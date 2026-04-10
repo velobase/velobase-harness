@@ -57,6 +57,14 @@ src/
 - 邮件模板放在 `src/server/email/templates/`，同时提供 React 组件版和 HTML 字符串版
 - Support 模块的 SMTP（nodemailer）是独立的客服回复通道，不走 sendEmail()
 
+## 数据库
+
+- 数据库操作统一使用 `db` from `@/server/db`，不要自己创建 PrismaClient
+- Redis 操作统一使用 `redis` from `@/server/redis`，不要自己创建连接
+- 所有数据模型在 `prisma/schema.prisma` 中定义，修改后运行 `npx prisma db push`
+- 本地开发通过 `docker compose up -d` 一键启动 PostgreSQL + Redis
+- 生产环境通过 `DATABASE_URL` 和 `REDIS_*` 环境变量连接云服务（Neon/Supabase + Upstash）
+
 ## 代码约定
 
 - 所有 mutation 必须使用 `protectedProcedure`（类型强制）

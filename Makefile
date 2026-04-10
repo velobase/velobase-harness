@@ -1,22 +1,30 @@
-.PHONY: help build docker-build docker-push deploy
+.PHONY: help db db-stop db-init db-reset build
 
 help:
 	@echo "Available commands:"
+	@echo "  make db            - Start local PostgreSQL + Redis (Docker Compose)"
+	@echo "  make db-stop       - Stop local database containers"
+	@echo "  make db-init       - Incremental sync schema + seed (safe to run repeatedly)"
+	@echo "  make db-reset      - Destroy all data and re-initialize from scratch"
 	@echo "  make build         - Build Next.js application"
-	@echo "  make docker-build  - Build Docker image locally"
-	@echo "  make docker-push   - Push Docker image to registry"
-	@echo "  make deploy        - Deploy to Kubernetes (via GitOps)"
+
+db:
+	docker compose up -d
+
+db-stop:
+	docker compose down
+
+db-init:
+	docker compose up -d
+	pnpm db:push
+	pnpm db:seed
+
+db-reset:
+	docker compose down -v
+	docker compose up -d
+	pnpm db:push
+	pnpm db:seed
 
 build:
 	pnpm build
-
-docker-build:
-	docker build -t vibevideo-art:latest .
-
-docker-push:
-	@echo "Use GitHub Actions to push images"
-
-deploy:
-	@echo "Deployment is automated via GitOps (ArgoCD)"
-	@echo "Push to dev/pre/prod branch to trigger deployment"
 

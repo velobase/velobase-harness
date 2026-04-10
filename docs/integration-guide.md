@@ -32,9 +32,9 @@ AI：功能实现（写代码）
 | --- | ------------- | ------------------------------------------------- | ---------------- | ----- |
 | 1   | 认证（Auth）      | NextAuth + Google + GitHub                        | 用户注册/登录          | ✅ 已完成 |
 | 2   | 邮件（Email）     | Resend + SendGrid                                 | 认证 Magic Link、通知 | ✅ 已完成 |
-| 3   | 数据库（Database） | Prisma + PostgreSQL                               | 数据持久化            | 待梳理   |
+| 3   | 数据库（Database） | Prisma + PostgreSQL + Redis                       | 数据持久化            | ✅ 已完成 |
 | 4   | 收费（Payment）   | Stripe / Airwallex / NowPayments / Telegram Stars | SaaS 商业模式核心      | 待梳理   |
-| 5   | 存储（Storage）   | Cloudflare R2 / AWS S3 / 阿里云 OSS / GCS            | 文件上传/下载          | 待梳理   |
+| 5   | 存储（Storage）   | Cloudflare R2 / AWS S3 / 阿里云 OSS / GCS / MinIO    | 文件上传/下载          | ✅ 已完成 |
 
 
 ### 第二层：增长能力（多数项目需要）
