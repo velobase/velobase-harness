@@ -6,6 +6,9 @@
   "scripts": {
     "build": "NODE_OPTIONS='--max-old-space-size=4096' next build",
     "check": "next lint && tsc --noEmit",
+    "docker:up": "docker compose --profile stripe up -d",
+    "docker:down": "docker compose --profile stripe down --remove-orphans",
+    "docker:db:up": "docker compose up -d postgres redis",
     "db:generate": "prisma migrate dev",
     "db:migrate": "prisma migrate deploy",
     "db:push": "prisma db push",
@@ -80,6 +83,7 @@
     "@trpc/react-query": "^11.0.0",
     "@trpc/server": "^11.0.0",
     "@types/sharp": "^0.32.0",
+    "@velobaseai/billing": "^0.1.4",
     "ai": "^5.0.68",
     "bcryptjs": "^3.0.3",
     "browser-image-compression": "^2.0.2",

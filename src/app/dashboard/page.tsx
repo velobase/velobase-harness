@@ -2,7 +2,7 @@
 
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import {
   MessageSquare,
@@ -20,10 +20,17 @@ import {
   HelpCircle,
   Users,
   Wallet,
+  Zap,
+  Lock,
+  Unlock,
+  FlaskConical,
 } from "lucide-react";
 import { Header } from "@/components/layout/header";
 import { Background } from "@/components/layout/background";
 import { cn } from "@/lib/utils";
+import { api } from "@/trpc/react";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
 
 interface NavItem {
   title: string;
@@ -212,8 +219,159 @@ export default function DashboardPage() {
           <PageSection title="Account" items={accountPages} />
           <PageSection title="Resources" items={otherPages} />
           {isAdmin && <PageSection title="Administration" items={adminPages} />}
+
+          <BillingTestPanel userId={session.user.id} />
         </div>
       </main>
+    </div>
+  );
+}
+
+function BillingTestPanel({ userId }: { userId: string }) {
+  const [logs, setLogs] = useState<string[]>([]);
+  const balanceQuery = api.billing.getBalance.useQuery({ userId });
+  const freezeMutation = api.billing.freeze.useMutation();
+  const consumeMutation = api.billing.consume.useMutation();
+  const unfreezeMutation = api.billing.unfreeze.useMutation();
+  const deductMutation = api.billing.postConsume.useMutation();
+
+  const log = useCallback((msg: string) => {
+    setLogs((prev) => [`[${new Date().toLocaleTimeString()}] ${msg}`, ...prev].slice(0, 20));
+  }, []);
+
+  const refetch = () => void balanceQuery.refetch();
+
+  const handleDirectDeduct = async () => {
+    const txId = `test_deduct_${userId}_${crypto.randomUUID().replace(/-/g, "").slice(0, 16)}`;
+    log(`Deduct: transactionId=${txId}, amount=10`);
+    try {
+      const res = await deductMutation.mutateAsync({
+        userId,
+        amount: 10,
+        businessId: txId,
+        businessType: "TASK",
+        description: "Dashboard test: direct deduct",
+      });
+      log(`Deduct OK: charged ${res.totalAmount} credits`);
+      toast.success(`Deducted ${res.totalAmount} credits`);
+      refetch();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "unknown error";
+      log(`Deduct FAILED: ${msg}`);
+      toast.error(msg);
+    }
+  };
+
+  const handleFreezeConsume = async () => {
+    const txId = `test_fc_${userId}_${crypto.randomUUID().replace(/-/g, "").slice(0, 16)}`;
+    log(`Freeze+Consume: transactionId=${txId}, amount=15`);
+    try {
+      const freezeRes = await freezeMutation.mutateAsync({
+        userId,
+        accountType: "CREDIT",
+        businessId: txId,
+        businessType: "TASK",
+        amount: 15,
+        description: "Dashboard test: freeze",
+      });
+      log(`Freeze OK: frozen ${freezeRes.totalAmount} credits`);
+      refetch();
+
+      const consumeRes = await consumeMutation.mutateAsync({
+        businessId: txId,
+        actualAmount: 8,
+      });
+      log(`Consume OK: charged ${consumeRes.totalAmount}, returned ${consumeRes.returnedAmount ?? 0}`);
+      toast.success(`Frozen 15 → consumed 8, returned 7`);
+      refetch();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "unknown error";
+      log(`Freeze+Consume FAILED: ${msg}`);
+      toast.error(msg);
+    }
+  };
+
+  const handleFreezeUnfreeze = async () => {
+    const txId = `test_fu_${userId}_${crypto.randomUUID().replace(/-/g, "").slice(0, 16)}`;
+    log(`Freeze+Unfreeze: transactionId=${txId}, amount=20`);
+    try {
+      const freezeRes = await freezeMutation.mutateAsync({
+        userId,
+        accountType: "CREDIT",
+        businessId: txId,
+        businessType: "TASK",
+        amount: 20,
+        description: "Dashboard test: freeze then unfreeze",
+      });
+      log(`Freeze OK: frozen ${freezeRes.totalAmount} credits`);
+      refetch();
+
+      const unfreezeRes = await unfreezeMutation.mutateAsync({ businessId: txId });
+      log(`Unfreeze OK: returned ${unfreezeRes.totalAmount} credits`);
+      toast.success(`Frozen 20 → unfrozen 20, balance restored`);
+      refetch();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "unknown error";
+      log(`Freeze+Unfreeze FAILED: ${msg}`);
+      toast.error(msg);
+    }
+  };
+
+  const available = balanceQuery.data?.totalSummary.available ?? 0;
+  const frozen = balanceQuery.data?.totalSummary.frozen ?? 0;
+  const isLoading = freezeMutation.isPending || consumeMutation.isPending || unfreezeMutation.isPending || deductMutation.isPending;
+
+  return (
+    <div className="mt-4">
+      <h2 className="text-sm font-medium text-muted-foreground mb-3 px-1 flex items-center gap-2">
+        <FlaskConical className="w-4 h-4" />
+        Billing Test (Velobase)
+      </h2>
+      <div className="rounded-xl border border-border/50 bg-card/50 backdrop-blur-sm p-5 space-y-4">
+        <div className="flex items-center gap-6 text-sm">
+          <div>
+            <span className="text-muted-foreground">Available: </span>
+            <span className="font-mono font-semibold text-foreground">{available.toLocaleString()}</span>
+          </div>
+          <div>
+            <span className="text-muted-foreground">Frozen: </span>
+            <span className="font-mono font-semibold text-yellow-500">{frozen.toLocaleString()}</span>
+          </div>
+          <button onClick={refetch} className="text-xs text-muted-foreground hover:text-foreground transition-colors">
+            ↻ Refresh
+          </button>
+        </div>
+
+        <div className="flex flex-wrap gap-3">
+          <Button size="sm" variant="destructive" onClick={() => void handleDirectDeduct()} disabled={isLoading}>
+            <Zap className="w-3.5 h-3.5 mr-1.5" />
+            Direct Deduct (10)
+          </Button>
+          <Button size="sm" variant="default" onClick={() => void handleFreezeConsume()} disabled={isLoading}>
+            <Lock className="w-3.5 h-3.5 mr-1.5" />
+            Freeze(15) → Consume(8)
+          </Button>
+          <Button size="sm" variant="secondary" onClick={() => void handleFreezeUnfreeze()} disabled={isLoading}>
+            <Unlock className="w-3.5 h-3.5 mr-1.5" />
+            Freeze(20) → Unfreeze(20)
+          </Button>
+        </div>
+
+        {logs.length > 0 && (
+          <div className="rounded-lg bg-black/40 border border-border/30 p-3 max-h-48 overflow-y-auto">
+            <div className="space-y-1 font-mono text-[11px] text-muted-foreground">
+              {logs.map((line, i) => (
+                <div key={i} className={cn(
+                  line.includes("FAILED") && "text-red-400",
+                  line.includes("OK") && "text-green-400",
+                )}>
+                  {line}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

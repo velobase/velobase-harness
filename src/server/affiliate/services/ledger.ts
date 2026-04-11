@@ -8,6 +8,7 @@ import type {
 } from "@prisma/client";
 
 import { db } from "@/server/db";
+import { grant } from "@/server/billing/services/grant";
 
 const COMMISSION_RATE_BPS = 3000; // 30%
 
@@ -465,45 +466,18 @@ export async function exchangeAffiliateCredits(params: {
       meta: { credits: params.credits },
     });
 
-    // Grant credits (transactional, idempotent via outerBizId)
+    // Grant credits via Velobase (idempotent via outerBizId)
     const outerBizId = `affiliate_exchange_${params.payoutRequestId}`;
-    const existing = await tx.billingAccount.findUnique({
-      where: { outerBizId },
-      select: { id: true },
+    await grant({
+      userId: params.userId,
+      accountType: 'CREDIT',
+      subAccountType: 'DEFAULT',
+      amount: params.credits,
+      outerBizId,
+      businessType: 'ADMIN_GRANT',
+      referenceId: params.payoutRequestId,
+      description: `Affiliate exchange: $${(params.amountCents / 100).toFixed(2)} -> ${params.credits} credits`,
     });
-    if (!existing) {
-      const billingAccount = await tx.billingAccount.create({
-        data: {
-          userId: params.userId,
-          accountType: "CREDIT",
-          subAccountType: "DEFAULT",
-          outerBizId,
-          referenceId: params.payoutRequestId,
-          totalAmount: params.credits,
-          usedAmount: 0,
-          frozenAmount: 0,
-          status: "ACTIVE",
-          startsAt: null,
-          expiresAt: null,
-        },
-        select: { id: true },
-      });
-      await tx.billingRecord.create({
-        data: {
-          billingAccountId: billingAccount.id,
-          userId: params.userId,
-          accountType: "CREDIT",
-          subAccountType: "DEFAULT",
-          operationType: "GRANT",
-          amount: params.credits,
-          businessId: outerBizId,
-          businessType: "ADMIN_GRANT",
-          referenceId: params.payoutRequestId,
-          description: `Affiliate exchange: $${(params.amountCents / 100).toFixed(2)} -> ${params.credits} credits`,
-          status: "COMPLETED",
-        },
-      });
-    }
   });
 }
 
