@@ -22,12 +22,13 @@
 
 ## 功能清单
 
-
-| 功能                        | 说明                           | 依赖                           | 状态  |
-| ------------------------- | ---------------------------- | ---------------------------- | --- |
-| [每日签到赠送](./daily-bonus/)  | 每日首次访问自动赠送积分，递减衰减            | Velobase Billing + Auth      | 已实现 |
-| [注册反滥用](./anti-abuse/)    | 检测白嫖/多号滥用并回收积分               | Velobase Billing + Auth + DB | 已实现 |
-| [CDN 适配](./cdn-adapters/) | 自动感知部署环境（IP/国家/Flexible SSL） | 无（仅依赖 HTTP 请求头）              | 已实现 |
+| 功能 | 说明 | 依赖 | 对应 API | 状态 |
+| --- | --- | --- | --- | --- |
+| [每日签到赠送](./daily-bonus/) | 每日首次访问自动赠送积分，递减衰减 | Velobase Billing + Auth | — | ✅ 已实现 |
+| [注册反滥用](./anti-abuse/) | 检测白嫖/多号滥用并回收积分 | Velobase Billing + Auth + DB | — | ✅ 已实现 |
+| [CDN 适配](./cdn-adapters/) | 自动感知部署环境（IP/国家/Flexible SSL） | 无（仅依赖 HTTP 请求头） | — | ✅ 已实现 |
+| 优惠码 | 优惠码验证与兑换 | Order + Billing | `promo.*` | ⏳ 待整理 |
+| 联盟推广 | 邀请返佣、佣金提现、积分兑换 | Order + Billing | `affiliate.*` | ⏳ 待整理 |
 
 
 ## 文档规范

@@ -2,6 +2,9 @@
 
 This is a reference template showing how to add a new business feature to the framework.
 
+> API 编码约定（Procedure 选择、瘦 Router 原则、错误码、分页）→ [`docs/conventions/api.md`](../../../docs/conventions/api.md)  
+> 后台任务添加步骤 → [`docs/integrations/queue/`](../../../docs/integrations/queue/)
+
 ## Structure
 
 ```

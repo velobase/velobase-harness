@@ -4,6 +4,7 @@
 
 > **定位**：本文件只包含 AI 写代码时必须遵守的**约束规则**。  
 > 架构设计、快速启动、分阶段 Checklist → 见 `[FRAMEWORK_GUIDE.md](./FRAMEWORK_GUIDE.md)`  
+> API 三区制与编码约定 → 见 `[docs/conventions/api.md](./docs/conventions/api.md)`  
 > 第三方集成详细文档 → 见 `[docs/integrations/](./docs/integrations/)`  
 > 框架内置功能详细文档 → 见 `[docs/features/](./docs/features/)`
 
@@ -37,11 +38,14 @@ src/
 
 ## 添加新功能
 
+> 详细步骤和代码模式 → `[docs/conventions/api.md](./docs/conventions/api.md)`
+
 1. 参考 `src/modules/example/` 的结构（含 README）
 2. 在 `prisma/schema.prisma` 添加数据模型
-3. 创建 `src/modules/<name>/server/router.ts` + `service.ts`
+3. 创建 `src/modules/<name>/server/service.ts`（业务逻辑）+ `router.ts`（瘦 Router）
 4. 在 `src/server/api/root.ts` 注册新 router
 5. 运行 `npx prisma db push`
+6. 前端通过 `api.<name>.<procedure>.useQuery/useMutation()` 调用
 
 ## 编码规则
 

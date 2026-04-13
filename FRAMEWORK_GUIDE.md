@@ -3,10 +3,11 @@
 本文档指导基于本框架开发新的 AI SaaS 产品。涵盖架构概览、快速启动、代码边界划分和分阶段 Checklist。
 
 > **定位**：本文件面向开发者，说明"框架是什么、怎么用、从模板到产品的路径"。  
-> AI 编码规则（禁止/必须） → 见 [`AGENTS.md`](./AGENTS.md)  
-> 第三方集成详细文档 → 见 [`docs/integrations/`](./docs/integrations/)  
-> 集成梳理流程和进度 → 见 [`docs/integration-guide.md`](./docs/integration-guide.md)  
-> 框架内置功能 → 见 [`docs/features/`](./docs/features/)
+> AI 编码规则（禁止/必须） → 见 `[AGENTS.md](./AGENTS.md)`  
+> API 三区制与编码约定 → 见 `[docs/conventions/api.md](./docs/conventions/api.md)`  
+> 第三方集成详细文档 → 见 `[docs/integrations/](./docs/integrations/)`  
+> 集成梳理流程和进度 → 见 `[docs/integration-guide.md](./docs/integration-guide.md)`  
+> 框架内置功能 → 见 `[docs/features/](./docs/features/)`
 
 ---
 
@@ -24,15 +25,17 @@
 
 ### 技术栈
 
-| 层级 | 技术 |
-| --- | --- |
-| 前端框架 | Next.js 15 (App Router) + React 19 |
-| API 层 | tRPC 11（类型安全的端到端 API） |
-| 数据库 ORM | Prisma 6 + PostgreSQL |
-| 缓存 / 队列 | Redis + BullMQ |
-| 认证 | NextAuth v5（支持 OAuth + 邮箱） |
-| 样式 | Tailwind CSS v4 |
-| 包管理 | pnpm |
+
+| 层级      | 技术                                 |
+| ------- | ---------------------------------- |
+| 前端框架    | Next.js 15 (App Router) + React 19 |
+| API 层   | tRPC 11（类型安全的端到端 API）              |
+| 数据库 ORM | Prisma 6 + PostgreSQL              |
+| 缓存 / 队列 | Redis + BullMQ                     |
+| 认证      | NextAuth v5（支持 OAuth + 邮箱）         |
+| 样式      | Tailwind CSS v4                    |
+| 包管理     | pnpm                               |
+
 
 ### 分层架构
 
@@ -84,6 +87,8 @@ graph TB
   workers --> business
 ```
 
+
+
 ### 请求数据流
 
 ```mermaid
@@ -104,6 +109,8 @@ sequenceDiagram
   Service-->>tRPC: 返回结果
   tRPC-->>Browser: 类型安全响应
 ```
+
+
 
 ---
 
@@ -142,11 +149,13 @@ pnpm worker:dev             # 新终端，Worker 服务 http://localhost:3001
 
 ### 可选但推荐提前配置
 
-| 功能 | 变量 | 详细文档 |
-| --- | --- | --- |
-| 文件上传 | `STORAGE_*` + `CDN_BASE_URL` | [`docs/integrations/storage/`](./docs/integrations/storage/) |
-| 发送邮件 | `RESEND_API_KEY` / `SENDGRID_API_KEY` | [`docs/integrations/email/`](./docs/integrations/email/) |
-| 防机器人 | `TURNSTILE_*` | [`docs/integrations/security/`](./docs/integrations/security/) |
+
+| 功能   | 变量                                    | 详细文档                                                           |
+| ---- | ------------------------------------- | -------------------------------------------------------------- |
+| 文件上传 | `STORAGE_*` + `CDN_BASE_URL`          | `[docs/integrations/storage/](./docs/integrations/storage/)`   |
+| 发送邮件 | `RESEND_API_KEY` / `SENDGRID_API_KEY` | `[docs/integrations/email/](./docs/integrations/email/)`       |
+| 防机器人 | `TURNSTILE_*`                         | `[docs/integrations/security/](./docs/integrations/security/)` |
+
 
 ---
 
@@ -154,41 +163,47 @@ pnpm worker:dev             # 新终端，Worker 服务 http://localhost:3001
 
 ### 框架层（不需要修改，直接复用）
 
-| 路径 | 说明 |
-| --- | --- |
-| `src/env.js` | 环境变量 Schema 统一入口（Zod 校验） |
-| `src/server/db.ts` | Prisma Client 单例 |
-| `src/server/redis.ts` | Redis 客户端单例（ioredis） |
-| `src/server/ratelimit.ts` | 基于 Redis 的请求限流 |
-| `src/server/auth/config.ts` | NextAuth 配置（按需增减 provider） |
-| `src/server/email/` | 邮件发送抽象（Resend / SendGrid 自动切换） |
-| `src/server/api/trpc.ts` | tRPC 中间件（认证、限流） |
-| `src/server/order/` | 订单状态机（通用，不与产品耦合） |
-| `src/server/features/` | 框架内置功能（[详见](./docs/features/)） |
-| `src/workers/` | Worker 进程入口与调度框架（[详见](./docs/integrations/queue/)） |
-| `src/components/ui/` | 基础 UI 组件（shadcn/ui 风格） |
-| `src/components/auth/` | 登录相关组件 |
-| `src/components/layout/` | 全局布局组件 |
+
+| 路径                          | 说明                                                 |
+| --------------------------- | -------------------------------------------------- |
+| `src/env.js`                | 环境变量 Schema 统一入口（Zod 校验）                           |
+| `src/server/db.ts`          | Prisma Client 单例                                   |
+| `src/server/redis.ts`       | Redis 客户端单例（ioredis）                               |
+| `src/server/ratelimit.ts`   | 基于 Redis 的请求限流                                     |
+| `src/server/auth/config.ts` | NextAuth 配置（按需增减 provider）                         |
+| `src/server/email/`         | 邮件发送抽象（Resend / SendGrid 自动切换）                     |
+| `src/server/api/trpc.ts`    | tRPC 中间件（认证、限流）                                    |
+| `src/server/order/`         | 订单状态机（通用，不与产品耦合）                                   |
+| `src/server/features/`      | 框架内置功能（[详见](./docs/features/)）                     |
+| `src/workers/`              | Worker 进程入口与调度框架（[详见](./docs/integrations/queue/)） |
+| `src/components/ui/`        | 基础 UI 组件（shadcn/ui 风格）                             |
+| `src/components/auth/`      | 登录相关组件                                             |
+| `src/components/layout/`    | 全局布局组件                                             |
+
 
 ### 框架 + 配置层（复用引擎，替换配置）
 
-| 路径 | 需要定制的部分 |
-| --- | --- |
-| `src/server/billing/config/` | 积分包定义、消耗规则、订阅档位 |
-| `src/server/touch/config/` | 触达场景文案和触发条件 |
-| `src/server/support/` | 客服邮件账号、飞书/Lark 群配置 |
-| `prisma/schema.prisma` | 保留核心表，删除/替换业务相关表 |
-| `src/app/admin/` | 保留通用管理页，删除业务特定视图 |
+
+| 路径                           | 需要定制的部分            |
+| ---------------------------- | ------------------ |
+| `src/server/billing/config/` | 积分包定义、消耗规则、订阅档位    |
+| `src/server/touch/config/`   | 触达场景文案和触发条件        |
+| `src/server/support/`        | 客服邮件账号、飞书/Lark 群配置 |
+| `prisma/schema.prisma`       | 保留核心表，删除/替换业务相关表   |
+| `src/app/admin/`             | 保留通用管理页，删除业务特定视图   |
+
 
 ### 业务层（完全替换为新产品逻辑）
 
-| 路径 | 替换说明 |
-| --- | --- |
+
+| 路径                            | 替换说明                      |
+| ----------------------------- | ------------------------- |
 | `src/modules/<your-feature>/` | 按 `modules/example/` 结构创建 |
-| `src/server/product/` | 重新定义产品 SKU、定价结构 |
-| `src/app/(feature)/` | 核心功能前端页面 |
-| `src/app/pricing/` | 基于新产品定价重写 |
-| `src/app/page.tsx` | 首页完全替换 |
+| `src/server/product/`         | 重新定义产品 SKU、定价结构           |
+| `src/app/(feature)/`          | 核心功能前端页面                  |
+| `src/app/pricing/`            | 基于新产品定价重写                 |
+| `src/app/page.tsx`            | 首页完全替换                    |
+
 
 ### Prisma Schema 边界
 
@@ -319,11 +334,13 @@ Worker 独立部署、可单独扩缩容、故障不影响主服务。详见[队
 
 ### 多环境行为差异
 
-| `NEXT_PUBLIC_APP_ENV` | 环境 | 典型差异 |
-| --- | --- | --- |
-| `dev` | 本地开发 | 关闭部分限流，详细错误信息 |
-| `staging` | 测试环境 | 测试支付 key，不发真实邮件 |
-| `prod` | 生产环境 | 全部限流开启，使用真实支付 |
+
+| `NEXT_PUBLIC_APP_ENV` | 环境   | 典型差异            |
+| --------------------- | ---- | --------------- |
+| `dev`                 | 本地开发 | 关闭部分限流，详细错误信息   |
+| `staging`             | 测试环境 | 测试支付 key，不发真实邮件 |
+| `prod`                | 生产环境 | 全部限流开启，使用真实支付   |
+
 
 ### tRPC 类型安全
 
@@ -332,3 +349,4 @@ Worker 独立部署、可单独扩缩容、故障不影响主服务。详见[队
 2. 在 src/server/api/root.ts 挂载 router
 3. 前端直接 api.<feature>.<procedure>.useQuery() — 类型自动推断
 ```
+
