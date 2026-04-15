@@ -141,11 +141,30 @@ AUTH_GOOGLE_SECRET=
 pnpm install                # 安装依赖
 cp .env.example .env        # 复制模板，填入必需变量
 docker compose up -d        # 启动 PostgreSQL + Redis
-pnpm db:migrate             # 执行迁移
-pnpm db:seed                # 可选：初始化种子数据
+pnpm db:push                # 同步 schema，创建所有数据表
+pnpm db:seed                # 写入种子数据（Agent、产品、测试账号）
 pnpm dev                    # 主应用 http://localhost:3000
 pnpm worker:dev             # 新终端，Worker 服务 http://localhost:3001
 ```
+
+**seed 写入的内容：**
+
+- 系统 Agent（AI 助手、写作等默认 Agent）
+- 产品 SKU（订阅档位 + 积分包）
+- 密码登录测试账号（详见下方）
+- 触达场景通知模板
+
+**本地测试账号（密码登录）：**
+
+白名单在 `src/server/auth/password-login-allowlist.ts`，默认包含：
+
+| 邮箱 | 密码 | 说明 |
+| --- | --- | --- |
+| `testadmin@example.com` | `Testadmin2024!` | 测试用户（非管理员） |
+
+设置管理员：在 `.env` 中配置 `ADMIN_EMAIL=your@email.com`，重跑 `pnpm db:seed` 即可。
+
+> 详细说明见 [数据库文档](./docs/integrations/database/)
 
 ### 可选但推荐提前配置
 

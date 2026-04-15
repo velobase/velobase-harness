@@ -45,3 +45,6 @@ logs/*
 
 k8s.yaml
 KNOWN_ISSUES.md
+
+# cloud architecture docs
+docs/cloud/

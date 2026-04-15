@@ -35,6 +35,7 @@ AI：功能实现（写代码）
 | 3   | 数据库（Database） | Prisma + PostgreSQL + Redis                    | 数据持久化            | ✅ 已完成 |
 | 4   | 收费（Payment）   | Stripe + NowPayments                           | SaaS 商业模式核心      | ✅ 已完成 |
 | 5   | 存储（Storage）   | Cloudflare R2 / AWS S3 / 阿里云 OSS / GCS / MinIO | 文件上传/下载          | ✅ 已完成 |
+| 6   | 后台任务（Queue）   | Redis + BullMQ                                 | 异步处理（邮件、对账、清理）   | ✅ 已完成 |
 
 
 ### 第二层：增长能力（多数项目需要）
@@ -42,7 +43,6 @@ AI：功能实现（写代码）
 
 | 序号  | 大类            | 三方服务                                 | 说明             | 状态    |
 | --- | ------------- | ------------------------------------ | -------------- | ----- |
-| 6   | 后台任务（Queue）   | Redis + BullMQ                       | 异步处理（邮件、对账、清理） | ✅ 已完成 |
 | 7   | 分析（Analytics） | PostHog（事件追踪 + Feature Flag）         | 用户行为追踪、A/B 测试  | ✅ 已完成 |
 | 8   | AI/LLM        | OpenAI / Anthropic / xAI（via AI SDK） | AI 对话、Agent 能力 | 待梳理   |
 
@@ -50,13 +50,13 @@ AI：功能实现（写代码）
 ### 第三层：运营支撑（按需选用）
 
 
-| 序号  | 大类               | 三方服务                    | 说明          | 状态  |
-| --- | ---------------- | ----------------------- | ----------- | --- |
-| 9   | 安全（Security）     | Cloudflare Turnstile    | 人机验证（防滥用）   | 已完成 |
-| 10  | 通知（Notification） | 飞书/Lark + Telegram Bot  | 内部运营通知、用户触达 | 待梳理 |
-| 11  | 广告（Ads）          | Google Ads（离线转化上传）      | 付费获客追踪      | 待梳理 |
-| 12  | 客服（Support）      | SMTP + IMAP（nodemailer） | 用户支持邮件收发    | 待梳理 |
-| 13  | 部署（Deployment）   | Docker / Vercel / VPS   | 上线运行        | 待梳理 |
+| 序号  | 大类               | 三方服务                     | 说明          | 状态    |
+| --- | ---------------- | ------------------------ | ----------- | ----- |
+| 9   | 安全（Security）     | Cloudflare Turnstile     | 人机验证（防滥用）   | 已完成   |
+| 10  | 通知（Notification） | 飞书/Lark + Telegram Bot   | 内部运营通知、用户触达 | 待梳理   |
+| 11  | 广告（Ads）          | Google Ads + Twitter Ads | 付费获客追踪      | ✅ 已完成 |
+| 12  | 客服（Support）      | SMTP + IMAP（nodemailer）  | 用户支持邮件收发    | 待梳理   |
+| 13  | 部署（Deployment）   | Docker / Vercel / VPS    | 上线运行        | 待梳理   |
 
 
 ### 已内置（无需单独梳理）

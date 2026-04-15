@@ -115,6 +115,14 @@ src/
 - 新事件先在 `src/analytics/events/` 定义常量 + Properties interface，再使用
 - Feature Flag 客户端用 `useFeatureFlagVariantKey()`，服务端用 `getFeatureFlag()` from `@/server/experiments`
 
+### 广告（Ads）
+
+> 详细架构和归因链路 → `[docs/integrations/ads/](./docs/integrations/ads/)`
+
+- 前端广告追踪从 `@/analytics/ads` 导入，**禁止**直接调用 `window.gtag` 或 `window.twq`
+- 支付履约后调用 `enqueueGoogleAdsUploadsForPayment(paymentId)` 触发服务端离线回传
+- 修改 Google Ads ID → `src/analytics/ads/google.ts`；修改 Twitter 事件 ID → `src/analytics/ads/twitter.ts`
+
 ### 框架内置功能
 
 > 功能清单和各功能详细文档 → `[docs/features/](./docs/features/)`

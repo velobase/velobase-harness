@@ -1,3 +1,5 @@
+import { ADS_CONFIG, isTwitterAdsEnabled } from "./config";
+
 declare global {
   interface Window {
     twq?: (command: string, eventId: string, params?: TwitterConversionParams) => void;
@@ -24,8 +26,6 @@ interface TwitterContentItem {
 
 /**
  * 发送 Twitter 转化事件
- * @param eventId - 完整的事件 ID，如 'tw-qv3gm-qv3gn'
- * @param params - 转化参数
  */
 export function trackTwitterConversion(
   eventId: string,
@@ -37,7 +37,7 @@ export function trackTwitterConversion(
 }
 
 /**
- * 追踪购买转化
+ * 追踪购买转化（事件 ID 从环境变量读取，未配置则静默跳过）
  */
 export function trackTwitterPurchase(params: {
   orderId: string;
@@ -51,7 +51,9 @@ export function trackTwitterPurchase(params: {
     quantity: number;
   }>;
 }): void {
-  trackTwitterConversion("tw-qv3gm-qv3gn", {
+  if (!isTwitterAdsEnabled()) return;
+
+  trackTwitterConversion(ADS_CONFIG.twitter.purchaseEventId, {
     value: params.value,
     currency: params.currency ?? "USD",
     conversion_id: params.orderId,

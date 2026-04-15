@@ -101,34 +101,99 @@ await redis.setex("key", 300, "value"); // 带 TTL
 
 ### 模式 A：Docker 自建（推荐本地开发）
 
-1. 配置 `.env`：
-  ```env
-   DATABASE_URL="postgresql://velobase:velobase@localhost:5432/velobase"
-   REDIS_HOST=127.0.0.1
-   REDIS_PORT=6379
-  ```
-2. **首次启动**（一条命令完成：启动容器 → 建表 → 种子数据）：
-  ```bash
-   make db-init
-  ```
-3. **日常启动**（已有数据，增量同步 schema 变更）：
-  ```bash
-   make db-init           # 安全地重复运行，db:push 只增量同步差异，seed 需幂等
-  ```
-4. **完全重置**（清空所有数据，从零开始）：
-  ```bash
-   make db-reset          # docker compose down -v 删除 volume → 重建 → 建表 → seed
-  ```
+**第 1 步：配置 `.env`**
 
-#### 命令对照
+```env
+DATABASE_URL="postgresql://velobase:velobase@localhost:5432/velobase"
+REDIS_HOST=127.0.0.1
+REDIS_PORT=6379
+```
 
+**第 2 步：首次初始化**（启动容器 → 建表 → 写入种子数据）
 
-| 命令              | 作用                      | 数据            |
-| --------------- | ----------------------- | ------------- |
-| `make db`       | 仅启动容器                   | 保留            |
-| `make db-init`  | 启动 + 增量同步 schema + seed | 保留            |
-| `make db-reset` | 销毁 volume + 重建一切        | **清空**        |
-| `make db-stop`  | 停止容器                    | 保留（volume 还在） |
+```bash
+docker compose up -d          # 启动 PostgreSQL + Redis
+pnpm db:push                  # 同步 prisma/schema.prisma 到数据库（创建所有表）
+pnpm db:seed                  # 写入种子数据（Agent、Product、测试账号）
+```
+
+**第 3 步：日常启动**（已有数据，schema 有变更时）
+
+```bash
+docker compose up -d          # 启动容器
+pnpm db:push                  # 增量同步 schema 变更（不清空数据）
+```
+
+**完全重置**（清空所有数据，从零开始）
+
+```bash
+docker compose down -v        # 销毁 volume（数据全部删除）
+docker compose up -d
+pnpm db:push
+pnpm db:seed
+```
+
+#### 命令速查
+
+| 命令 | 作用 | 数据 |
+| --- | --- | --- |
+| `docker compose up -d` | 启动 PG + Redis 容器 | 保留 |
+| `docker compose down` | 停止容器 | 保留（volume 还在）|
+| `docker compose down -v` | 停止并销毁 volume | **全部清空** |
+| `pnpm db:push` | 同步 schema 到 DB（增量） | 保留 |
+| `pnpm db:seed` | 写入种子数据 | 追加/幂等 |
+| `pnpm db:generate` | 生成 Prisma Client | — |
+| `pnpm db:migrate` | 执行迁移文件（生产用） | — |
+
+---
+
+### Seed 数据说明
+
+`pnpm db:seed`（对应 `prisma/seed.ts`）按顺序写入以下内容：
+
+| 步骤 | 内容 | 文件 |
+| --- | --- | --- |
+| 1 | 默认 AI Assistant Agent | `seed-vibe-creator-agent.ts` |
+| 2 | 其他系统 Agent（写作、搜索等） | `seed-agent-apps.ts` |
+| 3 | 产品 SKU（订阅档位 + 积分包） | `seed-products.ts` |
+| 4 | 设置管理员账号 | `seed.ts`（读取 `ADMIN_EMAIL`） |
+| 5 | 密码登录测试账号 | `seed-password-login-users.ts` |
+| 6 | 触达场景模板（通知邮件） | `seed-touch-scenes.ts` |
+
+Seed 设计为**幂等**，重复运行不会创建重复数据（使用 `upsert`）。
+
+#### 配置管理员账号
+
+Seed 会将 `ADMIN_EMAIL` 指定的用户设为管理员（`isAdmin: true`）。
+
+```env
+# .env
+ADMIN_EMAIL=your@email.com
+```
+
+> 如果该邮箱对应的用户尚未注册，seed 会跳过（不创建）。需先登录一次，再重跑 `pnpm db:seed`。
+
+#### 密码登录测试账号
+
+框架内置密码登录白名单机制，供本地开发和测试使用（避免每次都走 Magic Link）。
+
+**白名单文件**：`src/server/auth/password-login-allowlist.ts`
+
+```typescript
+export const PASSWORD_LOGIN_ALLOWLIST: string[] = [
+  "testadmin@example.com",
+  // 可以加更多测试邮箱
+];
+```
+
+**默认密码规则**：`邮箱本地部分首字母大写 + 2024!`
+
+| 邮箱 | 默认密码 |
+| --- | --- |
+| `testadmin@example.com` | `Testadmin2024!` |
+| `alice@example.com` | `Alice2024!` |
+
+> 生产环境请清空 `PASSWORD_LOGIN_ALLOWLIST`，完全关闭密码登录。
 
 
 ### 模式 B：云服务商

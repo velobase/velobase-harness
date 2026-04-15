@@ -1,2 +1,9 @@
 export { trackTwitterConversion, trackTwitterPurchase } from "./twitter";
-export { getGoogleAdsConfig, GOOGLE_ADS_CONFIG } from "./google";
+export {
+  ADS_CONFIG,
+  getGoogleAdsConfig,
+  isGoogleAdsEnabled,
+  isTwitterAdsEnabled,
+  isPropellerEnabled,
+  isTrafficJunkyEnabled,
+} from "./config";

@@ -16,7 +16,7 @@ import { GeoUpdater } from "@/components/geo-updater";
 import { PostHogProvider } from "@/analytics";
 import { UtmTracker } from "@/components/analytics/utm-tracker";
 import { headers, cookies } from "next/headers";
-import { getGoogleAdsConfig } from "@/analytics/ads";
+import { ADS_CONFIG, isGoogleAdsEnabled, isTwitterAdsEnabled } from "@/analytics/ads";
 import { auth } from "@/server/auth";
 import { getClientCountryFromHeaders } from "@/server/lib/get-client-country";
 import { isEeaLikeCountry } from "@/server/lib/is-eea-country";
@@ -67,10 +67,11 @@ export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   const headersList = await headers();
-  const host = headersList.get("host") ?? "";
-  const gAdsConfig = getGoogleAdsConfig(host);
-  const GA_MEASUREMENT_ID = gAdsConfig.measurementId;
   const session = await auth();
+  const googleAdsEnabled = isGoogleAdsEnabled();
+  const GA_MEASUREMENT_ID = ADS_CONFIG.google.measurementId;
+  const twitterAdsEnabled = isTwitterAdsEnabled();
+  const TWITTER_PIXEL_ID = ADS_CONFIG.twitter.pixelId;
 
   const countryCode = getClientCountryFromHeaders(headersList as unknown as Headers);
   const isEea = isEeaLikeCountry(countryCode);
@@ -86,7 +87,7 @@ export default async function RootLayout({
       suppressHydrationWarning
     >
       <head>
-        {analyticsEnabled ? (
+        {analyticsEnabled && googleAdsEnabled ? (
           <>
             <Script
               src={`https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`}
@@ -101,6 +102,16 @@ export default async function RootLayout({
               `}
             </Script>
           </>
+        ) : null}
+        {analyticsEnabled && twitterAdsEnabled ? (
+          <Script id="twitter-pixel" strategy="afterInteractive">
+            {`
+              !function(e,t,n,s,u,a){e.twq||(s=e.twq=function(){s.exe?s.exe.apply(s,arguments):s.queue.push(arguments);},
+              s.version='1.1',s.queue=[],u=t.createElement(n),u.async=!0,u.src='https://static.ads-twitter.com/uwt.js',
+              a=t.getElementsByTagName(n)[0],a.parentNode.insertBefore(u,a))}(window,document,'script');
+              twq('config','${TWITTER_PIXEL_ID}');
+            `}
+          </Script>
         ) : null}
       </head>
       <body>

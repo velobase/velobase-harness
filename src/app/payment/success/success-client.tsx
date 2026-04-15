@@ -8,8 +8,14 @@ import { Button } from '@/components/ui/button'
 import Link from 'next/link'
 import { Check, Copy } from 'lucide-react'
 import { track } from '@/analytics'
-import { trackTwitterPurchase } from '@/analytics/ads'
-import { getGoogleAdsConfig } from '@/analytics/ads'
+import {
+  trackTwitterPurchase,
+  getGoogleAdsConfig,
+  isGoogleAdsEnabled,
+  isPropellerEnabled,
+  isTrafficJunkyEnabled,
+  ADS_CONFIG,
+} from '@/analytics/ads'
 
 declare global {
   interface Window {
@@ -235,47 +241,46 @@ export function PaymentSuccessClient() {
       }
 
       // Google Ads conversion
-      try {
-        const gAdsConfig = getGoogleAdsConfig(window.location.hostname)
-        const txId = orderId || paymentId
-        const currency = payment.currency ?? 'USD'
+      if (isGoogleAdsEnabled()) {
+        try {
+          const gAdsConfig = getGoogleAdsConfig()
+          const txId = orderId || paymentId
+          const currency = payment.currency ?? 'USD'
 
-        // Wait longer: gtag loads afterInteractive in root layout
-        const gtagReady = await waitForGtag({ timeoutMs: 8000 })
-        if (gtagReady && typeof window !== 'undefined' && typeof window.gtag === 'function') {
-          const sendTo = `${gAdsConfig.measurementId}/${gAdsConfig.conversionLabel}`
+          const gtagReady = await waitForGtag({ timeoutMs: 8000 })
+          if (gtagReady && typeof window !== 'undefined' && typeof window.gtag === 'function') {
+            const sendTo = `${gAdsConfig.measurementId}/${gAdsConfig.conversionLabel}`
 
-          // Use beacon + callback to reduce loss on navigation
-          await new Promise<void>((resolve) => {
-            let done = false
-            const finish = () => {
-              if (done) return
-              done = true
-              resolve()
-            }
-            window.gtag!('event', 'conversion', {
-              send_to: sendTo,
-              transaction_id: txId,
+            await new Promise<void>((resolve) => {
+              let done = false
+              const finish = () => {
+                if (done) return
+                done = true
+                resolve()
+              }
+              window.gtag!('event', 'conversion', {
+                send_to: sendTo,
+                transaction_id: txId,
+                value: conversionValue,
+                currency,
+                transport_type: 'beacon',
+                event_callback: finish,
+                event_timeout: 2000,
+              })
+              setTimeout(finish, 2200)
+            })
+          } else {
+            fireGoogleAdsConversionPixel({
+              measurementId: gAdsConfig.measurementId,
+              conversionLabel: gAdsConfig.conversionLabel,
+              transactionId: txId,
               value: conversionValue,
               currency,
-              transport_type: 'beacon',
-              event_callback: finish,
-              event_timeout: 2000,
             })
-            setTimeout(finish, 2200)
-          })
-        } else {
-          // Best-effort fallback when gtag isn't ready (script load race)
-          fireGoogleAdsConversionPixel({
-            measurementId: gAdsConfig.measurementId,
-            conversionLabel: gAdsConfig.conversionLabel,
-            transactionId: txId,
-            value: conversionValue,
-            currency,
-          })
+          }
+        } catch {
+          // no-op
         }
-      } catch {
-        // no-op: tracking failures should not break UX
       }
 
       // Twitter conversion (使用实付金额，不做 LTV 调整)
@@ -286,28 +291,30 @@ export function PaymentSuccessClient() {
         email: userEmail,
       })
 
-      // PropellerAds conversion (前端像素方式)
-      const propellerVisitorIdRaw = document.cookie
-        .split('; ')
-        .find(row => row.startsWith('propeller_visitor_id='))
-        ?.split('=')[1]
-      const propellerVisitorId = propellerVisitorIdRaw ? decodeURIComponent(propellerVisitorIdRaw) : undefined
+      // PropellerAds conversion
+      if (isPropellerEnabled()) {
+        const propellerVisitorIdRaw = document.cookie
+          .split('; ')
+          .find(row => row.startsWith('propeller_visitor_id='))
+          ?.split('=')[1]
+        const propellerVisitorId = propellerVisitorIdRaw ? decodeURIComponent(propellerVisitorIdRaw) : undefined
 
-      if (propellerVisitorId) {
-        const payout = actualValue.toFixed(2)
-        const img = new Image()
-        img.src = `http://ad.propellerads.com/conversion.php?aid=3883062&tid=150824&visitor_id=${propellerVisitorId}&payout=${payout}`
+        if (propellerVisitorId) {
+          const payout = actualValue.toFixed(2)
+          const img = new Image()
+          img.src = `http://ad.propellerads.com/conversion.php?aid=${ADS_CONFIG.propeller.aid}&tid=${ADS_CONFIG.propeller.tid}&visitor_id=${propellerVisitorId}&payout=${payout}`
+        }
       }
 
-      // TrafficJunky Pixel Implementation
-      {
+      // TrafficJunky conversion
+      if (isTrafficJunkyEnabled()) {
         const payout = actualValue.toFixed(2)
-        const cb = Date.now() // cache buster
-        const cti = payment.id || orderId || paymentId // Transaction ID
-        const ctd = payment.order?.productId ?? 'subscription' // Transaction Description
-        
+        const cb = Date.now()
+        const cti = payment.id || orderId || paymentId
+        const ctd = payment.order?.productId ?? 'subscription'
+
         const img = new Image()
-        img.src = `https://ads.trafficjunky.net/ct?a=1000552301&member_id=1007677341&cb=${cb}&cti=${cti}&ctv=${payout}&ctd=${ctd}`
+        img.src = `https://ads.trafficjunky.net/ct?a=${ADS_CONFIG.trafficJunky.accountId}&member_id=${ADS_CONFIG.trafficJunky.memberId}&cb=${cb}&cti=${cti}&ctv=${payout}&ctd=${ctd}`
       }
     }
 
