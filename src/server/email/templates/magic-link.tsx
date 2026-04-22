@@ -1,4 +1,3 @@
-/* eslint-disable @next/next/no-head-element */
 import * as React from "react";
 
 interface MagicLinkEmailTemplateProps {

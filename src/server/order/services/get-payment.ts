@@ -1,7 +1,6 @@
 import { db } from "@/server/db";
 import { getNowPaymentsPaymentStatus } from "../providers/nowpayments";
 import { processFulfillmentByPayment } from "@/server/fulfillment/manager";
-import { logger } from "@/server/shared/telemetry/logger";
 import { ENABLE_PAYMENT_GATEWAY_PREFERENCE_AUTO_SYNC } from "../config";
 
 export async function getPayment(paymentId: string) {

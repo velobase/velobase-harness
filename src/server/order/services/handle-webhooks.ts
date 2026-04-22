@@ -588,7 +588,7 @@ export async function handlePaymentWebhook(providerName: string, req: Request) {
 
       await appEvents.emit("payment:succeeded", {
         paymentId: payment.id,
-        orderId: payment.orderId!,
+        orderId: payment.orderId,
         userId: payment.userId,
         gateway: providerName,
         amountCents: payment.amount,
