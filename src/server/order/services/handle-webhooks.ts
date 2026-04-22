@@ -3,8 +3,7 @@ import { ENABLE_PAYMENT_GATEWAY_PREFERENCE_AUTO_SYNC } from "../config";
 import { getProvider } from "../providers/registry";
 import type { Payment, Prisma } from "@prisma/client";
 import { logger } from "@/server/shared/telemetry/logger";
-import { getServerPostHog } from "@/analytics/server";
-import { BILLING_EVENTS } from "@/analytics/events/billing";
+import { appEvents } from "@/server/events/bus";
 import {
   asyncSendPaymentNotification,
 } from "@/lib/lark";
@@ -13,17 +12,13 @@ import { grant } from "@/server/billing/services/grant";
 import { createSubscriptionCycle } from "@/server/membership/services/create-subscription-cycle";
 import { NEW_USER_UNLOCK_OFFER } from "@/server/offers/constants";
 import { consumeNewUserUnlockOffer } from "@/server/offers/services/consume-new-user-unlock-offer";
-import { enqueueGoogleAdsUploadsForPayment } from "@/server/ads/google-ads/queue";
 import type { NormalizedSubscriptionWebhookData } from "../providers/types";
 import { getStripeClient } from "@/server/order/providers/stripe";
-import { createAffiliateEarningForOrderPayment } from "@/server/affiliate/services/ledger";
-import { cancelSubscriptionRenewalReminderSchedule } from "@/server/touch/services/cancel-subscription-renewal-reminder";
 import {
   inferOccurredAtFromIsoFields,
   inferOccurredAtFromStripeObject,
   recordPaymentTransaction,
 } from "@/server/order/services/payment-transactions";
-import { sendOrderPaymentNotificationByPaymentId } from "./send-order-payment-notification";
 
 /**
  * 用于标记“我们希望 Stripe 重放”的错误：
@@ -563,19 +558,6 @@ export async function handlePaymentWebhook(providerName: string, req: Request) {
         data: { hasPurchased: true },
       });
 
-      // Google Ads Offline Conversion (server-side, covers Stripe + NowPayments)
-      // - 非阻塞，不影响 webhook 成功返回
-      // - 幂等：worker 内部依赖 payment.extra.googleAds.*.uploadedAt
-      // - 限流/重试：由 google-ads-upload worker 统一处理
-      setImmediate(() => {
-        void enqueueGoogleAdsUploadsForPayment(payment.id).catch((error) => {
-          logger.warn(
-            { error, paymentId: payment.id, orderId: payment.orderId, provider: providerName },
-            "Google Ads upload enqueue (webhook) failed"
-          );
-        });
-      });
-
       // Optional: sync default payment preference after a successful purchase (AUTO -> gateway).
       if (ENABLE_PAYMENT_GATEWAY_PREFERENCE_AUTO_SYNC) {
         // NowPayments -> crypto
@@ -603,6 +585,16 @@ export async function handlePaymentWebhook(providerName: string, req: Request) {
         },
         "Order fulfilled after payment success"
       );
+
+      await appEvents.emit("payment:succeeded", {
+        paymentId: payment.id,
+        orderId: payment.orderId!,
+        userId: payment.userId,
+        gateway: providerName,
+        amountCents: payment.amount,
+        currency: payment.currency,
+        productType: "UNKNOWN",
+      });
 
       // Skip Queue: 付费后将该用户的延迟任务插入快速队列，并清空当日队列计数
       try {
@@ -645,16 +637,6 @@ export async function handlePaymentWebhook(providerName: string, req: Request) {
         include: { product: { include: { creditsPackage: true } }, user: { include: { referredBy: { select: { name: true, email: true } } } } }
       });
       if (order) {
-        // Affiliate earning (best-effort, idempotent)
-        try {
-          await createAffiliateEarningForOrderPayment(payment.id);
-        } catch (error) {
-          logger.error(
-            { error, paymentId: payment.id, orderId: order.id, userId: order.userId },
-            "Failed to create affiliate earning (ignored)"
-          );
-        }
-
         // 更新用户聚合统计（UserStats）
         const now = new Date();
 
@@ -679,68 +661,6 @@ export async function handlePaymentWebhook(providerName: string, req: Request) {
           },
         });
 
-        const posthog = getServerPostHog();
-        if (posthog) {
-          try {
-            // 解析价格变体 & 产品类型
-            const rawType = order.product?.type ?? "UNKNOWN";
-            const productType =
-              rawType === "SUBSCRIPTION"
-                ? "subscription"
-                : rawType === "CREDITS_PACKAGE"
-                ? "credits"
-                : rawType.toLowerCase();
-            let priceVariant: string | undefined;
-            if (order.product?.metadata && typeof order.product.metadata === "object") {
-              const meta = order.product.metadata as { priceVariant?: string };
-              priceVariant = meta.priceVariant;
-            }
-
-            // Get all feature flags for experiment tracking (generic approach)
-            const allFlags = await posthog.getAllFlags(order.userId);
-            const featureFlagProps: Record<string, unknown> = {};
-            for (const [key, value] of Object.entries(allFlags)) {
-              if (value !== undefined && value !== null) {
-                featureFlagProps[`$feature/${key}`] = value;
-              }
-            }
-
-            posthog.capture({
-              distinctId: order.userId,
-              event: BILLING_EVENTS.CREDITS_PURCHASE_SUCCESS,
-              properties: {
-                package_id: order.productId,
-                credits: order.product?.creditsPackage?.creditsAmount ?? 0,
-                // Money fields:
-                // - amount/price: major unit (e.g. USD dollars / EUR euros) for PostHog GMV charts
-                // - amount_cents: minor unit (e.g. cents) for precision / reconciliation
-                currency: order.currency,
-                amount_cents: order.amount,
-                amount: order.amount / 100,
-                price: order.amount / 100, // 兼容旧字段，后续可移除
-                // Segmentation:
-                country_code: order.user?.countryCode ?? null,
-                gateway: (payment.paymentGateway ?? "").toLowerCase(),
-                order_id: order.id,
-                payment_id: payment.id,
-                product_type: productType,
-                price_variant: priceVariant,
-                ...featureFlagProps, // All feature flags for any experiment
-              },
-            });
-            await posthog.shutdown();
-          } catch (error) {
-            logger.error(
-              { error, paymentId: payment.id, orderId: order.id },
-              "Failed to track billing_credits_purchase_success"
-            );
-          }
-        }
-
-        // Send Lark notification for successful payment (Async)
-        setImmediate(() => {
-          void sendOrderPaymentNotificationByPaymentId(payment.id, { source: "webhook" });
-        });
       }
     } catch (err) {
       logger.error(
@@ -963,27 +883,16 @@ export async function handleStripeSubscriptionRenewal(
       });
     }
 
-    // Affiliate earning for Stripe renewals (best-effort, idempotent)
-    // Note: renewal has no Order/Payment row; we anchor on invoice id (txnId)
-    try {
-      const amountCents = result.getAmount() ?? 0;
-      if (amountCents > 0) {
-        const { createAffiliateEarningForStripeSubscriptionRenewal } = await import(
-          "@/server/affiliate/services/ledger"
-        );
-        await createAffiliateEarningForStripeSubscriptionRenewal({
-          referredUserId: subscription.userId,
-          subscriptionId: subscription.id,
-          invoiceId: txnId,
-          amountCents,
-        });
-      }
-    } catch (error) {
-      logger.error(
-        { error, subscriptionId: subscription.id, transactionId: txnId },
-        "Failed to create affiliate earning for Stripe renewal (ignored)"
-      );
-    }
+    // Affiliate earning is now handled by the event bus (subscription:renewed)
+    await appEvents.emit("subscription:renewed", {
+      subscriptionId: subscription.id,
+      userId: subscription.userId,
+      cycleNumber: newCycleSequenceNumber,
+      amountCents: result.getAmount() ?? 0,
+      currency: result.getCurrency() ?? "usd",
+      periodStart,
+      periodEnd,
+    });
   } catch (error) {
     logger.error(
       { error, subscriptionId: subscription.id, gatewaySubscriptionId: gatewaySubId, transactionId: txnId },
@@ -1386,22 +1295,13 @@ export async function handleSubscriptionWebhook(providerName: string, req: Reque
           },
         });
 
-        // If user set "cancel at period end", cancel the renewal reminder schedule for the active cycle.
+        // Emit subscription:canceled event for any side-effect modules (e.g. touch)
         if (nextCancelAtPeriodEnd === true) {
-          try {
-            const activeCycle = await db.userSubscriptionCycle.findFirst({
-              where: { subscriptionId: updatedSub.id, status: "ACTIVE" },
-              orderBy: { sequenceNumber: "desc" },
-            });
-            if (activeCycle) {
-              await cancelSubscriptionRenewalReminderSchedule({
-                cycleId: activeCycle.id,
-                reason: normalized?.cancelAt ? "cancel_at" : "cancel_at_period_end",
-              });
-            }
-          } catch {
-            // ignored
-          }
+          await appEvents.emit("subscription:canceled", {
+            subscriptionId: updatedSub.id,
+            userId: updatedSub.userId,
+            cancelAtPeriodEnd: true,
+          });
         }
         logger.info(
           {

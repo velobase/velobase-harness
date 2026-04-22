@@ -1,17 +1,14 @@
 /**
  * 飞书卡片回调 Webhook
- * 
+ *
  * 处理客服审核卡片的 Approve/Reject 操作。
+ *
+ * 所有业务依赖在 POST handler 内动态 import，
+ * 避免 next build 期间触发 BullMQ Queue / Redis 初始化。
  */
 
 import { NextResponse, type NextRequest } from "next/server";
 import { createLogger } from "@/lib/logger";
-import { approveDraft, rejectDraft } from "@/server/support/services/approve-draft";
-import { addActionEvent } from "@/server/support/services/add-event";
-import { supportSendQueue } from "@/workers/queues";
-import { generateReplyHtml } from "@/server/support/providers/smtp";
-import { executeTool, type ToolName } from "@/server/support/ai/tools";
-import { db } from "@/server/db";
 
 const logger = createLogger("lark-support-webhook");
 
@@ -34,7 +31,6 @@ export async function POST(req: NextRequest) {
 
     logger.info({ body }, "Received Lark card callback");
 
-    // 解析操作
     const actionValue = body.action?.value;
     if (!actionValue) {
       return NextResponse.json({ error: "No action value" }, { status: 400 });
@@ -53,11 +49,18 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Missing ticketId" }, { status: 400 });
     }
 
-    // 获取操作者信息
     const agentId = body.user_id ?? body.open_id ?? "unknown";
 
     if (action === "approve") {
-      // 审核通过
+      const { approveDraft } = await import("@/server/support/services/approve-draft");
+      const { addActionEvent } = await import("@/server/support/services/add-event");
+      const { supportSendQueue } = await import("@/workers/queues");
+      const { generateReplyHtml } = await import("@/server/support/providers/smtp");
+      const { executeTool } = await import("@/server/support/ai/tools");
+      const { db } = await import("@/server/db");
+
+      type ToolName = Parameters<typeof executeTool>[0];
+
       const result = await approveDraft(ticketId, agentId);
 
       if (!result) {
@@ -67,41 +70,38 @@ export async function POST(req: NextRequest) {
         );
       }
 
-      // 执行操作（如取消订阅）
       if (result.actions.length > 0) {
-        // 获取用户 ID
         const ticket = await db.supportTicket.findUnique({
           where: { id: ticketId },
         });
 
         if (ticket?.userId) {
-          for (const action of result.actions) {
+          for (const act of result.actions) {
             const toolResult = await executeTool(
-              action.tool as ToolName,
+              act.tool as ToolName,
               ticket.userId,
-              action.args
+              act.args
             );
 
             await addActionEvent(
               ticketId,
               "AGENT",
               agentId,
-              action.tool,
-              action.args,
+              act.tool,
+              act.args,
               toolResult.data,
               toolResult.success,
               toolResult.error
             );
 
             logger.info(
-              { ticketId, tool: action.tool, success: toolResult.success },
+              { ticketId, tool: act.tool, success: toolResult.success },
               "Executed approved action"
             );
           }
         }
       }
 
-      // 入发送队列
       await supportSendQueue.add(
         `send-${ticketId}`,
         {
@@ -121,7 +121,6 @@ export async function POST(req: NextRequest) {
 
       logger.info({ ticketId, agentId }, "Draft approved, reply queued");
 
-      // 返回更新后的卡片（可选）
       return NextResponse.json({
         toast: {
           type: "success",
@@ -129,7 +128,8 @@ export async function POST(req: NextRequest) {
         },
       });
     } else if (action === "reject") {
-      // 审核拒绝
+      const { rejectDraft } = await import("@/server/support/services/approve-draft");
+
       await rejectDraft(ticketId, agentId, "Rejected via Lark card");
 
       logger.info({ ticketId, agentId }, "Draft rejected");
@@ -152,7 +152,6 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// 飞书验证请求
 export async function GET(req: NextRequest) {
   const challenge = req.nextUrl.searchParams.get("challenge");
   if (challenge) {
@@ -160,4 +159,3 @@ export async function GET(req: NextRequest) {
   }
   return NextResponse.json({ status: "ok" });
 }
-

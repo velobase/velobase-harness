@@ -28,16 +28,19 @@ src/
 │   ├── start.ts      # startApi() 启动函数
 │   ├── index.ts      # 独立进程入口
 │   └── routes/       # API 路由（health、webhooks 等）
+├── config/           # 模块配置（modules.ts — 环境变量驱动的模块启停）
 ├── web/              # Web 服务启动封装
 │   └── start.ts      # startWeb() 启动函数（SERVICE_MODE=all 用）
 ├── modules/          # 业务功能模块（参考 modules/example/）
 ├── server/           # 服务端代码
-│   ├── api/          # tRPC 路由（root.ts 是注册中心）
+│   ├── api/          # tRPC 路由（root.ts — 核心路由 + 条件挂载）
 │   ├── standalone.ts # SERVICE_MODE 统一入口
 │   ├── auth/         # 认证
 │   ├── email/        # 统一邮件服务
 │   ├── billing/      # 计费（Velobase SDK）
 │   ├── order/        # 订单
+│   ├── events/       # 事件总线（bus.ts — 模块解耦通信）
+│   ├── modules/      # 可插拔模块（registry.ts + 各模块实现）
 │   ├── features/     # 框架内置功能（anti-abuse / cdn-adapters / daily-bonus）
 │   └── ...
 ├── components/       # 共享 UI 组件
@@ -65,12 +68,22 @@ src/
 
 > 详细步骤和代码模式 → `[docs/conventions/api.md](./docs/conventions/api.md)`
 
+**业务功能模块（始终启用）：**
+
 1. 参考 `src/modules/example/` 的结构（含 README）
 2. 在 `prisma/schema.prisma` 添加数据模型
 3. 创建 `src/modules/<name>/server/service.ts`（业务逻辑）+ `router.ts`（瘦 Router）
 4. 在 `src/server/api/root.ts` 注册新 router
 5. 运行 `npx prisma db push`
 6. 前端通过 `api.<name>.<procedure>.useQuery/useMutation()` 调用
+
+**可插拔模块（按需启停）：**
+
+1. 在 `src/config/modules.ts` 添加配置开关
+2. 创建 `src/server/modules/<name>.ts`，实现 `FrameworkModule` 接口
+3. 在 `src/server/modules/index.ts` 的 `initModules()` 中条件导入
+4. （可选）在 `src/server/api/root.ts` 中条件挂载 tRPC 路由
+5. （可选）在 Webhook 路由处添加配置守卫
 
 ## 编码规则
 
@@ -149,13 +162,40 @@ src/
 - **绝不在服务端代码中导入 `@/analytics`**（只能导入 `@/analytics/server` 和 `@/analytics/events/*`）
 - 新事件先在 `src/analytics/events/` 定义常量 + Properties interface，再使用
 - Feature Flag 客户端用 `useFeatureFlagVariantKey()`，服务端用 `getFeatureFlag()` from `@/server/experiments`
+- 服务端 PostHog 事件采集已迁移到可插拔模块（`src/server/modules/posthog.ts`），通过事件总线订阅 `payment:succeeded` 等事件自动触发
+- **禁止**在支付/订单代码中直接调用 PostHog capture — 由模块事件处理器完成
+
+### 事件总线与可插拔模块
+
+> 详细架构设计和模块清单 → `[FRAMEWORK_GUIDE.md — 第 5 章](./FRAMEWORK_GUIDE.md#5-可插拔模块架构)`
+
+**事件总线规则：**
+
+- 核心业务逻辑完成后通过 `appEvents.emit()` from `@/server/events/bus` 发出事件
+- **禁止**在核心流程中直接调用可插拔模块的函数（如 PostHog、Google Ads、Lark 通知），必须通过事件解耦
+- 新增事件类型须在 `EventPayload` 类型中定义，保证类型安全
+- 事件处理器内异常已自动隔离（`Promise.allSettled`），**禁止**在处理器中吞掉关键错误而不记录日志
+
+**模块系统规则：**
+
+- 模块配置集中在 `src/config/modules.ts`，**禁止**在其他文件中硬编码模块启停逻辑
+- 新模块必须实现 `FrameworkModule` 接口（from `@/server/modules/registry`）
+- 模块的 tRPC 路由在 `src/server/api/root.ts` 中条件挂载，禁用时路由不存在
+- Webhook 路由端点必须添加配置守卫（检查 `MODULES.xxx.enabled`，禁用时返回 404）
+- **禁止**在模块代码中导入其他可插拔模块 — 模块间通信通过事件总线
+
+**副作用迁移规则：**
+
+- 新增的通知、分析、广告追踪等副作用，必须作为模块事件订阅实现，**禁止**写在核心支付/订单流程中
+- 已有模块订阅的事件列表参见 `src/server/modules/` 下各模块文件
 
 ### 广告（Ads）
 
 > 详细架构和归因链路 → `[docs/integrations/ads/](./docs/integrations/ads/)`
 
+- Google Ads 已改为可插拔模块（`src/server/modules/google-ads.ts`），通过事件总线订阅 `payment:succeeded` 自动触发离线回传
+- **禁止**在支付/订单代码中直接调用 `enqueueGoogleAdsUploadsForPayment` — 该调用由模块的事件处理器完成
 - 前端广告追踪从 `@/analytics/ads` 导入，**禁止**直接调用 `window.gtag` 或 `window.twq`
-- 支付履约后调用 `enqueueGoogleAdsUploadsForPayment(paymentId)` 触发服务端离线回传
 - 修改 Google Ads ID → `src/analytics/ads/google.ts`；修改 Twitter 事件 ID → `src/analytics/ads/twitter.ts`
 
 ### 框架内置功能

@@ -2,13 +2,9 @@ import { db } from "@/server/db";
 import { getStripeClient } from "../providers/stripe";
 import { logger } from "@/server/shared/telemetry/logger";
 import { processFulfillmentByPayment } from "@/server/fulfillment/manager";
-import { enqueueGoogleAdsUploadsForPayment } from "@/server/ads/google-ads/queue";
+import { appEvents } from "@/server/events/bus";
 import type { Prisma } from "@prisma/client";
-import { asyncSendPaymentNotification } from "@/lib/lark";
-import { getServerPostHog } from "@/analytics/server";
-import { BILLING_EVENTS } from "@/analytics/events/billing";
 import { buildProductSnapshot } from "./product-snapshot";
-import { createAffiliateEarningForOrderPayment } from "@/server/affiliate/services/ledger";
 
 type ChargeDirectlyProduct = {
   id: string;
@@ -165,67 +161,15 @@ export async function chargeDirectly(
           data: { hasPurchased: true },
         });
 
-      // Google Ads Offline Conversion: direct charge 成功时也要回传（否则 webhook 可能因"已履约"提前 return）
-      setImmediate(() => {
-        void enqueueGoogleAdsUploadsForPayment(payment.id).catch((error) => {
-          logger.warn(
-            { error, paymentId: payment.id, orderId: order.id, gateway: "stripe" },
-            "Google Ads upload enqueue (direct charge) failed"
-          );
-        });
+      await appEvents.emit("payment:succeeded", {
+        paymentId: payment.id,
+        orderId: order.id,
+        userId,
+        gateway: "stripe",
+        amountCents: product.price,
+        currency: product.currency,
+        productType: product.type,
       });
-
-      // PostHog 上报
-      void (async () => {
-        const posthog = getServerPostHog();
-        if (!posthog) return;
-        try {
-          const productType =
-            product.type === "SUBSCRIPTION"
-              ? "subscription"
-              : product.type === "CREDITS_PACKAGE"
-                ? "credits"
-                : product.type.toLowerCase();
-
-          let priceVariant: string | undefined;
-          if (product.metadata && typeof product.metadata === "object") {
-            const meta = product.metadata as { priceVariant?: string };
-            priceVariant = meta.priceVariant;
-          }
-
-          const allFlags = await posthog.getAllFlags(userId);
-          const featureFlagProps: Record<string, unknown> = {};
-          for (const [key, value] of Object.entries(allFlags)) {
-            if (value !== undefined && value !== null) {
-              featureFlagProps[`$feature/${key}`] = value;
-            }
-          }
-
-          posthog.capture({
-            distinctId: userId,
-            event: BILLING_EVENTS.CREDITS_PURCHASE_SUCCESS,
-            properties: {
-              package_id: product.id,
-              credits: product.creditsPackage?.creditsAmount ?? 0,
-              currency: order.currency,
-              amount_cents: order.amount,
-              amount: order.amount / 100,
-              price: order.amount / 100,
-              country_code: (user as { countryCode?: string | null }).countryCode ?? null,
-              gateway: "stripe",
-              order_id: order.id,
-              payment_id: payment.id,
-              product_type: productType,
-              price_variant: priceVariant,
-              source: "direct_charge",
-              ...featureFlagProps,
-            },
-          });
-          await posthog.shutdown();
-        } catch (err) {
-          logger.error({ error: err, paymentId: payment.id }, "PostHog capture failed (direct charge)");
-        }
-      })();
 
       logger.info(
         {
@@ -236,76 +180,6 @@ export async function chargeDirectly(
         },
         "Direct charge succeeded"
       );
-
-      // Affiliate earning (best-effort, idempotent)
-      try {
-        await createAffiliateEarningForOrderPayment(payment.id);
-      } catch (err) {
-        logger.error(
-          { error: err, paymentId: payment.id, orderId: order.id, userId },
-          "Failed to create affiliate earning for direct charge (ignored)"
-        );
-      }
-
-      // 发送 Lark 支付通知（异步，不阻塞主流程）
-      setImmediate(() => {
-        void (async () => {
-          try {
-            // 查询用户统计
-            const [userStats, userOrders] = await Promise.all([
-              db.user.findUnique({
-                where: { id: userId },
-                select: {
-                  name: true,
-                  email: true,
-                  utmSource: true,
-                  utmMedium: true,
-                  utmCampaign: true,
-                  referredBy: { select: { name: true, email: true } },
-                },
-              }),
-              db.order.aggregate({
-                where: { userId, status: "FULFILLED" },
-                _count: true,
-                _sum: { amount: true },
-              }),
-            ]);
-
-            asyncSendPaymentNotification({
-              userName: userStats?.name ?? userStats?.email ?? userId,
-              userEmail: userStats?.email ?? undefined,
-              amountCents: product.price,
-              currency: product.currency,
-              productName: product.name,
-              orderId: order.id,
-              paymentId: payment.id,
-              gatewayTransactionId: paymentIntent.id,
-              gateway: "stripe",
-              status: "succeeded",
-              isTest: process.env.NODE_ENV !== "production",
-              credits: product.creditsPackage?.creditsAmount,
-              originalAmountCents: product.originalPrice ?? undefined,
-              utm: {
-                source: userStats?.utmSource ?? undefined,
-                medium: userStats?.utmMedium ?? undefined,
-                campaign: userStats?.utmCampaign ?? undefined,
-              },
-              userStats: {
-                isFirstOrder: userOrders._count <= 1,
-                totalSpentCents: userOrders._sum.amount ?? 0,
-              },
-              referredBy: userStats?.referredBy
-                ? { name: userStats.referredBy.name ?? undefined, email: userStats.referredBy.email ?? undefined }
-                : undefined,
-            });
-          } catch (notifyErr) {
-            logger.error(
-              { error: notifyErr, orderId: order.id },
-              "Failed to send direct charge payment notification"
-            );
-          }
-        })();
-      });
 
         return {
           success: true,
@@ -392,33 +266,19 @@ export async function chargeDirectly(
       typeof errObj?.decline_code === "string";
 
     if (!isCardError) {
-      setImmediate(() => {
-        const lines: string[] = [];
-        if (typeof errObj?.message === "string") lines.push(`- message: ${errObj.message}`);
-        if (typeof errObj?.code === "string") lines.push(`- code: ${errObj.code}`);
-        if (typeof errObj?.decline_code === "string") lines.push(`- decline_code: ${errObj.decline_code}`);
-        if (typeof errObj?.type === "string") lines.push(`- type: ${errObj.type}`);
-        const failureReason = lines.length ? `Stripe direct charge failed\n${lines.join("\n")}` : errorMessage;
-
-        asyncSendPaymentNotification({
-          userName: user.name ?? user.email ?? userId,
-          userEmail: user.email ?? undefined,
-          amountCents: product.price,
-          currency: product.currency,
-          productName: product.name,
-          orderId: order.id,
-          paymentId: payment.id,
-          gateway: "stripe",
-          status: "failed",
-          failureReason,
-          isTest: process.env.NODE_ENV !== "production",
-          utm: {
-            source: user.utmSource ?? undefined,
-            medium: user.utmMedium ?? undefined,
-            campaign: user.utmCampaign ?? undefined,
-          },
-          originalAmountCents: product.originalPrice ?? undefined,
-        });
+      void appEvents.emit("payment:failed", {
+        paymentId: payment.id,
+        orderId: order.id,
+        userId,
+        gateway: "stripe",
+        failureReason: (() => {
+          const lines: string[] = [];
+          if (typeof errObj?.message === "string") lines.push(`- message: ${errObj.message}`);
+          if (typeof errObj?.code === "string") lines.push(`- code: ${errObj.code}`);
+          if (typeof errObj?.decline_code === "string") lines.push(`- decline_code: ${errObj.decline_code}`);
+          if (typeof errObj?.type === "string") lines.push(`- type: ${errObj.type}`);
+          return lines.length ? `Stripe direct charge failed\n${lines.join("\n")}` : errorMessage;
+        })(),
       });
     }
 

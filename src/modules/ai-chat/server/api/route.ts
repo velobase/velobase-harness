@@ -1,3 +1,4 @@
+import { MODULES } from "@/config/modules";
 import { validateChatRequest, validateTriggerRequirements } from "../validators/request.validator";
 import { authenticateAndVerifyConversation } from "../services/auth.service";
 import { checkGuestRateLimits } from "../services/rate-limit.service";
@@ -19,6 +20,13 @@ const logger = createLogger("chat-route");
  * Stream AI chat response
  */
 export async function POST(req: Request) {
+  if (!MODULES.features.aiChat.enabled) {
+    return new Response(JSON.stringify({ error: "AI Chat is not enabled" }), {
+      status: 404,
+      headers: { "content-type": "application/json" },
+    });
+  }
+
   try {
     // 1. Parse and validate request
     const body: unknown = await req.json();

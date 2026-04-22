@@ -1,7 +1,6 @@
 import { db } from "@/server/db";
 import { getNowPaymentsPaymentStatus } from "../providers/nowpayments";
 import { processFulfillmentByPayment } from "@/server/fulfillment/manager";
-import { enqueueGoogleAdsOfflinePurchaseUpload } from "@/server/ads/google-ads/queue";
 import { logger } from "@/server/shared/telemetry/logger";
 import { ENABLE_PAYMENT_GATEWAY_PREFERENCE_AUTO_SYNC } from "../config";
 
@@ -81,18 +80,6 @@ export async function getPayment(paymentId: string) {
             where: { id: payment.id },
             data: { status: mappedPaymentStatus },
           });
-
-          // Google Ads Offline Conversion: provider polling 路径也补一份上传（避免 webhook 丢失/提前 return）
-          if (mappedPaymentStatus === "SUCCEEDED" && payment.orderId) {
-            setImmediate(() => {
-              void enqueueGoogleAdsOfflinePurchaseUpload(payment.id).catch((error) => {
-                logger.warn(
-                  { error, paymentId: payment.id, orderId: payment.orderId, gateway: payment.paymentGateway },
-                  "Google Ads offline purchase enqueue (get-payment) failed"
-                );
-              });
-            });
-          }
 
           if (mappedPaymentStatus === "SUCCEEDED" && payment.orderId) {
             const order = await db.order.findUnique({

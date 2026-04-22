@@ -3,12 +3,13 @@
  *
  * Provides `startWeb()` for the SERVICE_MODE=all combined process.
  *
- * In split deployment (SERVICE_MODE=web), the standalone `server.js` generated
- * by `next build` is run directly (`node .next/standalone/server.js`), which
- * is more efficient. This module is only used when Next.js needs to be started
- * programmatically alongside the API and Worker services.
+ * Next.js standalone mode does NOT support the programmatic `next()` API.
+ * Instead, we fork `server.js` as a child process and monitor it.
  */
 import { createLogger } from "@/lib/logger";
+import { fork, type ChildProcess } from "child_process";
+import path from "path";
+import http from "http";
 
 const log = createLogger("web");
 
@@ -20,39 +21,69 @@ export interface WebHandle {
 
 export async function startWeb(): Promise<WebHandle> {
   const port = parseInt(process.env.PORT ?? String(DEFAULT_WEB_PORT), 10);
-  const hostname = process.env.HOSTNAME ?? "0.0.0.0";
+  const hostname = process.env.WEB_HOST ?? "0.0.0.0";
 
-  // Dynamic import to avoid loading Next.js when not needed
-  const next = (await import("next")).default;
-  const app = next({ dev: false, hostname, port });
-  const handle = app.getRequestHandler();
+  const serverJs = path.resolve(process.cwd(), "server.js");
 
-  await app.prepare();
-
-  const { createServer } = await import("http");
-  const server = createServer((req, res) => {
-    void handle(req, res);
+  const child: ChildProcess = fork(serverJs, {
+    env: {
+      ...process.env,
+      PORT: String(port),
+      HOSTNAME: hostname,
+    },
+    stdio: "inherit",
   });
 
-  await new Promise<void>((resolve) => {
-    server.listen(port, hostname, () => {
-      log.info({ port, hostname }, `Next.js server listening on port ${port}`);
-      resolve();
-    });
+  child.on("error", (err) => {
+    log.error({ error: err }, "Next.js child process error");
   });
+
+  child.on("exit", (code, signal) => {
+    if (code !== 0 && code !== null) {
+      log.error({ code, signal }, "Next.js child process exited unexpectedly");
+    }
+  });
+
+  await waitForPort(port, hostname, 60_000);
+  log.info({ port, hostname }, `Next.js server listening on port ${port}`);
 
   const shutdown = () =>
-    new Promise<void>((resolve, reject) => {
-      server.close((err) => {
-        if (err) {
-          log.error({ error: err }, "Error closing Next.js server");
-          reject(err);
-        } else {
-          log.info("Next.js server closed");
-          resolve();
-        }
+    new Promise<void>((resolve) => {
+      if (!child.connected && child.exitCode !== null) {
+        resolve();
+        return;
+      }
+      child.once("exit", () => {
+        log.info("Next.js child process stopped");
+        resolve();
       });
+      child.kill("SIGTERM");
+      setTimeout(() => {
+        child.kill("SIGKILL");
+        resolve();
+      }, 5000);
     });
 
   return { shutdown };
+}
+
+function waitForPort(port: number, host: string, timeoutMs: number): Promise<void> {
+  const start = Date.now();
+  return new Promise((resolve, reject) => {
+    const check = () => {
+      const req = http.get({ host, port, path: "/healthz", timeout: 2000 }, (res) => {
+        res.resume();
+        resolve();
+      });
+      req.on("error", () => {
+        if (Date.now() - start > timeoutMs) {
+          reject(new Error(`Next.js did not start within ${timeoutMs}ms`));
+          return;
+        }
+        setTimeout(check, 500);
+      });
+      req.end();
+    };
+    check();
+  });
 }

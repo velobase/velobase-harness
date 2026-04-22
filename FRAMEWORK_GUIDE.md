@@ -17,7 +17,8 @@
 2. [最小配置快速启动](#2-最小配置快速启动)
 3. [框架 vs 业务 — 代码边界清单](#3-框架-vs-业务--代码边界清单)
 4. [从框架到生产应用 — 分阶段 Checklist](#4-从框架到生产应用--分阶段-checklist)
-5. [关键架构决策说明](#5-关键架构决策说明)
+5. [可插拔模块架构](#5-可插拔模块架构)
+6. [关键架构决策说明](#6-关键架构决策说明)
 
 ---
 
@@ -62,6 +63,8 @@ graph TB
     email[邮件服务抽象]
     ratelimit[限流]
     adminFrame[Admin 框架]
+    eventBus[事件总线 EventBus]
+    moduleRegistry[模块注册表 Registry]
   end
 
   subgraph business [业务层 — 按产品定制]
@@ -69,9 +72,17 @@ graph TB
     aiFeature[核心 AI 功能模块]
     billing[计费与积分]
     payment[支付渠道集成]
-    touch[用户触达 / 生命周期]
-    support[客服集成]
-    affiliate[联盟推广]
+  end
+
+  subgraph pluggable [可插拔模块层 — 按需启停]
+    modLark[Lark 通知]
+    modTelegram[Telegram Stars]
+    modAds[Google Ads]
+    modPosthog[PostHog 分析]
+    modAffiliate[联盟推广]
+    modTouch[用户触达]
+    modAiChat[AI Chat]
+    modNowpay[NowPayments]
   end
 
   subgraph workers [Worker 进程 — 独立部署]
@@ -83,6 +94,9 @@ graph TB
   api --> infra
   api --> business
   business --> infra
+  business -- "emit 事件" --> eventBus
+  eventBus -- "订阅" --> pluggable
+  moduleRegistry -- "注册/加载" --> pluggable
   workers --> infra
   workers --> business
 ```
@@ -200,6 +214,9 @@ pnpm worker:dev             # Worker 服务 http://localhost:3001
 | `src/server/api/trpc.ts`    | tRPC 中间件（认证、限流）                                    |
 | `src/server/order/`         | 订单状态机（通用，不与产品耦合）                                   |
 | `src/server/features/`      | 框架内置功能（[详见](./docs/features/)）                     |
+| `src/server/events/bus.ts`  | 事件总线（模块间通信，详见第 5 章）                               |
+| `src/server/modules/`       | 可插拔模块注册表与模块实现（详见第 5 章）                           |
+| `src/config/modules.ts`     | 模块启停配置（环境变量驱动）                                    |
 | `src/workers/`              | Worker 进程入口与调度框架（[详见](./docs/integrations/queue/)） |
 | `src/components/ui/`        | 基础 UI 组件（shadcn/ui 风格）                             |
 | `src/components/auth/`      | 登录相关组件                                             |
@@ -212,8 +229,7 @@ pnpm worker:dev             # Worker 服务 http://localhost:3001
 | 路径                           | 需要定制的部分            |
 | ---------------------------- | ------------------ |
 | `src/server/billing/config/` | 积分包定义、消耗规则、订阅档位    |
-| `src/server/touch/config/`   | 触达场景文案和触发条件        |
-| `src/server/support/`        | 客服邮件账号、飞书/Lark 群配置 |
+| `src/config/modules.ts`      | 按需启停可插拔模块（通过环境变量） |
 | `prisma/schema.prisma`       | 保留核心表，删除/替换业务相关表   |
 | `src/app/admin/`             | 保留通用管理页，删除业务特定视图   |
 
@@ -292,8 +308,19 @@ SupportTicket
 - 选择支付渠道，配置 env 和 Webhook（[支付文档](./docs/integrations/payment/)）
 - 测试完整流程：选择产品 → 支付 → Webhook → 积分到账
 - 测试退款、订阅续费
+- 支付相关的副作用（通知、分析、佣金）由可插拔模块自动处理，无需额外代码
 
-### 阶段六：用户触达
+### 阶段六：启用可插拔模块
+
+> 目标：按需开启分析、通知、推广等非核心功能
+
+- 查看 [模块清单](#模块清单)，决定需要启用哪些模块
+- 配置对应的环境变量（API Key），模块自动启用
+- 无需修改任何代码，事件总线会自动连接模块
+- 测试：启动后查看日志确认 `Module initialized` 输出
+- 如需创建自定义模块，参考 [创建新模块](#创建新模块)
+
+### 阶段七：用户触达
 
 > 目标：关键节点自动触达用户
 
@@ -301,15 +328,24 @@ SupportTicket
 - 编写邮件模板（`src/server/email/templates/`）
 - 在 Worker 中配置定时调度
 
-### 阶段七：运营后台与通知
+### 阶段七：用户触达
+
+> 目标：关键节点自动触达用户
+
+- Touch 模块默认启用（可通过 `DISABLE_TOUCH=true` 禁用）
+- 在 `src/server/touch/config/` 配置触达场景
+- 编写邮件模板（`src/server/email/templates/`）
+- 在 Worker 中配置定时调度
+
+### 阶段八：运营后台与通知
 
 > 目标：内部运营管理
 
 - 配置 Admin 权限，添加必要视图
-- 配置运营通知渠道（Lark / Telegram）
+- 配置运营通知渠道 — 设置 `LARK_APP_ID` / `TELEGRAM_BOT_TOKEN` 即自动启用对应模块
 - 配置 Turnstile 防机器人（[安全文档](./docs/integrations/security/)）
 
-### 阶段八：生产部署
+### 阶段九：生产部署
 
 > 目标：在生产环境稳定运行
 
@@ -318,7 +354,7 @@ SupportTicket
 - 配置 SSL、CI/CD、健康检查告警
 - 所有三类服务均内置 `/health` + `/ready` 端点
 
-### 阶段九：安全加固
+### 阶段十：安全加固
 
 > 目标：符合基本生产安全标准
 
@@ -330,7 +366,108 @@ SupportTicket
 
 ---
 
-## 5. 关键架构决策说明
+## 5. 可插拔模块架构
+
+框架中的第三方集成和非核心功能被设计为**可插拔模块**。每个模块通过环境变量自动启停，不需要修改任何代码即可开关。
+
+### 设计动机
+
+在实际使用框架开发产品时，并非所有第三方集成和附加功能都是必需的。旧架构中这些功能与核心业务逻辑紧密耦合（如支付 Webhook 中直接调用 Google Ads、PostHog、Lark 通知），导致禁用某个功能需要修改多个文件。新架构通过**事件总线 + 模块注册表**将它们彻底解耦。
+
+### 核心概念
+
+#### 事件总线 (`src/server/events/bus.ts`)
+
+核心业务逻辑完成后通过 `appEvents.emit()` 发出事件，模块订阅感兴趣的事件来执行副作用：
+
+```
+核心流程（支付完成）──emit──→ "payment:succeeded"
+                                 ├──→ Google Ads 模块：上传离线转化
+                                 ├──→ PostHog 模块：采集支付事件
+                                 ├──→ Lark 模块：发送运营通知
+                                 └──→ Affiliate 模块：创建佣金记录
+```
+
+每个事件处理器独立隔离，单个模块失败不影响其他模块和核心流程。
+
+已定义的事件类型：
+
+| 事件 | 触发时机 |
+| --- | --- |
+| `payment:succeeded` | 支付成功（Stripe/NowPayments/Telegram Stars） |
+| `payment:failed` | 支付失败 |
+| `payment:refunded` | 退款完成 |
+| `subscription:renewed` | 订阅续期 |
+| `subscription:canceled` | 订阅取消 |
+| `subscription:invoice_failed` | 订阅扣款失败 |
+| `order:fulfilled` | 订单完成履约 |
+| `user:signup` | 新用户注册 |
+| `fraud:efw` | Stripe Early Fraud Warning |
+
+#### 模块注册表 (`src/server/modules/registry.ts`)
+
+每个模块实现 `FrameworkModule` 接口：
+
+```typescript
+interface FrameworkModule {
+  name: string;
+  enabled: boolean;
+  registerEventHandlers?(bus: AppEventBus): void;  // 订阅事件
+  getRouter?(): AnyRouter;                          // 提供 tRPC 路由
+  getWebhookHandler?(): { path: string; handler: (req: Request) => Promise<Response> };
+  onInit?(): Promise<void>;                         // 初始化逻辑
+}
+```
+
+#### 配置开关 (`src/config/modules.ts`)
+
+模块的启停由**环境变量**驱动，遵循两条规则：
+
+1. **有 API Key 则自动启用** — 配置了 `POSTHOG_API_KEY` 则 PostHog 自动生效
+2. **`DISABLE_*` 强制禁用** — 设置 `DISABLE_POSTHOG=true` 可覆盖第一条规则
+
+### 模块清单
+
+| 模块 | 类别 | 自动启用条件 | 强制禁用变量 |
+| --- | --- | --- | --- |
+| Google Ads | 分析/广告 | `GOOGLE_ADS_CUSTOMER_ID` + `GOOGLE_ADS_DEVELOPER_TOKEN` | `DISABLE_GOOGLE_ADS` |
+| PostHog | 分析 | `POSTHOG_API_KEY` 或 `NEXT_PUBLIC_POSTHOG_KEY` | `DISABLE_POSTHOG` |
+| Lark/飞书 | 通知 | `LARK_APP_ID` + `LARK_APP_SECRET` | `DISABLE_LARK` |
+| Telegram | 通知/支付 | `TELEGRAM_BOT_TOKEN` | `DISABLE_TELEGRAM` |
+| NowPayments | 支付 | `NOWPAYMENTS_API_KEY` | `DISABLE_NOWPAYMENTS` |
+| Affiliate | 功能 | 默认启用 | `DISABLE_AFFILIATE` |
+| Touch | 功能 | 默认启用 | `DISABLE_TOUCH` |
+| AI Chat | 功能 | 任一 LLM API Key | `DISABLE_AI_CHAT` |
+
+### 模块加载流程
+
+```
+启动时 initModules()
+  │
+  ├── 遍历 MODULES 配置
+  │     ├── enabled=true → 动态 import 模块
+  │     └── enabled=false → 跳过
+  │
+  ├── 对每个已加载模块
+  │     ├── registerEventHandlers(appEvents) — 订阅事件
+  │     └── onInit() — 执行初始化
+  │
+  └── 日志输出已加载模块列表
+```
+
+tRPC 路由也根据模块状态动态挂载（`src/server/api/root.ts`），禁用的模块其路由完全不存在。Webhook 路由端点通过配置守卫返回 404。
+
+### 创建新模块
+
+1. 在 `src/config/modules.ts` 添加配置开关
+2. 创建 `src/server/modules/<name>.ts`，实现 `FrameworkModule` 接口
+3. 在 `src/server/modules/index.ts` 的 `initModules()` 中条件导入
+4. （可选）如有 tRPC 路由，在 `src/server/api/root.ts` 中条件挂载
+5. （可选）如有 Webhook 端点，在路由处添加配置守卫
+
+---
+
+## 6. 关键架构决策说明
 
 ### 积分模型
 
@@ -395,7 +532,7 @@ SERVICE_MODE=web / api / worker（生产拆分）
 
 ```
 1. 在 src/server/api/routers/<feature>.ts 定义 procedure
-2. 在 src/server/api/root.ts 挂载 router
+2. 在 src/server/api/root.ts 挂载 router（核心路由直接挂载，可插拔模块路由条件挂载）
 3. 前端直接 api.<feature>.<procedure>.useQuery() — 类型自动推断
 ```
 

@@ -1,7 +1,6 @@
 import { db } from "@/server/db";
 import { processFulfillmentByPayment } from "@/server/fulfillment/manager";
 import { logger } from "@/server/shared/telemetry/logger";
-import { enqueueGoogleAdsOfflinePurchaseUpload } from "@/server/ads/google-ads/queue";
 import { getProvider } from "../providers/registry";
 import { sendOrderPaymentNotificationByPaymentId } from "./send-order-payment-notification";
 
@@ -49,13 +48,6 @@ export async function confirmPaymentById(
 
   // If order already fulfilled, we're done (idempotent)
   if (payment.order.status === "FULFILLED" && payment.status === "SUCCEEDED") {
-    // Best-effort: some paths (e.g. direct charge) can fulfill without going through webhook;
-    // still ensure offline conversion upload happens.
-    setImmediate(() => {
-      void enqueueGoogleAdsOfflinePurchaseUpload(paymentId).catch((error) => {
-        logger.warn({ error, paymentId, orderId }, "Google Ads offline purchase enqueue (confirm-payment) failed");
-      });
-    });
     return { status: "SUCCEEDED", paymentId, orderId };
   }
 
@@ -68,11 +60,6 @@ export async function confirmPaymentById(
     await db.user.update({ where: { id: userId }, data: { hasPurchased: true } });
     setImmediate(() => {
       void sendOrderPaymentNotificationByPaymentId(paymentId, { source: "confirm" });
-    });
-    setImmediate(() => {
-      void enqueueGoogleAdsOfflinePurchaseUpload(paymentId).catch((error) => {
-        logger.warn({ error, paymentId, orderId }, "Google Ads offline purchase enqueue (confirm-payment) failed");
-      });
     });
     return { status: "SUCCEEDED", paymentId, orderId };
   }
@@ -179,11 +166,6 @@ export async function confirmPaymentById(
       "Failed to record payment transaction (confirm-payment, ignored)"
     );
   }
-  setImmediate(() => {
-    void enqueueGoogleAdsOfflinePurchaseUpload(paymentId).catch((error: unknown) => {
-      logger.warn({ error, paymentId, orderId }, "Google Ads offline purchase enqueue (confirm-payment) failed");
-    });
-  });
 
   return { status: "SUCCEEDED", paymentId, orderId };
 }

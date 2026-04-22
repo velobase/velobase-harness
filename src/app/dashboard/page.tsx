@@ -2,34 +2,21 @@
 
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
-  MessageSquare,
-  CreditCard,
-  Coins,
-  Tag,
   User,
+  CreditCard,
   Settings,
-  FolderOpen,
-  Store,
-  Compass,
+  Activity,
   ShieldCheck,
-  FileText,
-  BookOpen,
-  HelpCircle,
-  Users,
-  Zap,
-  Lock,
-  Unlock,
-  FlaskConical,
+  Puzzle,
+  CheckCircle2,
+  XCircle,
 } from "lucide-react";
 import { Header } from "@/components/layout/header";
 import { Background } from "@/components/layout/background";
 import { cn } from "@/lib/utils";
-import { api } from "@/trpc/react";
-import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
 
 interface NavItem {
   title: string;
@@ -39,90 +26,30 @@ interface NavItem {
   badge?: string;
 }
 
-const mainFeatures: NavItem[] = [
+const frameworkPages: NavItem[] = [
   {
-    title: "AI Chat",
-    href: "/chat",
-    icon: MessageSquare,
-    description: "Multi-agent AI chat with tool use",
+    title: "Overview",
+    href: "/dashboard",
+    icon: Activity,
+    description: "System status & quick actions",
   },
-  {
-    title: "Projects",
-    href: "/projects",
-    icon: FolderOpen,
-    description: "Manage your projects and documents",
-  },
-  {
-    title: "Marketplace",
-    href: "/marketplace",
-    icon: Store,
-    description: "Browse and install AI agents",
-  },
-  {
-    title: "Explorer",
-    href: "/explorer",
-    icon: Compass,
-    description: "Explore community content",
-  },
-];
-
-const accountPages: NavItem[] = [
   {
     title: "Profile",
     href: "/account/profile",
     icon: User,
-    description: "Manage your profile",
+    description: "Manage your profile & account",
   },
   {
     title: "Billing",
     href: "/account/billing",
     icon: CreditCard,
-    description: "Subscription & payment history",
-  },
-  {
-    title: "Credits",
-    href: "/pricing#credits",
-    icon: Coins,
-    description: "Buy credit packs",
+    description: "Subscription, credits & payment history",
   },
   {
     title: "Settings",
     href: "/account/settings",
     icon: Settings,
-    description: "Account settings",
-  },
-  {
-    title: "Affiliate",
-    href: "/account/affiliate",
-    icon: Users,
-    description: "Referral program (30% commission)",
-  },
-];
-
-const otherPages: NavItem[] = [
-  {
-    title: "Pricing",
-    href: "/pricing",
-    icon: Tag,
-    description: "Plans and pricing",
-  },
-  {
-    title: "Docs",
-    href: "/docs",
-    icon: BookOpen,
-    description: "Documentation",
-  },
-  {
-    title: "Support",
-    href: "/support",
-    icon: HelpCircle,
-    description: "Get help",
-  },
-  {
-    title: "Blog",
-    href: "/blog",
-    icon: FileText,
-    description: "Latest news and updates",
+    description: "Account settings & integrations",
   },
 ];
 
@@ -135,6 +62,26 @@ const adminPages: NavItem[] = [
     badge: "Admin",
   },
 ];
+
+interface ModuleStatus {
+  name: string;
+  enabled: boolean;
+  category: string;
+}
+
+function getModuleStatuses(): ModuleStatus[] {
+  // Client-side: read from a global exposed by the server, or infer from env
+  // For SSR/client rendering, we read NEXT_PUBLIC_ vars and infer
+  return [
+    { name: "PostHog", enabled: !!process.env.NEXT_PUBLIC_POSTHOG_KEY, category: "Analytics" },
+    { name: "Google Ads", enabled: !!process.env.NEXT_PUBLIC_GOOGLE_ADS_MEASUREMENT_ID, category: "Analytics" },
+    { name: "Lark", enabled: false, category: "Messaging" }, // server-only env, defaults to unknown on client
+    { name: "Telegram", enabled: !!process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME, category: "Messaging" },
+    { name: "NowPayments", enabled: false, category: "Payment" }, // server-only env
+    { name: "Affiliate", enabled: true, category: "Features" }, // on by default
+    { name: "AI Chat", enabled: true, category: "Features" }, // on by default if any LLM key
+  ];
+}
 
 function PageCard({ item }: { item: NavItem }) {
   return (
@@ -178,6 +125,58 @@ function PageSection({ title, items }: { title: string; items: NavItem[] }) {
   );
 }
 
+function ModuleStatusPanel() {
+  const [modules] = useState(() => getModuleStatuses());
+  const categories = [...new Set(modules.map((m) => m.category))];
+
+  return (
+    <div>
+      <h2 className="text-sm font-medium text-muted-foreground mb-3 px-1 flex items-center gap-2">
+        <Puzzle className="w-4 h-4" />
+        Module Status
+      </h2>
+      <div className="rounded-xl border border-border/50 bg-card/50 backdrop-blur-sm p-5">
+        <div className="space-y-4">
+          {categories.map((cat) => (
+            <div key={cat}>
+              <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">
+                {cat}
+              </h3>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                {modules
+                  .filter((m) => m.category === cat)
+                  .map((mod) => (
+                    <div
+                      key={mod.name}
+                      className="flex items-center gap-2 px-3 py-2 rounded-lg bg-background/50 border border-border/30"
+                    >
+                      {mod.enabled ? (
+                        <CheckCircle2 className="w-3.5 h-3.5 text-green-500 shrink-0" />
+                      ) : (
+                        <XCircle className="w-3.5 h-3.5 text-muted-foreground/40 shrink-0" />
+                      )}
+                      <span
+                        className={cn(
+                          "text-sm",
+                          mod.enabled ? "text-foreground" : "text-muted-foreground/60",
+                        )}
+                      >
+                        {mod.name}
+                      </span>
+                    </div>
+                  ))}
+              </div>
+            </div>
+          ))}
+        </div>
+        <p className="text-[11px] text-muted-foreground/50 mt-4">
+          Module availability is determined by environment configuration. Server-only modules show client-side inference.
+        </p>
+      </div>
+    </div>
+  );
+}
+
 export default function DashboardPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
@@ -209,168 +208,16 @@ export default function DashboardPage() {
             Welcome back{session.user.name ? `, ${session.user.name}` : ""}
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Choose where you want to go.
+            Manage your account and explore framework features.
           </p>
         </div>
 
         <div className="space-y-8">
-          <PageSection title="Core Features" items={mainFeatures} />
-          <PageSection title="Account" items={accountPages} />
-          <PageSection title="Resources" items={otherPages} />
+          <PageSection title="Framework" items={frameworkPages} />
           {isAdmin && <PageSection title="Administration" items={adminPages} />}
-
-          <BillingTestPanel userId={session.user.id} />
+          <ModuleStatusPanel />
         </div>
       </main>
-    </div>
-  );
-}
-
-function BillingTestPanel({ userId }: { userId: string }) {
-  const [logs, setLogs] = useState<string[]>([]);
-  const balanceQuery = api.billing.getBalance.useQuery({ userId });
-  const freezeMutation = api.billing.freeze.useMutation();
-  const consumeMutation = api.billing.consume.useMutation();
-  const unfreezeMutation = api.billing.unfreeze.useMutation();
-  const deductMutation = api.billing.postConsume.useMutation();
-
-  const log = useCallback((msg: string) => {
-    setLogs((prev) => [`[${new Date().toLocaleTimeString()}] ${msg}`, ...prev].slice(0, 20));
-  }, []);
-
-  const refetch = () => void balanceQuery.refetch();
-
-  const handleDirectDeduct = async () => {
-    const txId = `test_deduct_${userId}_${crypto.randomUUID().replace(/-/g, "").slice(0, 16)}`;
-    log(`Deduct: transactionId=${txId}, amount=10`);
-    try {
-      const res = await deductMutation.mutateAsync({
-        userId,
-        amount: 10,
-        businessId: txId,
-        businessType: "TASK",
-        description: "Dashboard test: direct deduct",
-      });
-      log(`Deduct OK: charged ${res.totalAmount} credits`);
-      toast.success(`Deducted ${res.totalAmount} credits`);
-      refetch();
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : "unknown error";
-      log(`Deduct FAILED: ${msg}`);
-      toast.error(msg);
-    }
-  };
-
-  const handleFreezeConsume = async () => {
-    const txId = `test_fc_${userId}_${crypto.randomUUID().replace(/-/g, "").slice(0, 16)}`;
-    log(`Freeze+Consume: transactionId=${txId}, amount=15`);
-    try {
-      const freezeRes = await freezeMutation.mutateAsync({
-        userId,
-        accountType: "CREDIT",
-        businessId: txId,
-        businessType: "TASK",
-        amount: 15,
-        description: "Dashboard test: freeze",
-      });
-      log(`Freeze OK: frozen ${freezeRes.totalAmount} credits`);
-      refetch();
-
-      const consumeRes = await consumeMutation.mutateAsync({
-        businessId: txId,
-        actualAmount: 8,
-      });
-      log(`Consume OK: charged ${consumeRes.totalAmount}, returned ${consumeRes.returnedAmount ?? 0}`);
-      toast.success(`Frozen 15 → consumed 8, returned 7`);
-      refetch();
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : "unknown error";
-      log(`Freeze+Consume FAILED: ${msg}`);
-      toast.error(msg);
-    }
-  };
-
-  const handleFreezeUnfreeze = async () => {
-    const txId = `test_fu_${userId}_${crypto.randomUUID().replace(/-/g, "").slice(0, 16)}`;
-    log(`Freeze+Unfreeze: transactionId=${txId}, amount=20`);
-    try {
-      const freezeRes = await freezeMutation.mutateAsync({
-        userId,
-        accountType: "CREDIT",
-        businessId: txId,
-        businessType: "TASK",
-        amount: 20,
-        description: "Dashboard test: freeze then unfreeze",
-      });
-      log(`Freeze OK: frozen ${freezeRes.totalAmount} credits`);
-      refetch();
-
-      const unfreezeRes = await unfreezeMutation.mutateAsync({ businessId: txId });
-      log(`Unfreeze OK: returned ${unfreezeRes.totalAmount} credits`);
-      toast.success(`Frozen 20 → unfrozen 20, balance restored`);
-      refetch();
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : "unknown error";
-      log(`Freeze+Unfreeze FAILED: ${msg}`);
-      toast.error(msg);
-    }
-  };
-
-  const available = balanceQuery.data?.totalSummary.available ?? 0;
-  const frozen = balanceQuery.data?.totalSummary.frozen ?? 0;
-  const isLoading = freezeMutation.isPending || consumeMutation.isPending || unfreezeMutation.isPending || deductMutation.isPending;
-
-  return (
-    <div className="mt-4">
-      <h2 className="text-sm font-medium text-muted-foreground mb-3 px-1 flex items-center gap-2">
-        <FlaskConical className="w-4 h-4" />
-        Billing Test (Velobase)
-      </h2>
-      <div className="rounded-xl border border-border/50 bg-card/50 backdrop-blur-sm p-5 space-y-4">
-        <div className="flex items-center gap-6 text-sm">
-          <div>
-            <span className="text-muted-foreground">Available: </span>
-            <span className="font-mono font-semibold text-foreground">{available.toLocaleString()}</span>
-          </div>
-          <div>
-            <span className="text-muted-foreground">Frozen: </span>
-            <span className="font-mono font-semibold text-yellow-500">{frozen.toLocaleString()}</span>
-          </div>
-          <button onClick={refetch} className="text-xs text-muted-foreground hover:text-foreground transition-colors">
-            ↻ Refresh
-          </button>
-        </div>
-
-        <div className="flex flex-wrap gap-3">
-          <Button size="sm" variant="destructive" onClick={() => void handleDirectDeduct()} disabled={isLoading}>
-            <Zap className="w-3.5 h-3.5 mr-1.5" />
-            Direct Deduct (10)
-          </Button>
-          <Button size="sm" variant="default" onClick={() => void handleFreezeConsume()} disabled={isLoading}>
-            <Lock className="w-3.5 h-3.5 mr-1.5" />
-            Freeze(15) → Consume(8)
-          </Button>
-          <Button size="sm" variant="secondary" onClick={() => void handleFreezeUnfreeze()} disabled={isLoading}>
-            <Unlock className="w-3.5 h-3.5 mr-1.5" />
-            Freeze(20) → Unfreeze(20)
-          </Button>
-        </div>
-
-        {logs.length > 0 && (
-          <div className="rounded-lg bg-black/40 border border-border/30 p-3 max-h-48 overflow-y-auto">
-            <div className="space-y-1 font-mono text-[11px] text-muted-foreground">
-              {logs.map((line, i) => (
-                <div key={i} className={cn(
-                  line.includes("FAILED") && "text-red-400",
-                  line.includes("OK") && "text-green-400",
-                )}>
-                  {line}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
     </div>
   );
 }

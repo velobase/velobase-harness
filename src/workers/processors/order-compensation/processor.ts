@@ -7,11 +7,9 @@
 import type { Job } from "bullmq";
 import { createLogger } from "@/lib/logger";
 import { db } from "@/server/db";
-import { getServerPostHog } from "@/analytics/server";
-import { BILLING_EVENTS } from "@/analytics/events/billing";
-import { enqueueGoogleAdsUploadsForPayment } from "@/server/ads/google-ads/queue";
 import { getNowPaymentsPaymentStatus } from "@/server/order/providers/nowpayments";
 import { sendOrderPaymentNotificationByPaymentId } from "@/server/order/services/send-order-payment-notification";
+import { appEvents } from "@/server/events/bus";
 import { getStripe } from "@/server/order/services/stripe/client";
 import type { OrderCompensationJobData } from "../../queues/order-compensation.queue";
 
@@ -375,71 +373,16 @@ async function triggerFulfillment(
         data: { hasPurchased: true },
       });
 
-      // 上报 PostHog 事件 (与 webhook 保持一致)
-      const order = await db.order.findUnique({
-        where: { id: payment.orderId },
-        include: { product: { include: { creditsPackage: true } } },
+      await appEvents.emit("payment:succeeded", {
+        paymentId: payment.id,
+        orderId: payment.orderId,
+        userId: payment.userId,
+        gateway: (payment.paymentGateway ?? "unknown").toLowerCase(),
+        amountCents: payment.amount,
+        currency: payment.currency,
+        productType: "UNKNOWN",
       });
-      if (order) {
-        const posthog = getServerPostHog();
-        if (posthog) {
-          try {
-            const rawType = order.product?.type ?? "UNKNOWN";
-            const productType =
-              rawType === "SUBSCRIPTION"
-                ? "subscription"
-                : rawType === "CREDITS_PACKAGE"
-                ? "credits"
-                : rawType.toLowerCase();
-            let priceVariant: string | undefined;
-            if (order.product?.metadata && typeof order.product.metadata === "object") {
-              const meta = order.product.metadata as { priceVariant?: string };
-              priceVariant = meta.priceVariant;
-            }
-
-            // Get all feature flags for experiment tracking (generic approach)
-            const allFlags = await posthog.getAllFlags(order.userId);
-            const featureFlagProps: Record<string, unknown> = {};
-            for (const [key, value] of Object.entries(allFlags)) {
-              if (value !== undefined && value !== null) {
-                featureFlagProps[`$feature/${key}`] = value;
-              }
-            }
-
-            posthog.capture({
-              distinctId: order.userId,
-              event: BILLING_EVENTS.CREDITS_PURCHASE_SUCCESS,
-              properties: {
-                package_id: order.productId,
-                credits: order.product?.creditsPackage?.creditsAmount ?? 0,
-                amount: order.amount / 100,
-                price: order.amount / 100,
-                order_id: order.id,
-                payment_id: payment.id,
-                source: "compensation", // 标记来源
-                product_type: productType,
-                price_variant: priceVariant,
-                ...featureFlagProps, // All feature flags for any experiment
-              },
-            });
-            await posthog.shutdown();
-          } catch (error) {
-            logger.error(
-              { error, paymentId: payment.id, orderId: order.id },
-              "Failed to track billing_credits_purchase_success (compensation)"
-            );
-          }
-        }
-      }
     }
-
-    // Google Ads 上传：统一走队列，限流 + 重试由 google-ads-upload worker 处理
-    void enqueueGoogleAdsUploadsForPayment(payment.id).catch((error) => {
-      logger.warn(
-        { error, paymentId: payment.id, orderId: payment.orderId },
-        "Google Ads upload enqueue (compensation) failed"
-      );
-    });
 
     logger.info(
       { paymentId: payment.id, orderId: payment.orderId },

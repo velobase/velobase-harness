@@ -12,7 +12,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { LogOut, Coins, CreditCard, ArrowRight, Tag, Users, User, History } from "lucide-react";
+import { LogOut, Coins, CreditCard, ArrowRight, Tag, User, History } from "lucide-react";
 import Link from "next/link";
 import { useAuthStore } from "@/components/auth/store/auth-store";
 import { VibeLogo } from "@/components/ui/vibe-logo";
@@ -43,11 +43,6 @@ export function Header({ variant = "default", className }: HeaderProps) {
     enabled: !!session && variant === "default",
     refetchInterval: 10000,
   });
-
-  const { data: affiliateStatus } = api.affiliate.getStatus.useQuery(undefined, {
-    enabled: !!session && variant === "default",
-  });
-  const isAffiliateEligible = affiliateStatus?.eligible ?? false;
 
   const credits = billingStatus?.creditsBalance ?? 0;
   const isLowBalance = credits < 500;
@@ -92,15 +87,6 @@ export function Header({ variant = "default", className }: HeaderProps) {
           </div>
 
           <div className="flex items-center gap-4">
-            {session && isAffiliateEligible && (
-              <Link
-                href="/account/affiliate"
-                className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-full border bg-accent/50 border-border text-muted-foreground hover:bg-accent hover:text-foreground transition-all text-sm"
-              >
-                <Users className="w-4 h-4" />
-                <span className="font-medium">{t("referrals", { percent: 30 })}</span>
-              </Link>
-            )}
             <LocaleSwitcher />
             <ThemeToggle />
             {session ? (
@@ -169,14 +155,6 @@ export function Header({ variant = "default", className }: HeaderProps) {
                         {t("pricing")}
                       </Link>
                     </DropdownMenuItem>
-                    {isAffiliateEligible && (
-                      <DropdownMenuItem asChild>
-                        <Link href="/account/affiliate" className="cursor-pointer">
-                          <Users className="mr-2 h-4 w-4" />
-                          {t("referrals", { percent: 30 })}
-                        </Link>
-                      </DropdownMenuItem>
-                    )}
                     <DropdownMenuSeparator />
                     <DropdownMenuItem
                       onClick={handleLogout}

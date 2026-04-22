@@ -97,6 +97,10 @@ declare module "next-auth" {
  * @see https://next-auth.js.org/configuration/options
  */
 export const authConfig = {
+  // Required when running behind a reverse proxy (K8s Ingress / Nginx).
+  // Tells Auth.js to trust the X-Forwarded-Host header so the session
+  // endpoint works correctly at https://<subdomain>.velobase.app
+  trustHost: true,
   providers: [
     ...oauthProviders,
 

@@ -9,6 +9,7 @@
  */
 
 import { env } from "@/env";
+import { MODULES } from "@/config/modules";
 import { handleTelegramUpdate } from "@/server/telegram/bot-handler";
 import type { TelegramUpdate } from "@/server/telegram/api";
 import { logger as rootLogger } from "@/server/shared/telemetry/logger";
@@ -16,6 +17,10 @@ import { logger as rootLogger } from "@/server/shared/telemetry/logger";
 const logger = rootLogger.child({ module: "telegram-webhook-route" });
 
 export async function POST(req: Request) {
+  if (!MODULES.integrations.messaging.telegram.enabled) {
+    return new Response(null, { status: 404 });
+  }
+
   logger.info("Telegram webhook received");
 
   // Verify webhook secret

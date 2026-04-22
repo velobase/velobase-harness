@@ -21,6 +21,21 @@ AI：功能实现（写代码）
 - 不做关联页面（由用户 + AI 根据具体产品实现）
 - 不做业务逻辑模板（AI 来写）
 
+## 可插拔模块架构
+
+所有第三方集成均采用**可插拔模块**架构，通过**事件总线**与核心业务逻辑解耦：
+
+- **核心集成**（第一层）：始终存在，是框架运行的基础
+- **增长集成**（第二层）：作为可插拔模块实现，配置 API Key 自动启用
+- **运营集成**（第三层）：作为可插拔模块实现，按需选用
+
+每个可插拔集成通过订阅事件总线（`src/server/events/bus.ts`）接收核心流程的通知，而不是被核心代码直接调用。这意味着：
+
+- **禁用某个集成不需要修改任何核心代码**
+- **添加新集成只需实现 `FrameworkModule` 接口并订阅感兴趣的事件**
+
+详见 [FRAMEWORK_GUIDE.md — 可插拔模块架构](../FRAMEWORK_GUIDE.md#5-可插拔模块架构)。
+
 ## 集成梳理顺序
 
 按搭建一个 SaaS 产品的依赖顺序，分三层：
@@ -40,23 +55,27 @@ AI：功能实现（写代码）
 
 ### 第二层：增长能力（多数项目需要）
 
+> 此层集成均作为**可插拔模块**实现，配置对应 API Key 即自动启用。
 
-| 序号  | 大类            | 三方服务                                 | 说明             | 状态    |
-| --- | ------------- | ------------------------------------ | -------------- | ----- |
-| 7   | 分析（Analytics） | PostHog（事件追踪 + Feature Flag）         | 用户行为追踪、A/B 测试  | ✅ 已完成 |
-| 8   | AI/LLM        | OpenAI / Anthropic / xAI（via AI SDK） | AI 对话、Agent 能力 | 待梳理   |
+
+| 序号  | 大类            | 三方服务                                 | 说明             | 模块文件 | 状态    |
+| --- | ------------- | ------------------------------------ | -------------- | --- | ----- |
+| 7   | 分析（Analytics） | PostHog（事件追踪 + Feature Flag）         | 用户行为追踪、A/B 测试  | `server/modules/posthog.ts` | ✅ 模块化 |
+| 8   | AI/LLM        | OpenAI / Anthropic / xAI（via AI SDK） | AI 对话、Agent 能力 | `server/modules/ai-chat.ts` | ✅ 模块化 |
 
 
 ### 第三层：运营支撑（按需选用）
 
+> 此层集成均作为**可插拔模块**实现，按需配置环境变量启用。
 
-| 序号  | 大类               | 三方服务                     | 说明          | 状态    |
-| --- | ---------------- | ------------------------ | ----------- | ----- |
-| 9   | 安全（Security）     | Cloudflare Turnstile     | 人机验证（防滥用）   | 已完成   |
-| 10  | 通知（Notification） | 飞书/Lark + Telegram Bot   | 内部运营通知、用户触达 | 待梳理   |
-| 11  | 广告（Ads）          | Google Ads + Twitter Ads | 付费获客追踪      | ✅ 已完成 |
-| 12  | 客服（Support）      | SMTP + IMAP（nodemailer）  | 用户支持邮件收发    | 待梳理   |
-| 13  | 部署（Deployment）   | Docker / Vercel / VPS    | 上线运行        | 待梳理   |
+
+| 序号  | 大类               | 三方服务                     | 说明          | 模块文件 | 状态    |
+| --- | ---------------- | ------------------------ | ----------- | --- | ----- |
+| 9   | 安全（Security）     | Cloudflare Turnstile     | 人机验证（防滥用）   | — | 已完成   |
+| 10  | 通知（Notification） | 飞书/Lark + Telegram Bot   | 内部运营通知、用户触达 | `server/modules/lark.ts` `server/modules/telegram.ts` | ✅ 模块化 |
+| 11  | 广告（Ads）          | Google Ads + Twitter Ads | 付费获客追踪      | `server/modules/google-ads.ts` | ✅ 模块化 |
+| 12  | 客服（Support）      | SMTP + IMAP（nodemailer）  | 用户支持邮件收发    | — | 待梳理   |
+| 13  | 部署（Deployment）   | Docker / Vercel / VPS    | 上线运行        | — | 待梳理   |
 
 
 ### 已内置（无需单独梳理）
@@ -167,15 +186,20 @@ docs/integrations/<name>/
 ├── README.md          # 选型说明 + 架构设计 + 接口文档 + 配置指南
 └── DECISIONS.md       # 关键设计决策及理由（可选）
 
-src/capabilities/<name>/        # 或在现有目录中整理
+src/server/modules/<name>.ts   # 可插拔模块实现（实现 FrameworkModule 接口）
+
+src/capabilities/<name>/      # 或在现有目录中整理
 ├── index.ts           # 统一导出
 ├── <provider>.ts      # 各三方 provider 实现
 ├── types.ts           # 对外类型定义
 └── errors.ts          # 错误类型定义
 
+src/config/modules.ts  # 新增该集成的启停配置
 .env.example           # 新增相关环境变量
 AGENTS.md              # 新增该集成的 AI 使用规则
 ```
+
+**对于可插拔集成**，核心产物是 `src/server/modules/<name>.ts`，它通过事件总线订阅核心事件来执行副作用，而不是被核心代码直接调用。
 
 ## 质量检查
 

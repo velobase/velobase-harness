@@ -1,6 +1,4 @@
-// Import tools index to trigger registration
-import "@/server/api/tools";
-import { toolRegistry } from "@/server/api/tools/registry";
+import { toolRegistry, registerBuiltinTools } from "@/server/api/tools";
 import { filterUnsupportedToolCalls } from "../lib/message-utils";
 import type { ChatUIMessage } from "../../types/message";
 import type { ToolContext } from "../../types/tool";
@@ -15,6 +13,7 @@ export function prepareTools(
   agentTools: string[],
   context: ToolContext,
 ): Record<string, unknown> {
+  registerBuiltinTools();
   const tools: Record<string, unknown> = {};
 
   for (const toolName of agentTools) {

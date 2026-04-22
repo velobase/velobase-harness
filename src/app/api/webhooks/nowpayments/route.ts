@@ -1,8 +1,13 @@
+import { MODULES } from "@/config/modules";
 import { initOrderProviders } from "@/server/order/services/init-providers";
 import { handlePaymentWebhook } from "@/server/order/services/handle-webhooks";
 import { db } from "@/server/db";
 
 export async function POST(req: Request) {
+  if (!MODULES.integrations.payment.nowpayments.enabled) {
+    return new Response(null, { status: 404 });
+  }
+
   initOrderProviders();
 
   const rawBody = await req.clone().text();
