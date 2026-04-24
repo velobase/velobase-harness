@@ -9,7 +9,6 @@ import type { Queue } from "bullmq";
 import type { Job } from "bullmq";
 import type { Worker } from "bullmq";
 import { createWorkerInstance } from "./utils/create-worker";
-import { redis } from "@/server/redis";
 import { createLogger } from "@/lib/logger";
 
 const log = createLogger("worker-registry");
@@ -84,8 +83,5 @@ export class WorkerRegistry {
       await queue.close();
       log.info({ queue: name }, "Queue closed");
     }
-
-    await redis.quit();
-    log.info("Redis connection closed");
   }
 }

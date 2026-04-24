@@ -16,6 +16,7 @@
 import "dotenv/config";
 
 import { createLogger } from "@/lib/logger";
+import { redis } from "@/server/redis";
 
 const log = createLogger("standalone");
 
@@ -74,6 +75,10 @@ async function shutdown(signal: string) {
       log.error({ error: err }, "Error during service shutdown");
     }
   }
+  try {
+    await redis.quit();
+    log.info("Redis connection closed");
+  } catch {}
   process.exit(0);
 }
 

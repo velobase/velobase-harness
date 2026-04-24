@@ -8,6 +8,7 @@
 import "dotenv/config";
 
 import { startWorker } from "./start";
+import { redis } from "@/server/redis";
 import { createLogger } from "@/lib/logger";
 
 const log = createLogger("worker:main");
@@ -23,6 +24,8 @@ async function shutdown(signal: string) {
   log.info({ signal }, "Received shutdown signal");
   try {
     await workerHandle?.shutdown();
+    await redis.quit();
+    log.info("Redis connection closed");
     process.exit(0);
   } catch (error) {
     log.error({ error }, "Error during shutdown");
