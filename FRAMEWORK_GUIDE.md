@@ -263,6 +263,66 @@ Touch / TouchLog
 SupportTicket
 ```
 
+### 数据库变更流程（Schema 修改必读）
+
+修改 `prisma/schema.prisma` 后，**必须同时完成本地同步和生成 migration 文件**，否则线上部署时数据库不会更新。
+
+#### 本地开发 vs 线上部署的区别
+
+| 命令 | 作用 | 适用场景 |
+| --- | --- | --- |
+| `pnpm db:push` / `npx prisma db push` | 直接将 schema 同步到数据库，**不生成 migration 文件** | 本地开发快速迭代 |
+| `npx prisma migrate dev` | 生成 migration SQL 文件 + 应用到本地数据库 | 本地开发最终确认 |
+| `npx prisma migrate deploy` | 执行 `prisma/migrations/` 下未应用的 SQL 文件 | **线上容器启动时自动执行**（见 `docker-entrypoint-*.sh`） |
+
+**关键点**：线上 entrypoint 只执行 `prisma migrate deploy`，它只认 `prisma/migrations/` 目录下的 SQL 文件。仅做 `db:push` 而不创建 migration，线上数据库不会有任何变化。
+
+#### 完整操作步骤
+
+```bash
+# 1. 修改 prisma/schema.prisma（添加字段、枚举值、新表等）
+
+# 2. 方式 A：使用 prisma migrate dev（推荐，自动生成 + 应用）
+npx prisma migrate dev --name describe_your_change
+#    例：npx prisma migrate dev --name add_deploy_queue_support
+#    会在 prisma/migrations/<timestamp>_<name>/migration.sql 生成 SQL
+
+# 2. 方式 B：手写 migration（复杂变更或需要幂等 SQL 时）
+#    创建目录：prisma/migrations/<YYYYMMDDHHMMSS>_<name>/migration.sql
+#    手写 SQL，然后标记为已应用：
+npx prisma db push                    # 先同步本地数据库
+npx prisma migrate resolve --applied <migration_name>  # 标记 migration 为已应用
+
+# 3. 验证
+npx prisma generate                   # 重新生成 Prisma Client
+```
+
+#### Migration SQL 编写规范
+
+手写 migration 时，使用幂等语法避免重复执行出错：
+
+```sql
+-- 添加枚举值（幂等）
+DO $$ BEGIN
+  ALTER TYPE "MyEnumType" ADD VALUE 'NEW_VALUE' BEFORE 'EXISTING_VALUE';
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+-- 添加列（幂等）
+ALTER TABLE "my_table" ADD COLUMN IF NOT EXISTS "new_column" TEXT;
+
+-- 添加索引（幂等）
+CREATE INDEX IF NOT EXISTS "idx_my_table_new_column" ON "my_table" ("new_column");
+```
+
+#### 常见错误
+
+| 症状 | 原因 | 解决方式 |
+| --- | --- | --- |
+| 线上报 `column does not exist` | 只做了 `db:push`，没有创建 migration 文件 | 补建 migration SQL 文件并部署 |
+| `prisma migrate deploy` 跳过变更 | migration 目录或文件名格式不对 | 确认目录结构：`prisma/migrations/<timestamp>_<name>/migration.sql` |
+| 本地 `migrate dev` 报 drift | 本地数据库通过 `db:push` 超前于 migration 历史 | 用 `prisma migrate resolve --applied <name>` 对齐 |
+
 ---
 
 ## 4. 从框架到生产应用 — 分阶段 Checklist
@@ -291,7 +351,7 @@ SupportTicket
 - 确定产品模型：一次性购买 / 订阅 / 积分包
 - 在 `src/server/product/` 定义 SKU
 - 在 `src/server/billing/config/` 配置积分规则
-- 在 `prisma/schema.prisma` 中添加业务 Model，运行 `pnpm db:migrate`
+- 在 `prisma/schema.prisma` 中添加业务 Model，**创建 migration 文件**并应用（详见[数据库变更流程](#数据库变更流程schema-修改必读)）
 
 ### 阶段四：实现核心 AI 功能
 
