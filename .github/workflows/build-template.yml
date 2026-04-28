@@ -65,12 +65,14 @@ jobs:
       # ══════════════════════════════════════════════════════════════════
       # B. Create template PostgreSQL database
       # ══════════════════════════════════════════════════════════════════
-      - name: Set up Cloud SQL Auth Proxy
-        uses: google-github-actions/setup-cloud-sql-proxy@v2
+      - name: Download Cloud SQL Auth Proxy
+        run: |
+          curl -fsSL "https://storage.googleapis.com/cloud-sql-connectors/cloud-sql-proxy/v2.15.2/cloud-sql-proxy.linux.amd64" -o cloud-sql-proxy
+          chmod +x cloud-sql-proxy
 
       - name: Start Cloud SQL Auth Proxy
         run: |
-          cloud-sql-proxy \
+          ./cloud-sql-proxy \
             "${{ secrets.GCP_PROJECT_ID }}:${{ secrets.GCP_REGION }}:${{ secrets.CLOUD_SQL_INSTANCE }}" \
             --port=5432 &
           sleep 3
