@@ -15,9 +15,14 @@ import { seedPasswordLoginTestUsers } from './seed-password-login-users';
 import { seedTouchScenes } from './seed-touch-scenes';
 
 const prisma = new PrismaClient();
+const isTemplateBuild = process.env.TEMPLATE_BUILD === '1';
 
 async function main() {
-  console.log('🌱 Starting database seeding...\n');
+  if (isTemplateBuild) {
+    console.log('🏗️  Template build mode — seeding shared data only\n');
+  } else {
+    console.log('🌱 Starting database seeding...\n');
+  }
 
   // 1. Seed default AI assistant agent
   console.log('📦 Step 1: Seeding default AI assistant agent...');
@@ -34,29 +39,33 @@ async function main() {
   await seedProducts();
   console.log('');
 
-  // 4. Set Admin User (update the email below to your own)
-  console.log('👑 Step 4: Setting Admin User...');
-  const adminEmail = process.env.ADMIN_EMAIL ?? 'admin@example.com';
-  try {
-    const user = await prisma.user.findUnique({ where: { email: adminEmail } });
-    if (user) {
-      await prisma.user.update({
-        where: { email: adminEmail },
-        data: { isAdmin: true },
-      });
-      console.log(`   ✅ Set ${adminEmail} as admin`);
-    } else {
-      console.log(`   ℹ️ User ${adminEmail} not found, skipping admin promotion`);
+  if (!isTemplateBuild) {
+    // 4. Set Admin User (update the email below to your own)
+    console.log('👑 Step 4: Setting Admin User...');
+    const adminEmail = process.env.ADMIN_EMAIL ?? 'admin@example.com';
+    try {
+      const user = await prisma.user.findUnique({ where: { email: adminEmail } });
+      if (user) {
+        await prisma.user.update({
+          where: { email: adminEmail },
+          data: { isAdmin: true },
+        });
+        console.log(`   ✅ Set ${adminEmail} as admin`);
+      } else {
+        console.log(`   ℹ️ User ${adminEmail} not found, skipping admin promotion`);
+      }
+    } catch (error) {
+      console.warn(`   ⚠️ Failed to set admin for ${adminEmail}:`, error);
     }
-  } catch (error) {
-    console.warn(`   ⚠️ Failed to set admin for ${adminEmail}:`, error);
-  }
-  console.log('');
+    console.log('');
 
-  // 5. Seed Password Login Test Users (optional)
-  console.log('🔐 Step 5: Seeding Password Login Test Users...');
-  await seedPasswordLoginTestUsers();
-  console.log('');
+    // 5. Seed Password Login Test Users (optional)
+    console.log('🔐 Step 5: Seeding Password Login Test Users...');
+    await seedPasswordLoginTestUsers();
+    console.log('');
+  } else {
+    console.log('⏭️  Step 4-5: Skipped (admin promotion & test users) in template mode\n');
+  }
 
   // 6. Seed Touch Scenes (notification templates)
   console.log('📧 Step 6: Seeding Touch Scenes...');
@@ -64,11 +73,13 @@ async function main() {
   console.log('');
 
   console.log('✨ Database seeding completed successfully!\n');
-  console.log('🎉 You now have:');
-  console.log('   - System Agents for AI chat');
-  console.log('   - Products (subscriptions + credit packages)');
-  console.log('   - Touch Scenes (notification templates)');
-  console.log('\n💡 Users can now install agents and purchase subscriptions!\n');
+  if (!isTemplateBuild) {
+    console.log('🎉 You now have:');
+    console.log('   - System Agents for AI chat');
+    console.log('   - Products (subscriptions + credit packages)');
+    console.log('   - Touch Scenes (notification templates)');
+    console.log('\n💡 Users can now install agents and purchase subscriptions!\n');
+  }
 }
 
 main()

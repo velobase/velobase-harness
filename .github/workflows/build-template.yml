@@ -1,0 +1,143 @@
+name: Build Template (Image + DB)
+
+on:
+  workflow_dispatch:
+    inputs:
+      commit_sha:
+        description: "Commit SHA to build (defaults to HEAD)"
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  IMAGE_NAME: velobase-template
+  TEMPLATE_DB_PREFIX: velobase_tpl_
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      # ── Resolve commit ─────────────────────────────────────────────────
+      - name: Resolve target commit
+        id: resolve
+        run: |
+          SHA="${{ github.event.inputs.commit_sha }}"
+          if [ -z "$SHA" ]; then
+            SHA="${{ github.sha }}"
+          fi
+          SHORT="${SHA:0:12}"
+          echo "sha=$SHA"       >> "$GITHUB_OUTPUT"
+          echo "short=$SHORT"   >> "$GITHUB_OUTPUT"
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.resolve.outputs.sha }}
+
+      # ── GCP Auth (OIDC / Workload Identity Federation) ─────────────────
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      # ══════════════════════════════════════════════════════════════════
+      # A. Build & push template Docker image
+      # ══════════════════════════════════════════════════════════════════
+      - name: Configure Docker for Artifact Registry
+        run: gcloud auth configure-docker ${{ secrets.GCP_REGION }}-docker.pkg.dev --quiet
+
+      - name: Build & push template image
+        run: |
+          IMAGE="${{ secrets.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ secrets.ARTIFACT_REGISTRY_REPOSITORY }}/${{ env.IMAGE_NAME }}:${{ steps.resolve.outputs.sha }}"
+          docker build -t "$IMAGE" .
+          docker push "$IMAGE"
+          echo "✅ Pushed image"
+
+      # ══════════════════════════════════════════════════════════════════
+      # B. Create template PostgreSQL database
+      # ══════════════════════════════════════════════════════════════════
+      - name: Set up Cloud SQL Auth Proxy
+        uses: google-github-actions/setup-cloud-sql-proxy@v2
+
+      - name: Start Cloud SQL Auth Proxy
+        run: |
+          cloud-sql-proxy \
+            "${{ secrets.GCP_PROJECT_ID }}:${{ secrets.GCP_REGION }}:${{ secrets.CLOUD_SQL_INSTANCE }}" \
+            --port=5432 &
+          sleep 3
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.12.1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Create template database
+        env:
+          PGHOST: 127.0.0.1
+          PGPORT: "5432"
+          PGUSER: postgres
+          PGPASSWORD: ${{ secrets.TEMPLATE_DB_ADMIN_PASSWORD }}
+          TEMPLATE_DB_NAME: ${{ env.TEMPLATE_DB_PREFIX }}${{ steps.resolve.outputs.short }}
+          BUILD_TMP_DB: velobase_tpl_build_tmp
+        run: |
+          set -euo pipefail
+
+          echo "── Checking if template DB already exists..."
+          EXISTS=$(psql -d postgres -tAc "SELECT 1 FROM pg_database WHERE datname = '$TEMPLATE_DB_NAME'" || true)
+          if [ "$EXISTS" = "1" ]; then
+            echo "✅ Template DB '$TEMPLATE_DB_NAME' already exists, skipping creation."
+            exit 0
+          fi
+
+          echo "── Dropping leftover build-tmp DB if any..."
+          psql -d postgres -c "DROP DATABASE IF EXISTS $BUILD_TMP_DB"
+
+          echo "── Creating temporary build DB..."
+          psql -d postgres -c "CREATE DATABASE $BUILD_TMP_DB"
+
+          echo "── Running prisma migrate deploy..."
+          DATABASE_URL="postgresql://postgres:$PGPASSWORD@127.0.0.1:5432/$BUILD_TMP_DB" \
+            npx prisma migrate deploy
+
+          echo "── Running seed in template mode..."
+          DATABASE_URL="postgresql://postgres:$PGPASSWORD@127.0.0.1:5432/$BUILD_TMP_DB" \
+            TEMPLATE_BUILD=1 \
+            npx tsx prisma/seed.ts
+
+          echo "── Terminating connections to build-tmp DB..."
+          psql -d postgres -c "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = '$BUILD_TMP_DB' AND pid <> pg_backend_pid()"
+
+          echo "── Renaming to final template DB name..."
+          psql -d postgres -c "ALTER DATABASE $BUILD_TMP_DB RENAME TO $TEMPLATE_DB_NAME"
+
+          echo "── Locking template DB (disallow connections, mark as template)..."
+          psql -d postgres -c "ALTER DATABASE $TEMPLATE_DB_NAME WITH is_template = true allow_connections = false"
+
+          echo "✅ Template DB '$TEMPLATE_DB_NAME' created successfully."
+
+      - name: Summary
+        run: |
+          echo "### Build Template Summary" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Item | Value |" >> "$GITHUB_STEP_SUMMARY"
+          echo "|------|-------|" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Commit | \`${{ steps.resolve.outputs.sha }}\` |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Template DB | \`${{ env.TEMPLATE_DB_PREFIX }}${{ steps.resolve.outputs.short }}\` |" >> "$GITHUB_STEP_SUMMARY"
