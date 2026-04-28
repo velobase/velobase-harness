@@ -95,7 +95,7 @@ jobs:
         env:
           PGHOST: 127.0.0.1
           PGPORT: "5432"
-          PGUSER: ${{ secrets.TEMPLATE_DB_ADMIN_USER }}
+          PGUSER: velobase
           PGPASSWORD: ${{ secrets.TEMPLATE_DB_ADMIN_PASSWORD }}
           TEMPLATE_DB_NAME: ${{ env.TEMPLATE_DB_PREFIX }}${{ steps.resolve.outputs.short }}
           BUILD_TMP_DB: velobase_tpl_build_tmp
@@ -116,11 +116,11 @@ jobs:
           psql -d postgres -c "CREATE DATABASE $BUILD_TMP_DB"
 
           echo "── Running prisma migrate deploy..."
-          DATABASE_URL="postgresql://$PGUSER:$PGPASSWORD@127.0.0.1:5432/$BUILD_TMP_DB" \
+          DATABASE_URL="postgresql://velobase:$PGPASSWORD@127.0.0.1:5432/$BUILD_TMP_DB" \
             npx prisma migrate deploy
 
           echo "── Running seed in template mode..."
-          DATABASE_URL="postgresql://$PGUSER:$PGPASSWORD@127.0.0.1:5432/$BUILD_TMP_DB" \
+          DATABASE_URL="postgresql://velobase:$PGPASSWORD@127.0.0.1:5432/$BUILD_TMP_DB" \
             TEMPLATE_BUILD=1 \
             npx tsx prisma/seed.ts
 
