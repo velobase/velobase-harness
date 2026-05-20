@@ -683,16 +683,17 @@ export async function handlePaymentWebhook(providerName: string, req: Request) {
   return result.getData();
 }
 
-// Stripe 订阅续费（invoice.payment_succeeded -> subscription_period > 1）
-export async function handleStripeSubscriptionRenewal(
+// Provider-agnostic subscription renewal (provider invoice/payment success -> subscription_period > 1)
+export async function handleSubscriptionRenewal(
+  providerName: string,
   result: PaymentWebhookResult
 ) {
   const gatewaySubId = result.getGatewaySubscriptionId();
   const txnId = result.getGatewayTransactionId();
   if (!gatewaySubId) {
     logger.error(
-      {},
-      "Stripe subscription renewal webhook missing gateway subscription id"
+      { provider: providerName },
+      "Subscription renewal webhook missing gateway subscription id"
     );
     // Payload 本身缺字段，重放也不会变好：直接 2xx 吞掉，避免 Stripe 无限重试
     return result.getData();
@@ -700,8 +701,8 @@ export async function handleStripeSubscriptionRenewal(
 
   if (!txnId) {
     logger.error(
-      {},
-      "Stripe subscription renewal webhook missing gateway transaction id"
+      { provider: providerName },
+      "Subscription renewal webhook missing gateway transaction id"
     );
     // Payload 本身缺字段，重放也不会变好：直接 2xx 吞掉，避免 Stripe 无限重试
     return result.getData();
@@ -721,13 +722,38 @@ export async function handleStripeSubscriptionRenewal(
   if (!subscription) {
     logger.error(
       { gatewaySubscriptionId: gatewaySubId },
-      "UserSubscription not found for Stripe renewal"
+      "UserSubscription not found for renewal"
     );
     // 找不到订阅通常是数据不一致或竞态；重放未必能修复，避免无限重试
     return result.getData();
   }
 
-  // Note: Stripe cashflow is recorded exclusively on charge.succeeded (see handlePaymentWebhook).
+  // Stripe cashflow is recorded exclusively on charge.succeeded (see handlePaymentWebhook).
+  // Other providers can use their invoice/payment-success webhook as the cashflow fact.
+  if (providerName.toUpperCase() !== "STRIPE") {
+    try {
+      const amountCents = result.getAmount() ?? 0;
+      if (amountCents > 0) {
+        await recordPaymentTransaction({
+          userId: subscription.userId,
+          gateway: providerName.toUpperCase(),
+          externalId: txnId,
+          kind: "SUBSCRIPTION_RENEWAL_CHARGE",
+          amountCents,
+          currency: result.getCurrency() ?? "usd",
+          occurredAt: inferOccurredAtFromIsoFields(result.getRawData()) ?? new Date(),
+          orderId: null,
+          paymentId: null,
+          gatewaySubscriptionId: gatewaySubId,
+          gatewayInvoiceId: txnId,
+          sourceEventId: null,
+          sourceEventType: "subscription_payment_success",
+        });
+      }
+    } catch (error) {
+      logger.warn({ error, provider: providerName, transactionId: txnId }, "Failed to record renewal transaction (ignored)");
+    }
+  }
 
   const activeCycle = subscription.cycles[0] ?? null;
 
@@ -894,8 +920,8 @@ export async function handleStripeSubscriptionRenewal(
     });
   } catch (error) {
     logger.error(
-      { error, subscriptionId: subscription.id, gatewaySubscriptionId: gatewaySubId, transactionId: txnId },
-      "Stripe renewal fulfillment failed"
+      { error, provider: providerName, subscriptionId: subscription.id, gatewaySubscriptionId: gatewaySubId, transactionId: txnId },
+      "Subscription renewal fulfillment failed"
     );
     throw new WebhookFulfillmentError(error);
   }
@@ -908,7 +934,7 @@ export async function handleStripeSubscriptionRenewal(
       periodEnd,
       creditsPerPeriod,
     },
-    "Stripe subscription renewal processed"
+    "Subscription renewal processed"
   );
 
   // Lark: 订阅续费/提前转正（invoice.payment_succeeded）通知
@@ -967,7 +993,12 @@ export async function handleStripeSubscriptionRenewal(
       productName: planSnapshot?.name ? `${planSnapshot.name} (Renewal)` : "Subscription Renewal",
       // 续费没有 Order，这里用稳定的业务 ID 方便检索
       orderId: `sub_renewal_${subscription.id}_${txnId}`,
-      gateway: "stripe",
+      gateway:
+        providerName.toUpperCase() === "STRIPE"
+          ? "stripe"
+          : providerName.toUpperCase() === "NOWPAYMENTS"
+            ? "nowpayments"
+            : "other",
       status: "succeeded",
       isTest: process.env.NODE_ENV !== "production",
       credits: creditsPerPeriod > 0 ? creditsPerPeriod : undefined,
@@ -994,6 +1025,10 @@ export async function handleStripeSubscriptionRenewal(
   return result.getData();
 }
 
+export async function handleStripeSubscriptionRenewal(result: PaymentWebhookResult) {
+  return handleSubscriptionRenewal("STRIPE", result);
+}
+
 export async function handleSubscriptionWebhook(providerName: string, req: Request) {
   const provider = getProvider(providerName);
   const result = await provider.handleSubscriptionWebhook(req);
@@ -1010,7 +1045,9 @@ export async function handleSubscriptionWebhook(providerName: string, req: Reque
     return { status: "ignored" };
   }
 
-  // Stripe 续费 & 提前转正（early-convert trial）处理
+  // 订阅续费处理：
+  // - provider returns subscriptionPeriod>1 for renewals;
+  // - Stripe also has an early-convert trial case that is routed into the same renewal flow.
   // - invoice.payment_succeeded 会作为订阅类事件进入这里；
   // - 默认仅当 subscriptionPeriod>1 时视为“续费”；
   // - 对于提前结束试用并立即扣款的场景（billing_reason=subscription_update 且 amount_paid>0，
@@ -1018,71 +1055,72 @@ export async function handleSubscriptionWebhook(providerName: string, req: Reque
   const maybePaymentResult = result as unknown as PaymentWebhookResult;
 
   if (
-    providerName.toUpperCase() === "STRIPE" &&
     typeof maybePaymentResult.getSubscriptionPeriod === "function" &&
     maybePaymentResult.getStatus() === "SUCCEEDED"
   ) {
-    const raw = maybePaymentResult.getRawData() as
-      | {
-          object?: string;
-          billing_reason?: string | null;
-          amount_paid?: number | null;
-        }
-      | null;
+    if (providerName.toUpperCase() === "STRIPE") {
+      const raw = maybePaymentResult.getRawData() as
+        | {
+            object?: string;
+            billing_reason?: string | null;
+            amount_paid?: number | null;
+          }
+        | null;
 
-    const isInvoice =
-      raw?.object === "invoice" || raw?.object === "test_helpers.test_clock_advance.invoice";
-    const isSubscriptionUpdateWithCharge =
-      isInvoice &&
-      raw?.billing_reason === "subscription_update" &&
-      (raw?.amount_paid ?? 0) > 0;
+      const isInvoice =
+        raw?.object === "invoice" || raw?.object === "test_helpers.test_clock_advance.invoice";
+      const isSubscriptionUpdateWithCharge =
+        isInvoice &&
+        raw?.billing_reason === "subscription_update" &&
+        (raw?.amount_paid ?? 0) > 0;
 
-    if (isSubscriptionUpdateWithCharge) {
-      const gatewaySubId = maybePaymentResult.getGatewaySubscriptionId();
+      if (isSubscriptionUpdateWithCharge) {
+        const gatewaySubId = maybePaymentResult.getGatewaySubscriptionId();
 
-      if (gatewaySubId) {
-        const subscription = await db.userSubscription.findFirst({
-          where: { gatewaySubscriptionId: gatewaySubId },
-          include: {
-            cycles: {
-              where: { status: "ACTIVE" },
-              orderBy: { sequenceNumber: "desc" },
-              take: 1,
+        if (gatewaySubId) {
+          const subscription = await db.userSubscription.findFirst({
+            where: { gatewaySubscriptionId: gatewaySubId },
+            include: {
+              cycles: {
+                where: { status: "ACTIVE" },
+                orderBy: { sequenceNumber: "desc" },
+                take: 1,
+              },
             },
-          },
-        });
+          });
 
-        const activeCycle = subscription?.cycles[0] ?? null;
+          const activeCycle = subscription?.cycles[0] ?? null;
 
-        // 仅当当前仍处于 TRIAL 周期时，才将该事件视为“提前转正”的首个正式周期
-        if (subscription && activeCycle?.type === "TRIAL") {
-          logger.info(
-            {
-              provider: providerName,
-              subscriptionId: subscription.id,
-              gatewaySubscriptionId: gatewaySubId,
-              billingReason: raw?.billing_reason,
-              amountPaid: raw?.amount_paid,
-            },
-            "Routing Stripe early-convert trial webhook as renewal"
-          );
+          // 仅当当前仍处于 TRIAL 周期时，才将该事件视为“提前转正”的首个正式周期
+          if (subscription && activeCycle?.type === "TRIAL") {
+            logger.info(
+              {
+                provider: providerName,
+                subscriptionId: subscription.id,
+                gatewaySubscriptionId: gatewaySubId,
+                billingReason: raw?.billing_reason,
+                amountPaid: raw?.amount_paid,
+              },
+              "Routing Stripe early-convert trial webhook as renewal"
+            );
 
-          return handleStripeSubscriptionRenewal(maybePaymentResult);
+            return handleSubscriptionRenewal(providerName, maybePaymentResult);
+          }
         }
       }
     }
 
-    // Stripe 正常续费：subscriptionPeriod>1
+    // Provider-normalized renewal: subscriptionPeriod>1
     if (maybePaymentResult.getSubscriptionPeriod() > 1) {
-    logger.info(
-      {
-        provider: providerName,
-        subscriptionId: maybePaymentResult.getGatewaySubscriptionId(),
-        subscriptionPeriod: maybePaymentResult.getSubscriptionPeriod(),
-      },
-      "Routing Stripe subscription renewal webhook"
-    );
-    return handleStripeSubscriptionRenewal(maybePaymentResult);
+      logger.info(
+        {
+          provider: providerName,
+          subscriptionId: maybePaymentResult.getGatewaySubscriptionId(),
+          subscriptionPeriod: maybePaymentResult.getSubscriptionPeriod(),
+        },
+        "Routing subscription renewal webhook"
+      );
+      return handleSubscriptionRenewal(providerName, maybePaymentResult);
     }
   }
 

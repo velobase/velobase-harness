@@ -8,6 +8,7 @@ interface CheckoutParams {
   productId: string
   successUrl?: string
   cancelUrl?: string
+  gateway?: 'STRIPE' | 'LEMONSQUEEZY'
 }
 
 type CheckoutResult =
@@ -15,7 +16,7 @@ type CheckoutResult =
   | { status: 'ERROR'; message: string }
 
 /**
- * Checkout hook — always routes to Stripe.
+ * Checkout hook — uses backend gateway resolution by default.
  *
  * Crypto payments are handled by separate UI entry points
  * (e.g. "pay with crypto" links on pricing page) that navigate
@@ -30,12 +31,12 @@ export function useSmartCheckout() {
       return { status: 'ERROR', message: 'Sales temporarily paused' }
     }
 
-    const { productId, successUrl, cancelUrl } = params
+    const { productId, successUrl, cancelUrl, gateway } = params
 
     try {
       const result = await checkoutMutation.mutateAsync({
         productId,
-        gateway: 'STRIPE',
+        gateway,
         successUrl: successUrl ?? `${window.location.origin}/payment/success`,
         cancelUrl: cancelUrl ?? window.location.href,
       })

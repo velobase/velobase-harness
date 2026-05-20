@@ -4,7 +4,7 @@ export const createCheckoutSessionSchema = z.object({
   productId: z.string().min(1),
   successUrl: z.string().url(),
   cancelUrl: z.string().url(),
-  gateway: z.enum(["STRIPE", "NOWPAYMENTS"]).optional(),
+  gateway: z.enum(["STRIPE", "NOWPAYMENTS", "LEMONSQUEEZY"]).optional(),
   cryptoCurrency: z.string().optional(),
   quantity: z.number().int().min(1).optional(),
   // 业务元信息（例如下载付费墙的 videoId/source），仅存入 payment.extra，在履约阶段使用

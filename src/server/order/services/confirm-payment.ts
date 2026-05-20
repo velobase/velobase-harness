@@ -11,6 +11,8 @@ export type ConfirmPaymentResult =
 
 function getCheckoutSessionId(extra: unknown): string | undefined {
   if (!extra || typeof extra !== "object") return undefined;
+  const gatewayCheckoutId = (extra as { gatewayCheckoutId?: unknown }).gatewayCheckoutId;
+  if (typeof gatewayCheckoutId === "string" && gatewayCheckoutId.length > 0) return gatewayCheckoutId;
   const stripeObj = (extra as { stripe?: unknown }).stripe;
   if (!stripeObj || typeof stripeObj !== "object") return undefined;
   const cs = (stripeObj as { checkoutSessionId?: unknown }).checkoutSessionId;
@@ -65,21 +67,23 @@ export async function confirmPaymentById(
   }
 
   const gateway = payment.paymentGateway?.toUpperCase();
-  if (gateway !== "STRIPE" && gateway !== "NOWPAYMENTS") {
+  if (gateway !== "STRIPE" && gateway !== "NOWPAYMENTS" && gateway !== "LEMONSQUEEZY") {
     return { status: payment.status === "FAILED" ? "FAILED" : "PENDING", paymentId, orderId };
   }
 
-  let checkoutSessionId: string | undefined;
+  let gatewayCheckoutId: string | undefined;
   let gatewayTxnId: string | undefined =
     typeof payment.gatewayTransactionId === "string" && payment.gatewayTransactionId.length > 0
       ? payment.gatewayTransactionId
       : undefined;
 
   if (gateway === "STRIPE") {
-    checkoutSessionId = getCheckoutSessionId(payment.extra);
+    gatewayCheckoutId = getCheckoutSessionId(payment.extra);
   } else if (gateway === "NOWPAYMENTS") {
     // NowPayments uses payment_id as both checkoutSessionId and gatewayTransactionId
-    checkoutSessionId = getNowPaymentsPaymentId(payment.extra) ?? gatewayTxnId;
+    gatewayCheckoutId = getNowPaymentsPaymentId(payment.extra) ?? gatewayTxnId;
+  } else if (gateway === "LEMONSQUEEZY") {
+    gatewayCheckoutId = getCheckoutSessionId(payment.extra);
   }
 
   const provider = getProvider(gateway);
@@ -88,11 +92,12 @@ export async function confirmPaymentById(
     | undefined;
   try {
     confirmed = await provider.confirmPayment?.({
-      checkoutSessionId,
+      gatewayCheckoutId,
+      checkoutSessionId: gatewayCheckoutId,
       gatewayTransactionId: gatewayTxnId,
     });
   } catch (error) {
-    logger.warn({ paymentId, orderId, checkoutSessionId, gatewayTxnId, gateway, error }, "ConfirmPayment: provider confirm failed");
+    logger.warn({ paymentId, orderId, gatewayCheckoutId, gatewayTxnId, gateway, error }, "ConfirmPayment: provider confirm failed");
   }
 
   const isPaid = !!confirmed?.isPaid;
