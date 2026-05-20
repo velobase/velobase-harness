@@ -1,7 +1,7 @@
 import { db } from "@/server/db";
 import { processFulfillmentByPayment } from "@/server/fulfillment/manager";
 import { logger } from "@/server/shared/telemetry/logger";
-import { getProvider } from "../providers/registry";
+import { getAdapter } from "../providers/registry";
 import { sendOrderPaymentNotificationByPaymentId } from "./send-order-payment-notification";
 
 export type ConfirmPaymentResult =
@@ -9,34 +9,18 @@ export type ConfirmPaymentResult =
   | { status: "PENDING"; paymentId: string; orderId: string }
   | { status: "FAILED"; paymentId: string; orderId: string };
 
-function getCheckoutSessionId(extra: unknown): string | undefined {
+function getCheckoutId(extra: unknown): string | undefined {
   if (!extra || typeof extra !== "object") return undefined;
-  const gatewayCheckoutId = (extra as { gatewayCheckoutId?: unknown }).gatewayCheckoutId;
-  if (typeof gatewayCheckoutId === "string" && gatewayCheckoutId.length > 0) return gatewayCheckoutId;
-  const stripeObj = (extra as { stripe?: unknown }).stripe;
-  if (!stripeObj || typeof stripeObj !== "object") return undefined;
-  const cs = (stripeObj as { checkoutSessionId?: unknown }).checkoutSessionId;
-  return typeof cs === "string" && cs.length > 0 ? cs : undefined;
+  const e = extra as Record<string, unknown>;
+  if (typeof e.gatewayCheckoutId === "string" && e.gatewayCheckoutId.length > 0) return e.gatewayCheckoutId;
+  const stripe = e.stripe as Record<string, unknown> | undefined;
+  if (stripe && typeof stripe.checkoutSessionId === "string" && stripe.checkoutSessionId.length > 0) return stripe.checkoutSessionId;
+  return undefined;
 }
 
-function getNowPaymentsPaymentId(extra: unknown): string | undefined {
-  if (!extra || typeof extra !== "object") return undefined;
-  const npObj = (extra as { nowpayments?: unknown }).nowpayments;
-  if (!npObj || typeof npObj !== "object") return undefined;
-  const paymentId = (npObj as { payment_id?: unknown }).payment_id;
-  return typeof paymentId === "string" && paymentId.length > 0 ? paymentId : undefined;
-}
-
-/**
- * Confirm Stripe payment status by querying Stripe directly (handles webhook delays).
- *
- * Safety:
- * - Only triggers fulfillment when Stripe says "paid/succeeded".
- * - Fulfillment path is made idempotent by paymentId (subscription) and outerBizId (grant).
- */
 export async function confirmPaymentById(
   paymentId: string,
-  userId: string
+  userId: string,
 ): Promise<ConfirmPaymentResult> {
   const payment = await db.payment.findUnique({
     where: { id: paymentId },
@@ -48,15 +32,14 @@ export async function confirmPaymentById(
 
   const orderId = payment.orderId;
 
-  // If order already fulfilled, we're done (idempotent)
+  // Already fulfilled — idempotent
   if (payment.order.status === "FULFILLED" && payment.status === "SUCCEEDED") {
     return { status: "SUCCEEDED", paymentId, orderId };
   }
 
-  // If DB already marks payment succeeded but order isn't fulfilled (e.g. subscription webhook updated payment first),
-  // trigger fulfillment idempotently.
+  // Payment succeeded but order not fulfilled — trigger fulfillment
   if (payment.status === "SUCCEEDED" && payment.order.status !== "FULFILLED") {
-    logger.warn({ paymentId, orderId }, "Payment already SUCCEEDED but order not FULFILLED, triggering fulfillment");
+    logger.warn({ paymentId, orderId }, "Payment SUCCEEDED but order not FULFILLED, triggering fulfillment");
     await processFulfillmentByPayment(payment);
     await db.order.update({ where: { id: orderId }, data: { status: "FULFILLED" } });
     await db.user.update({ where: { id: userId }, data: { hasPurchased: true } });
@@ -66,60 +49,48 @@ export async function confirmPaymentById(
     return { status: "SUCCEEDED", paymentId, orderId };
   }
 
-  const gateway = payment.paymentGateway?.toUpperCase();
-  if (gateway !== "STRIPE" && gateway !== "NOWPAYMENTS" && gateway !== "LEMONSQUEEZY") {
+  // Active confirmation via adapter
+  const gateway = (payment.paymentGateway ?? "").toUpperCase();
+  let adapter;
+  try {
+    adapter = getAdapter(gateway);
+  } catch {
     return { status: payment.status === "FAILED" ? "FAILED" : "PENDING", paymentId, orderId };
   }
 
-  let gatewayCheckoutId: string | undefined;
-  let gatewayTxnId: string | undefined =
-    typeof payment.gatewayTransactionId === "string" && payment.gatewayTransactionId.length > 0
-      ? payment.gatewayTransactionId
-      : undefined;
-
-  if (gateway === "STRIPE") {
-    gatewayCheckoutId = getCheckoutSessionId(payment.extra);
-  } else if (gateway === "NOWPAYMENTS") {
-    // NowPayments uses payment_id as both checkoutSessionId and gatewayTransactionId
-    gatewayCheckoutId = getNowPaymentsPaymentId(payment.extra) ?? gatewayTxnId;
-  } else if (gateway === "LEMONSQUEEZY") {
-    gatewayCheckoutId = getCheckoutSessionId(payment.extra);
-  }
-
-  const provider = getProvider(gateway);
-  let confirmed:
-    | { isPaid: boolean; gatewayTransactionId?: string; gatewaySubscriptionId?: string }
-    | undefined;
-  try {
-    confirmed = await provider.confirmPayment?.({
-      gatewayCheckoutId,
-      checkoutSessionId: gatewayCheckoutId,
-      gatewayTransactionId: gatewayTxnId,
-    });
-  } catch (error) {
-    logger.warn({ paymentId, orderId, gatewayCheckoutId, gatewayTxnId, gateway, error }, "ConfirmPayment: provider confirm failed");
-  }
-
-  const isPaid = !!confirmed?.isPaid;
-  const nextGatewayTransactionId = confirmed?.gatewayTransactionId;
-  const nextGatewaySubscriptionId = confirmed?.gatewaySubscriptionId;
-
-  if (nextGatewayTransactionId || nextGatewaySubscriptionId) {
-    await db.payment.update({
-      where: { id: paymentId },
-      data: {
-        gatewayTransactionId: payment.gatewayTransactionId ?? nextGatewayTransactionId,
-        gatewaySubscriptionId: payment.gatewaySubscriptionId ?? nextGatewaySubscriptionId,
-      },
-    });
-    gatewayTxnId = gatewayTxnId ?? nextGatewayTransactionId;
-  }
-
-  if (!isPaid) {
+  if (!adapter.confirmPayment) {
     return { status: "PENDING", paymentId, orderId };
   }
 
-  // Mark payment succeeded and fulfill
+  const checkoutId = getCheckoutId(payment.extra);
+  const queryId = checkoutId ?? payment.gatewayTransactionId ?? undefined;
+  if (!queryId) {
+    return { status: "PENDING", paymentId, orderId };
+  }
+
+  let confirmed: { paid: boolean; transactionId?: string; subscriptionId?: string } | undefined;
+  try {
+    confirmed = await adapter.confirmPayment(queryId);
+  } catch (error) {
+    logger.warn({ paymentId, orderId, gateway, error }, "ConfirmPayment: adapter confirm failed");
+  }
+
+  if (!confirmed?.paid) {
+    return { status: "PENDING", paymentId, orderId };
+  }
+
+  // Backfill gateway IDs
+  if (confirmed.transactionId || confirmed.subscriptionId) {
+    await db.payment.update({
+      where: { id: paymentId },
+      data: {
+        gatewayTransactionId: payment.gatewayTransactionId ?? confirmed.transactionId,
+        gatewaySubscriptionId: payment.gatewaySubscriptionId ?? confirmed.subscriptionId,
+      },
+    });
+  }
+
+  // Mark succeeded and fulfill
   await db.payment.update({ where: { id: paymentId }, data: { status: "SUCCEEDED" } });
   await processFulfillmentByPayment({ ...payment, status: "SUCCEEDED" } as typeof payment);
   await db.order.update({ where: { id: orderId }, data: { status: "FULFILLED" } });
@@ -129,26 +100,13 @@ export async function confirmPaymentById(
     void sendOrderPaymentNotificationByPaymentId(paymentId, { source: "confirm" });
   });
 
-  // Append-only cashflow record (best-effort, idempotent).
-  // Note: Stripe subscription Checkout may still lack a stable gateway transaction id here.
+  // Best-effort cashflow record (non-Stripe)
   try {
-    const gateway = (payment.paymentGateway ?? "").toUpperCase();
-    const externalId =
-      gatewayTxnId ??
-      (typeof payment.gatewayTransactionId === "string" ? payment.gatewayTransactionId : undefined);
-
-    if (externalId) {
-      // First principles: PaymentTransaction for STRIPE should only be recorded on charge.succeeded.
-      // confirmPayment is a polling/fulfillment helper, not a cashflow event.
-      // For other gateways, we keep best-effort logging here.
-      if (gateway !== "STRIPE") {
-        const { recordPaymentTransaction } = await import(
-          "@/server/order/services/payment-transactions"
-        );
-        const kind =
-          payment.order?.product?.type === "SUBSCRIPTION"
-            ? "SUBSCRIPTION_INITIAL_CHARGE"
-            : "ONE_OFF_CHARGE";
+    if (gateway !== "STRIPE") {
+      const externalId = confirmed.transactionId ?? payment.gatewayTransactionId ?? "";
+      if (externalId) {
+        const { recordPaymentTransaction } = await import("@/server/order/services/payment-transactions");
+        const kind = payment.order?.product?.type === "SUBSCRIPTION" ? "SUBSCRIPTION_INITIAL_CHARGE" : "ONE_OFF_CHARGE";
         await recordPaymentTransaction({
           userId,
           gateway,
@@ -166,13 +124,8 @@ export async function confirmPaymentById(
       }
     }
   } catch (error) {
-    logger.warn(
-      { error, paymentId, orderId },
-      "Failed to record payment transaction (confirm-payment, ignored)"
-    );
+    logger.warn({ error, paymentId, orderId }, "Failed to record payment transaction (confirm-payment, ignored)");
   }
 
   return { status: "SUCCEEDED", paymentId, orderId };
 }
-
-

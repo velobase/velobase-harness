@@ -4,14 +4,14 @@
  * Priority order:
  * 1. Explicit gateway input from checkout call (always wins)
  * 2. FORCE_PAYMENT_GATEWAY env var (for testing)
- * 3. User payment preference, when set to a checkout-capable provider
+ * 3. User payment preference, when set to a registered adapter
  * 4. Default: STRIPE
  */
 
 import type { PaymentGateway } from "../providers/types";
 import { env } from "@/server/shared/env";
 import { db } from "@/server/db";
-import { hasProvider } from "../providers/registry";
+import { hasAdapter } from "../providers/registry";
 
 export interface ResolveGatewayParams {
   userId: string;
@@ -36,11 +36,10 @@ export async function resolvePaymentGateway(params: ResolveGatewayParams): Promi
     (user?.paymentGatewayPreference === "STRIPE" ||
       user?.paymentGatewayPreference === "NOWPAYMENTS" ||
       user?.paymentGatewayPreference === "LEMONSQUEEZY") &&
-    hasProvider(user.paymentGatewayPreference)
+    hasAdapter(user.paymentGatewayPreference)
   ) {
     return user.paymentGatewayPreference;
   }
 
   return "STRIPE";
 }
-
