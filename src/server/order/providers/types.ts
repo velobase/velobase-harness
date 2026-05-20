@@ -1,222 +1,110 @@
-// Avoid importing Prisma types directly to keep provider generic
+// ============================================================
+// PaymentAdapter — provider-neutral contract
+// ============================================================
 
 export type PaymentGateway = "STRIPE" | "NOWPAYMENTS" | "LEMONSQUEEZY";
 
-export type PaymentStatus =
-  | "PENDING"
-  | "SUCCEEDED"
-  | "FAILED"
-  | "EXPIRED"
-  | "REFUNDED"
-  | "REQUIRES_ACTION";
+// ---- Checkout ----
 
-export interface CreatePaymentResult {
-  paymentUrl: string;
-  gatewayTransactionId?: string;
-  /**
-   * Provider-specific hosted checkout/session identifier.
-   * For Stripe this is the Checkout Session ID (cs_...).
-   * For LemonSqueezy this is the Checkout ID.
-   * For NowPayments this may be the provider payment ID once known.
-   */
-  gatewayCheckoutId?: string;
-  /**
-   * Optional provider-specific checkout/session identifier.
-   * For Stripe this is the Checkout Session ID (cs_...).
-   * @deprecated Use gatewayCheckoutId.
-   */
-  checkoutSessionId?: string;
-  providerExtra?: Record<string, unknown>;
-}
+export type CheckoutMode = "payment" | "subscription";
 
-export interface CreateSubscriptionResult {
-  paymentUrl: string;
-  gatewaySubscriptionId?: string;
-  /**
-   * Optional provider transaction identifier.
-   * For Airwallex Billing Checkout, this is the Billing Checkout ID.
-   */
-  gatewayTransactionId?: string;
-  /**
-   * Provider-specific hosted checkout/session identifier.
-   * @deprecated-compatible replacement for checkoutSessionId.
-   */
-  gatewayCheckoutId?: string;
-  /**
-   * Optional provider-specific checkout/session identifier.
-   * For Stripe this is the Checkout Session ID (cs_...).
-   * @deprecated Use gatewayCheckoutId.
-   */
-  checkoutSessionId?: string;
-  providerExtra?: Record<string, unknown>;
-}
+export type ProductInterval = "week" | "month" | "year";
 
-export type ProductInterval = "month" | "year";
-export interface ProductSnapshot {
-  name?: string;
-  interval?: ProductInterval;
-  metadata?: unknown;
-  [key: string]: unknown;
-}
-
-export interface ProviderOrder {
-  id: string;
+export interface CheckoutRequest {
+  mode: CheckoutMode;
+  orderId: string;
+  paymentId: string;
+  userId: string;
   amount: number;
   currency: string;
-  productSnapshot?: ProductSnapshot | null;
+  productName: string;
+  successUrl: string;
+  cancelUrl: string;
+  metadata?: Record<string, string>;
+  interval?: ProductInterval;
+  intervalCount?: number;
+  trialDays?: number;
+  productMetadata?: Record<string, unknown>;
 }
 
-export interface PaymentExtra {
-  SuccessURL?: string;
-  CancelURL?: string;
-  FailedURL?: string;
-  TraceData?: Record<string, string>;
-  [key: string]: unknown;
+export interface CheckoutResponse {
+  url: string;
+  checkoutId?: string;
+  transactionId?: string;
+  subscriptionId?: string;
+  extra?: Record<string, unknown>;
 }
 
-export type GatewayResponse = Record<string, unknown>;
+// ---- Webhook ----
 
-export interface ProviderPayment {
-  id: string;
-  extra: PaymentExtra | null;
-}
+export type WebhookEventType =
+  | "payment.succeeded"
+  | "payment.failed"
+  | "payment.refunded"
+  | "subscription.activated"
+  | "subscription.renewed"
+  | "subscription.payment_failed"
+  | "subscription.updated"
+  | "subscription.canceled"
+  | "cashflow"
+  | "ignored";
 
-export interface PaymentWebhookResult {
-  getStatus(): PaymentStatus;
-  getGatewayCheckoutId(): string | undefined;
-  getGatewayTransactionId(): string | undefined;
-  getGatewaySubscriptionId(): string | undefined;
-  getSubscriptionPeriod(): number; // 0: N/A, 1: initial, >1: renewal
-  getAmount(): number | undefined; // cents
-  getCurrency(): string | undefined;
-  getRawData(): unknown;
-  getData(): unknown;
-}
-
-export interface SubscriptionWebhookResult {
-  getStatus(): PaymentStatus;
-  getGatewayCheckoutId(): string | undefined;
-  getGatewaySubscriptionId(): string | undefined;
-  getRawData(): unknown;
-  getData(): unknown;
-  /**
-   * Normalized, business-facing subscription webhook payload.
-   * Providers should populate this so business logic does not depend on provider-specific raw fields.
-   */
-  getNormalizedData(): NormalizedSubscriptionWebhookData;
-}
-
-export interface PaymentProvider {
-  createPayment(params: { payment: ProviderPayment; order: ProviderOrder }): Promise<CreatePaymentResult>;
-  createSubscription(params: { payment: ProviderPayment; order: ProviderOrder }): Promise<CreateSubscriptionResult>;
-
-  handlePaymentWebhook(req: Request): Promise<PaymentWebhookResult | null>;
-  handleSubscriptionWebhook(req: Request): Promise<SubscriptionWebhookResult | null>;
-
-  queryPaymentStatus?(gatewayTransactionId: string): Promise<PaymentStatus>;
-
-  /**
-   * Provider-specific active confirmation (used to mitigate webhook delays).
-   * Should NOT mutate local DB; only queries provider and returns the paid status + any discovered IDs.
-   */
-  confirmPayment?(params: {
-    gatewayCheckoutId?: string;
-    checkoutSessionId?: string;
-    gatewayTransactionId?: string;
-  }): Promise<{
-    isPaid: boolean;
-    gatewayTransactionId?: string;
-    gatewaySubscriptionId?: string;
-  }>;
-
-  /**
-   * Provider-specific checkout/session invalidation.
-   * For Stripe this expires the Checkout Session (cs_...).
-   */
-  expireCheckoutSession?(checkoutSessionId: string): Promise<void>;
-}
-
-export class BaseWebhookResult implements PaymentWebhookResult, SubscriptionWebhookResult {
-  private status: PaymentStatus;
-  private gatewayCheckoutId?: string;
-  private gatewayTransactionId?: string;
-  private gatewaySubscriptionId?: string;
-  private subscriptionPeriod: number;
-  private amount?: number;
-  private currency?: string;
-  private rawData: unknown;
-  private isSubscription: boolean;
-  private normalizedData: NormalizedSubscriptionWebhookData;
-
-  constructor(args: {
-    status: PaymentStatus;
-    gatewayCheckoutId?: string;
-    gatewayTransactionId?: string;
-    gatewaySubscriptionId?: string;
-    subscriptionPeriod?: number;
-    amount?: number;
-    currency?: string;
-    rawData: unknown;
-    isSubscription?: boolean;
-    normalizedData?: NormalizedSubscriptionWebhookData;
-  }) {
-    this.status = args.status;
-    this.gatewayCheckoutId = args.gatewayCheckoutId;
-    this.gatewayTransactionId = args.gatewayTransactionId;
-    this.gatewaySubscriptionId = args.gatewaySubscriptionId;
-    this.subscriptionPeriod = args.subscriptionPeriod ?? 0;
-    this.amount = args.amount;
-    this.currency = args.currency;
-    this.rawData = args.rawData;
-    this.isSubscription = args.isSubscription ?? false;
-    this.normalizedData = args.normalizedData ?? {};
-  }
-
-  getStatus() { return this.status; }
-  getGatewayCheckoutId() { return this.gatewayCheckoutId; }
-  getGatewayTransactionId() { return this.gatewayTransactionId; }
-  getGatewaySubscriptionId() { return this.gatewaySubscriptionId; }
-  getSubscriptionPeriod() { return this.subscriptionPeriod; }
-  getAmount() { return this.amount; }
-  getCurrency() { return this.currency; }
-  getRawData() { return this.rawData; }
-  getNormalizedData() { return this.normalizedData; }
-  getData() {
-    if (this.isSubscription) {
-      return {
-        status: this.status,
-        ...(this.gatewayCheckoutId ? { gateway_checkout_id: this.gatewayCheckoutId } : {}),
-        gateway_subscription_id: this.gatewaySubscriptionId,
-      };
-    }
-    return {
-      status: this.status,
-      ...(this.gatewayCheckoutId ? { gateway_checkout_id: this.gatewayCheckoutId } : {}),
-      gateway_transaction_id: this.gatewayTransactionId,
-      ...(this.gatewaySubscriptionId ? { gateway_subscription_id: this.gatewaySubscriptionId } : {}),
-      ...(this.subscriptionPeriod ? { subscription_period: this.subscriptionPeriod } : {}),
-    };
-  }
-}
-
-export interface NormalizedSubscriptionWebhookData {
-  /**
-   * "Cancel at period end" semantics: true means the subscription is scheduled to stop renewing.
-   * For Stripe this should be computed as: cancel_at_period_end === true OR cancel_at is set.
-   */
+export interface WebhookSubscriptionData {
   cancelAtPeriodEnd?: boolean;
-  /**
-   * Provider's scheduled cancellation timestamp, if any (e.g. Stripe cancel_at).
-   */
   cancelAt?: Date | null;
-  /**
-   * Provider's cancellation request timestamp, if any (e.g. Stripe canceled_at).
-   */
   canceledAt?: Date | null;
-  /**
-   * Provider's ended timestamp, if any (e.g. Stripe ended_at).
-   */
   endedAt?: Date | null;
 }
 
+export interface WebhookCashflowData {
+  externalId: string;
+  kind: string;
+  amountCents: number;
+  currency: string;
+  occurredAt: Date;
+  userId?: string | null;
+  gatewayChargeId?: string | null;
+  gatewayPaymentIntentId?: string | null;
+  gatewayInvoiceId?: string | null;
+  gatewaySubscriptionId?: string | null;
+  sourceEventId?: string | null;
+  sourceEventType?: string | null;
+}
 
+export interface WebhookEvent {
+  type: WebhookEventType;
+  checkoutId?: string;
+  transactionId?: string;
+  subscriptionId?: string;
+  amount?: number;
+  currency?: string;
+  subscription?: WebhookSubscriptionData;
+  cashflow?: WebhookCashflowData;
+  metadata?: Record<string, string>;
+  raw: unknown;
+  providerEventId?: string;
+}
+
+// ---- Confirm ----
+
+export interface ConfirmResult {
+  paid: boolean;
+  transactionId?: string;
+  subscriptionId?: string;
+}
+
+// ---- Adapter ----
+
+export interface PaymentAdapter {
+  readonly name: string;
+
+  createCheckout(params: CheckoutRequest): Promise<CheckoutResponse>;
+
+  parseWebhook(req: Request): Promise<WebhookEvent[]>;
+
+  confirmPayment?(checkoutId: string): Promise<ConfirmResult>;
+
+  expireCheckout?(checkoutId: string): Promise<void>;
+
+  ensureCustomer?(userId: string, email?: string): Promise<string>;
+}

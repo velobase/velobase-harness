@@ -1,5 +1,12 @@
 import type Stripe from "stripe";
-import { BaseWebhookResult, type PaymentProvider, type ProviderOrder, type ProviderPayment } from "./types";
+import type {
+  PaymentAdapter,
+  CheckoutRequest,
+  CheckoutResponse,
+  ConfirmResult,
+  WebhookEvent,
+  WebhookCashflowData,
+} from "./types";
 import { getStripeWebhookSecret } from "@/server/shared/env";
 import { logger } from "@/server/shared/telemetry/logger";
 import {
@@ -12,16 +19,17 @@ import {
   voidAffiliateEarningsForRefund,
   voidAffiliateEarningsForStripeInvoiceRefund,
 } from "@/server/affiliate/services/ledger";
-import type { NormalizedSubscriptionWebhookData } from "./types";
 import { getStripe } from "@/server/order/services/stripe/client";
+import { getOrCreateStripeCustomer } from "@/server/order/services/stripe-customer";
 
 export { getStripe as getStripeClient } from "@/server/order/services/stripe/client";
 
-// Stripe Clover 版本 webhook payload 的 invoice.subscription 可能缺失，
-// 需要从多个路径提取 subscription id（与 backfill 脚本逻辑保持一致）。
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
 function extractSubscriptionIdFromInvoice(invoice: Stripe.Invoice): string | undefined {
   const inv = invoice as unknown as Record<string, unknown>;
-
   const getId = (v: unknown): string | undefined => {
     if (typeof v === "string" && v) return v;
     if (v && typeof v === "object") {
@@ -30,36 +38,22 @@ function extractSubscriptionIdFromInvoice(invoice: Stripe.Invoice): string | und
     }
     return undefined;
   };
-
-  // 0) legacy: invoice.subscription
   const legacy = getId(inv.subscription);
   if (legacy) return legacy;
-
-  // 1) new: invoice.parent.subscription_details.subscription
   const parent = inv.parent as Record<string, unknown> | null | undefined;
   const subDetails = parent?.subscription_details as Record<string, unknown> | null | undefined;
   const parentSub = getId(subDetails?.subscription);
   if (parentSub) return parentSub;
-
-  // 2) fallback: invoice.lines.data[0].subscription
   const lines = inv.lines as Record<string, unknown> | null | undefined;
   const data = lines?.data as unknown[] | null | undefined;
   const line0 = (Array.isArray(data) ? data[0] : null) as Record<string, unknown> | null;
   const lineSub = getId(line0?.subscription);
   if (lineSub) return lineSub;
-
-  // 3) fallback: invoice.lines.data[0].parent.subscription_item_details.subscription
   const lineParent = (line0?.parent as Record<string, unknown> | null | undefined) ?? null;
   const itemDetails = lineParent?.subscription_item_details as Record<string, unknown> | null | undefined;
-  const lineParentSub = getId(itemDetails?.subscription);
-  if (lineParentSub) return lineParentSub;
-
-  return undefined;
+  return getId(itemDetails?.subscription);
 }
 
-/**
- * 处理 Stripe 退款/拒付事件，作废关联的 affiliate earning（幂等）
- */
 async function handleStripeRefundOrDispute(params: {
   eventId: string;
   chargeId: string | null;
@@ -68,8 +62,6 @@ async function handleStripeRefundOrDispute(params: {
   reason: string;
 }): Promise<void> {
   const { eventId, paymentIntentId, invoiceId, reason } = params;
-
-  // 1. 尝试作废 ORDER_PAYMENT 的 affiliate earning（通过 paymentIntentId 找 payment）
   if (paymentIntentId) {
     try {
       const payment = await db.payment.findFirst({
@@ -81,382 +73,259 @@ async function handleStripeRefundOrDispute(params: {
           paymentId: payment.id,
           idempotencyKey: `stripe_${reason}:${eventId}:payment:${payment.id}`,
         });
-        logger.info(
-          { paymentId: payment.id, paymentIntentId, reason },
-          "Voided affiliate earning for ORDER_PAYMENT refund/dispute"
-        );
       }
     } catch (error) {
-      logger.error(
-        { error, paymentIntentId, reason },
-        "Failed to void affiliate earning for ORDER_PAYMENT (ignored)"
-      );
+      logger.error({ error, paymentIntentId, reason }, "Failed to void affiliate earning for refund (ignored)");
     }
   }
-
-  // 2. 尝试作废 SUBSCRIPTION_RENEWAL 的 affiliate earning（通过 invoiceId）
   if (invoiceId) {
     try {
       await voidAffiliateEarningsForStripeInvoiceRefund({
         invoiceId,
         idempotencyKey: `stripe_${reason}:${eventId}:invoice:${invoiceId}`,
       });
-      logger.info(
-        { invoiceId, reason },
-        "Voided affiliate earning for SUBSCRIPTION_RENEWAL refund/dispute"
-      );
     } catch (error) {
-      logger.error(
-        { error, invoiceId, reason },
-        "Failed to void affiliate earning for SUBSCRIPTION_RENEWAL (ignored)"
-      );
+      logger.error({ error, invoiceId, reason }, "Failed to void affiliate earning for invoice refund (ignored)");
     }
   }
 }
 
-export const stripeProvider: PaymentProvider = {
-  async confirmPayment(params: { gatewayCheckoutId?: string; checkoutSessionId?: string; gatewayTransactionId?: string }) {
-    const stripe = getStripe();
-    const checkoutSessionId = params.gatewayCheckoutId ?? params.checkoutSessionId;
-    const gatewayTransactionId = params.gatewayTransactionId;
-
-    // Prefer Checkout Session when available (subscription mode)
-    if (checkoutSessionId) {
-      const session = await stripe.checkout.sessions.retrieve(checkoutSessionId);
-      const isPaid = session.payment_status === "paid";
-      return {
-        isPaid,
-        gatewayTransactionId: typeof session.payment_intent === "string" ? session.payment_intent : undefined,
-        gatewaySubscriptionId: typeof session.subscription === "string" ? session.subscription : undefined,
-      };
+function buildStripeMetadata(req: CheckoutRequest): Record<string, string> {
+  const meta: Record<string, string> = {
+    orderId: req.orderId,
+    paymentId: req.paymentId,
+  };
+  if (req.metadata) {
+    for (const [k, v] of Object.entries(req.metadata)) {
+      meta[k] = v;
     }
+  }
+  return meta;
+}
 
-    // Fallback: PaymentIntent
-    if (gatewayTransactionId) {
-      const pi = await stripe.paymentIntents.retrieve(gatewayTransactionId);
-      return {
-        isPaid: pi.status === "succeeded",
-        gatewayTransactionId: pi.id,
-      };
-    }
+function inferOccurredAt(obj: unknown): Date {
+  if (obj && typeof obj === "object") {
+    const r = obj as Record<string, unknown>;
+    if (typeof r.created === "number" && Number.isFinite(r.created)) return new Date(r.created * 1000);
+  }
+  return new Date();
+}
 
-    return { isPaid: false };
+function buildCashflow(charge: Record<string, unknown>, eventId: string, eventType: string): WebhookCashflowData | null {
+  const amountCents = typeof charge.amount === "number" ? charge.amount : null;
+  const currency = typeof charge.currency === "string" ? charge.currency : "usd";
+  const chargeId = typeof charge.id === "string" ? charge.id : null;
+  if (!chargeId || !amountCents || amountCents <= 0) return null;
+
+  const desc = (typeof charge.description === "string" ? charge.description : "").toLowerCase();
+  const kind =
+    desc.includes("subscription") && desc.includes("update")
+      ? "SUBSCRIPTION_UPDATE_CHARGE"
+      : desc.includes("subscription") && desc.includes("creation")
+        ? "SUBSCRIPTION_INITIAL_CHARGE"
+        : desc.includes("subscription")
+          ? "SUBSCRIPTION_OTHER_CHARGE"
+          : "ONE_OFF_CHARGE";
+
+  return {
+    externalId: chargeId,
+    kind,
+    amountCents,
+    currency,
+    occurredAt: inferOccurredAt(charge),
+    gatewayChargeId: chargeId,
+    gatewayPaymentIntentId: typeof charge.payment_intent === "string" ? charge.payment_intent : null,
+    gatewayInvoiceId: typeof charge.invoice === "string" ? charge.invoice : null,
+    sourceEventId: eventId,
+    sourceEventType: eventType,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Stripe Adapter
+// ---------------------------------------------------------------------------
+
+export const stripeAdapter: PaymentAdapter = {
+  name: "STRIPE",
+
+  async ensureCustomer(userId: string): Promise<string> {
+    return getOrCreateStripeCustomer(userId);
   },
 
-  async expireCheckoutSession(checkoutSessionId: string) {
+  async confirmPayment(checkoutId: string): Promise<ConfirmResult> {
     const stripe = getStripe();
-    await stripe.checkout.sessions.expire(checkoutSessionId);
-  },
-
-  async createPayment({ payment, order }: { payment: ProviderPayment; order: ProviderOrder }) {
-    const stripe = getStripe();
-    const stripeCustomerId = (payment.extra?.stripeCustomerId as string | undefined) ?? undefined;
-    const extraMetadata =
-      payment.extra &&
-      typeof payment.extra === "object" &&
-      "metadata" in payment.extra &&
-      payment.extra.metadata &&
-      typeof payment.extra.metadata === "object"
-        ? (payment.extra.metadata as Record<string, unknown>)
-        : undefined;
-
-    // Stripe metadata 只能是字符串，这里做一次安全过滤
-    const stripeMetadata: Record<string, string> = {
-      orderId: order.id,
-      paymentId: payment.id,
+    const session = await stripe.checkout.sessions.retrieve(checkoutId);
+    return {
+      paid: session.payment_status === "paid",
+      transactionId: typeof session.payment_intent === "string" ? session.payment_intent : undefined,
+      subscriptionId: typeof session.subscription === "string" ? session.subscription : undefined,
     };
-    if (extraMetadata) {
-      for (const [key, value] of Object.entries(extraMetadata)) {
-        if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
-          stripeMetadata[key] = String(value);
-        }
+  },
+
+  async expireCheckout(checkoutId: string): Promise<void> {
+    const stripe = getStripe();
+    await stripe.checkout.sessions.expire(checkoutId);
+  },
+
+  async createCheckout(params: CheckoutRequest): Promise<CheckoutResponse> {
+    const stripe = getStripe();
+    const meta = buildStripeMetadata(params);
+
+    // Read customer ID if ensureCustomer was called before
+    const user = await db.user.findUnique({
+      where: { id: params.userId },
+      select: { stripeCustomerId: true },
+    });
+    const customerId = (user as { stripeCustomerId?: string | null })?.stripeCustomerId ?? undefined;
+
+    if (params.mode === "subscription") {
+      const snapshot = params.productMetadata as {
+        hasTrial?: boolean;
+        trialDays?: number | null;
+      } | null | undefined;
+
+      const hasTrial = !!snapshot?.hasTrial && typeof snapshot.trialDays === "number" && snapshot.trialDays > 0;
+      const subscriptionData: Stripe.Checkout.SessionCreateParams.SubscriptionData | undefined =
+        hasTrial && typeof snapshot?.trialDays === "number"
+          ? { trial_period_days: snapshot.trialDays }
+          : undefined;
+
+      const offerEndsAtIso = params.metadata?.offerEndsAt;
+      let expiresAt: number | undefined;
+      if (offerEndsAtIso && !Number.isNaN(Date.parse(offerEndsAtIso))) {
+        const rawExpiry = Math.floor(Date.parse(offerEndsAtIso) / 1000);
+        const nowSec = Math.floor(Date.now() / 1000);
+        expiresAt = Math.min(Math.max(rawExpiry, nowSec + 30 * 60), nowSec + 24 * 60 * 60);
       }
+
+      const shouldForce3DS = params.amount > 27000;
+
+      const session = await stripe.checkout.sessions.create({
+        mode: "subscription",
+        ...(shouldForce3DS && {
+          payment_method_options: { card: { request_three_d_secure: "any" } },
+        }),
+        line_items: [{
+          price_data: {
+            currency: params.currency,
+            unit_amount: params.amount,
+            recurring: { interval: (params.interval ?? "month") as "week" | "month" | "year" },
+            product_data: { name: params.productName },
+          },
+          quantity: 1,
+        }],
+        success_url: params.successUrl,
+        cancel_url: params.metadata?.cancelUrl ?? params.successUrl,
+        customer: customerId,
+        subscription_data: subscriptionData,
+        ...(expiresAt ? { expires_at: expiresAt } : {}),
+        metadata: meta,
+      });
+
+      return {
+        url: session.url!,
+        checkoutId: session.id,
+        subscriptionId: session.subscription as string,
+      };
     }
 
+    // payment mode
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
-      line_items: [
-        {
-          price_data: {
-            currency: order.currency,
-            unit_amount: order.amount,
-            product_data: { name: order.productSnapshot?.name ?? "Product" },
-          },
-          quantity: 1,
+      line_items: [{
+        price_data: {
+          currency: params.currency,
+          unit_amount: params.amount,
+          product_data: { name: params.productName },
         },
-      ],
-      success_url: payment.extra?.SuccessURL ?? "https://example.com/success",
-      cancel_url: payment.extra?.CancelURL ?? "https://example.com/cancel",
-      customer: stripeCustomerId,
-      // IMPORTANT:
-      // We MUST attach paymentId/orderId onto PaymentIntent.metadata, otherwise
-      // `payment_intent.succeeded` / `payment_intent.payment_failed` webhooks cannot
-      // be reliably mapped back to our DB payment row.
-      payment_intent_data: {
-        metadata: stripeMetadata,
-        // 优化 3DS：移除 setup_future_usage，不再强制请求“未来后台扣款权限”。
-        // 这将大幅降低单次购买（如积分包）触发 3DS 的概率。
-        // ...(stripeCustomerId ? { setup_future_usage: "off_session" as const } : {}),
-      },
-      metadata: stripeMetadata,
+        quantity: 1,
+      }],
+      success_url: params.successUrl,
+      cancel_url: params.metadata?.cancelUrl ?? params.successUrl,
+      customer: customerId,
+      payment_intent_data: { metadata: meta },
+      metadata: meta,
     });
 
     return {
-      paymentUrl: session.url!,
-      // 交易主 ID：PaymentIntent
-      gatewayTransactionId: session.payment_intent as string | undefined,
-      // 补偿用的 Checkout Session ID
-      gatewayCheckoutId: session.id,
-      checkoutSessionId: session.id,
+      url: session.url!,
+      checkoutId: session.id,
+      transactionId: session.payment_intent as string | undefined,
     };
   },
 
-  async createSubscription({ payment, order }: { payment: ProviderPayment; order: ProviderOrder }) {
-    const stripe = getStripe();
-    const stripeCustomerId = (payment.extra?.stripeCustomerId as string | undefined) ?? undefined;
-    const extraMetadata =
-      payment.extra &&
-      typeof payment.extra === "object" &&
-      "metadata" in payment.extra &&
-      payment.extra.metadata &&
-      typeof payment.extra.metadata === "object"
-        ? (payment.extra.metadata as Record<string, unknown>)
-        : undefined;
-
-    // Stripe metadata 只能是字符串，这里做一次安全过滤
-    const stripeMetadata: Record<string, string> = {
-      orderId: order.id,
-      paymentId: payment.id,
-    };
-    if (extraMetadata) {
-      for (const [key, value] of Object.entries(extraMetadata)) {
-        if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
-          stripeMetadata[key] = String(value);
-        }
-      }
-    }
-
-    // 从商品快照中读取 trial 配置（仅订阅产品才会有）
-    const snapshot = order.productSnapshot as
-      | ({
-          hasTrial?: boolean;
-          trialDays?: number | null;
-        } & Record<string, unknown>)
-      | null
-      | undefined;
-
-    const hasTrial =
-      !!snapshot?.hasTrial &&
-      typeof snapshot.trialDays === "number" &&
-      snapshot.trialDays > 0;
-
-    const subscriptionData: Stripe.Checkout.SessionCreateParams.SubscriptionData | undefined =
-      hasTrial && typeof snapshot?.trialDays === "number"
-        ? {
-            trial_period_days: snapshot.trialDays,
-          }
-        : undefined;
-
-    // Optional: enforce offer expiry on Checkout Session (prevent "占坑" after countdown ends)
-    // Stripe requires expires_at to be between now+30min and now+24h
-    const offerEndsAtIso =
-      extraMetadata && typeof extraMetadata.offerEndsAt === "string"
-        ? extraMetadata.offerEndsAt
-        : undefined;
-    let offerExpiresAt: number | undefined;
-    if (offerEndsAtIso && !Number.isNaN(Date.parse(offerEndsAtIso))) {
-      const rawExpiry = Math.floor(Date.parse(offerEndsAtIso) / 1000);
-      const nowSec = Math.floor(Date.now() / 1000);
-      const minExpiry = nowSec + 30 * 60; // Stripe minimum: now + 30min
-      const maxExpiry = nowSec + 24 * 60 * 60; // Stripe maximum: now + 24h
-      offerExpiresAt = Math.min(Math.max(rawExpiry, minExpiry), maxExpiry);
-    }
-
-    // High Value Protection: Force 3DS for high-value subscriptions to reduce friendly fraud.
-    // NOTE: order.amount is in the order currency's smallest unit (not always USD cents).
-    // We use a conservative threshold (27000) to cover GBP yearly pricing (e.g. 27600) while keeping logic simple.
-    // If you need an exact USD threshold across currencies, base it on the USD base price (product snapshot) instead.
-    const shouldForce3DS = order.amount > 27000;
-
-    const session = await stripe.checkout.sessions.create({
-      mode: "subscription",
-      ...(shouldForce3DS && {
-        payment_method_options: {
-          card: {
-            request_three_d_secure: "any",
-          },
-        },
-      }),
-      line_items: [
-        {
-          price_data: {
-            currency: order.currency,
-            unit_amount: order.amount,
-            recurring: {
-              interval: (order.productSnapshot?.interval ?? "month") as
-                | "week"
-                | "month"
-                | "year",
-            },
-            product_data: { name: order.productSnapshot?.name ?? "Subscription" },
-          },
-          quantity: 1,
-        },
-      ],
-      success_url: payment.extra?.SuccessURL ?? "https://example.com/success",
-      cancel_url: payment.extra?.CancelURL ?? "https://example.com/cancel",
-      customer: stripeCustomerId,
-      // 允许复用已保存的支付方式
-      // 优化 3DS：移除显式的 payment_method_save: "enabled"。
-      // Subscription 模式本身就会保存卡用于续费，不需要额外请求通用存卡权限，这能降低风控敏感度。
-      // saved_payment_method_options: stripeCustomerId
-      //   ? {
-      //       payment_method_save: "enabled",
-      //     }
-      //   : undefined,
-      // Trial 订阅：在 Checkout 阶段即创建处于 trialing 状态的 Subscription
-      subscription_data: subscriptionData,
-      ...(offerExpiresAt ? { expires_at: offerExpiresAt } : {}),
-      metadata: stripeMetadata,
-    });
-
-    return {
-      paymentUrl: session.url!,
-      gatewaySubscriptionId: session.subscription as string,
-      // 订阅场景同样记录 Checkout Session ID，方便后续排查或补偿
-      gatewayCheckoutId: session.id,
-      checkoutSessionId: session.id,
-    };
-  },
-
-  async handlePaymentWebhook(req: Request) {
+  async parseWebhook(req: Request): Promise<WebhookEvent[]> {
     const stripe = getStripe();
     const signature = req.headers.get("stripe-signature");
-    if (!signature) return null;
+    if (!signature) return [];
+
     const body = await req.text();
-    const event = stripe.webhooks.constructEvent(body, signature, getStripeWebhookSecret());
-    logger.info({ type: event.type, id: event.id }, "Stripe payment webhook received");
+    let event: Stripe.Event;
+    try {
+      event = stripe.webhooks.constructEvent(body, signature, getStripeWebhookSecret());
+    } catch {
+      return [];
+    }
+
+    logger.info({ type: event.type, id: event.id }, "Stripe webhook received");
 
     switch (event.type) {
+      // ── One-time payment completed ──
       case "checkout.session.completed": {
         const session = stripeCheckoutSessionSchema.parse(event.data.object);
-        logger.info({
-          type: event.type,
-          id: event.id,
-          payment_intent: session.payment_intent,
-          subscription: session.subscription,
-          metadata: session.metadata,
-        }, "Stripe checkout.session.completed parsed");
-        return new BaseWebhookResult({
-          status: "SUCCEEDED",
-          gatewayTransactionId: session.payment_intent ?? undefined,
-          gatewaySubscriptionId: session.subscription ?? undefined,
-          rawData: session,
-        });
+        const isSubscription = !!(session.subscription);
+        const metadata: Record<string, string> = {};
+        if (session.metadata?.orderId) metadata.orderId = session.metadata.orderId;
+        if (session.metadata?.paymentId) metadata.paymentId = session.metadata.paymentId;
+
+        return [{
+          type: isSubscription ? "subscription.activated" : "payment.succeeded",
+          checkoutId: session.id,
+          transactionId: session.payment_intent ?? undefined,
+          subscriptionId: session.subscription ?? undefined,
+          metadata,
+          raw: session,
+          providerEventId: event.id,
+        }];
       }
-      case "payment_intent.succeeded": {
-        const pi = stripePaymentIntentSchema.parse(event.data.object);
-        logger.info({ id: pi.id, status: pi.status }, "Stripe payment_intent.succeeded parsed");
-        // 忽略 payment_intent.succeeded 事件：
-        // 1. 对于 Checkout 流程，我们依赖 checkout.session.completed 来触发履约。
-        // 2. payment_intent.succeeded 会与 checkout.session.completed 并发到达，导致重复履约竞态条件。
-        // 3. 只有非 Checkout 流程（如直接 Elements 调用）才依赖此事件，但我们全站都用 Checkout。
-        return null;
-      }
+
+      // ── Payment failed ──
       case "payment_intent.payment_failed": {
         const pi = stripePaymentIntentSchema.parse(event.data.object);
-        logger.info({ id: pi.id, status: pi.status }, "Stripe payment_intent.payment_failed parsed");
-        return new BaseWebhookResult({ status: "FAILED", gatewayTransactionId: pi.id, rawData: pi });
+        const metadata: Record<string, string> = {};
+        if (pi.metadata?.orderId) metadata.orderId = pi.metadata.orderId;
+        if (pi.metadata?.paymentId) metadata.paymentId = pi.metadata.paymentId;
+        return [{
+          type: "payment.failed",
+          transactionId: pi.id,
+          metadata,
+          raw: pi,
+          providerEventId: event.id,
+        }];
       }
 
-      // 关键：对账/记流水用（不触发履约）
-      // - 有些订阅首扣/升级扣款会出现 charge.invoice 为空 + PI.metadata 为空的情况，
-      //   此时 invoices.list / invoice.payment_succeeded 覆盖不到，但 Stripe 仍会发出 charge.succeeded。
-      // - 注意：charge.succeeded 事件顺序可能早于 checkout.session.completed。
-      //   如果把它作为 SUCCEEDED 返回给通用 handle-webhooks，会导致：
-      //   1) Payment.status 被提前置为 SUCCEEDED（此时 gatewaySubscriptionId 可能尚未补齐）
-      //   2) 触发履约（SubscriptionFulfiller），从而创建 gatewaySubscriptionId = "" 的订阅记录
-      // - 因此这里必须“只记账，不触发通用 webhook 流程”，即：自行 best-effort 写入 PaymentTransaction，然后 return null。
+      // ── Cashflow (charge) ──
       case "charge.succeeded": {
-        const charge = event.data.object as {
-          id: string;
-          paid?: boolean;
-          status?: string;
-          amount?: number;
-          currency?: string;
-          created?: number;
-          customer?: string | null;
-          invoice?: string | null;
-          payment_intent?: string | null;
-          description?: string | null;
-          metadata?: Record<string, string> | null;
-        };
+        const charge = event.data.object as unknown as Record<string, unknown>;
+        if (charge.paid !== true || charge.status !== "succeeded") return [{ type: "ignored", raw: charge }];
+        if (typeof charge.invoice === "string" && charge.invoice.length > 0) return [{ type: "ignored", raw: charge }];
 
-        // Only care about successful charges; ignore others.
-        if (charge.paid !== true || charge.status !== "succeeded") return null;
-
-        // Invoice-backed charges are tracked via invoice.payment_succeeded; skip to avoid duplicate cashflow records.
-        if (typeof charge.invoice === "string" && charge.invoice.length > 0) return null;
-
-        // Best-effort: resolve user by Stripe customer id and record cashflow.
-        try {
-          const customerId = typeof charge.customer === "string" ? charge.customer : null;
-          const amountCents = typeof charge.amount === "number" ? charge.amount : null;
-          const currency = typeof charge.currency === "string" ? charge.currency : "usd";
-          const occurredAt =
-            typeof charge.created === "number" && Number.isFinite(charge.created)
-              ? new Date(charge.created * 1000)
-              : new Date();
-
-          if (!customerId || !amountCents || amountCents <= 0) return null;
-
-          const userId =
-            (await db.user.findFirst({
-              where: { stripeCustomerId: customerId },
-              select: { id: true },
-            }))?.id ?? null;
-
-          if (!userId) return null;
-
-          const desc = (typeof charge.description === "string" ? charge.description : "").toLowerCase();
-          const kind =
-            desc.includes("subscription") && desc.includes("update")
-              ? "SUBSCRIPTION_UPDATE_CHARGE"
-              : desc.includes("subscription") && desc.includes("creation")
-                ? "SUBSCRIPTION_INITIAL_CHARGE"
-                : desc.includes("subscription")
-                  ? "SUBSCRIPTION_OTHER_CHARGE"
-                  : "ONE_OFF_CHARGE";
-
-          const { recordPaymentTransaction } = await import("@/server/order/services/payment-transactions");
-
-          await recordPaymentTransaction({
-            userId,
-            gateway: "STRIPE",
-            // Stripe PaymentTransaction is keyed by charge id (ch_*) — see recordPaymentTransaction guard.
-            externalId: charge.id,
-            kind,
-            amountCents,
-            currency,
-            occurredAt,
-            orderId: null,
-            paymentId: null,
-            gatewayInvoiceId: null,
-            gatewaySubscriptionId: null,
-            gatewayChargeId: charge.id,
-            gatewayPaymentIntentId: typeof charge.payment_intent === "string" ? charge.payment_intent : null,
-            sourceEventId: event.id,
-            sourceEventType: event.type,
-          });
-        } catch (err) {
-          logger.warn({ err, eventId: event.id }, "Stripe charge.succeeded: failed to record payment transaction (ignored)");
+        const customerId = typeof charge.customer === "string" ? charge.customer : null;
+        let userId: string | null = null;
+        if (customerId) {
+          const u = await db.user.findFirst({ where: { stripeCustomerId: customerId }, select: { id: true } });
+          userId = u?.id ?? null;
         }
+        if (!userId) return [{ type: "ignored", raw: charge }];
 
-        // IMPORTANT: return null to avoid triggering fulfillment / payment status changes.
-        return null;
+        const cf = buildCashflow(charge, event.id, event.type);
+        if (!cf) return [{ type: "ignored", raw: charge }];
+        cf.userId = userId;
+
+        return [{ type: "cashflow", cashflow: cf, raw: charge, providerEventId: event.id }];
       }
 
-      // 退款事件：作废关联的 affiliate earning（幂等）
+      // ── Refund ──
       case "charge.refunded": {
         const charge = event.data.object as {
           id: string;
@@ -464,10 +333,6 @@ export const stripeProvider: PaymentProvider = {
           invoice?: string | null;
           refunded: boolean;
         };
-        logger.info(
-          { chargeId: charge.id, paymentIntent: charge.payment_intent, invoice: charge.invoice, refunded: charge.refunded },
-          "Stripe charge.refunded received"
-        );
         if (charge.refunded) {
           await handleStripeRefundOrDispute({
             eventId: event.id,
@@ -477,15 +342,15 @@ export const stripeProvider: PaymentProvider = {
             reason: "refund",
           });
         }
-        // 返回 REFUNDED 状态，让 handle-webhooks 更新 payment 状态
-        return new BaseWebhookResult({
-          status: "REFUNDED",
-          gatewayTransactionId: charge.payment_intent ?? undefined,
-          rawData: charge,
-        });
+        return [{
+          type: "payment.refunded",
+          transactionId: charge.payment_intent ?? undefined,
+          raw: charge,
+          providerEventId: event.id,
+        }];
       }
 
-      // 拒付事件：资金被扣回时作废 affiliate earning
+      // ── Dispute ──
       case "charge.dispute.funds_withdrawn": {
         const dispute = event.data.object as {
           id: string;
@@ -493,35 +358,24 @@ export const stripeProvider: PaymentProvider = {
           payment_intent?: string | null;
           reason?: string | null;
         };
-        logger.info(
-          { disputeId: dispute.id, charge: dispute.charge, paymentIntent: dispute.payment_intent, reason: dispute.reason },
-          "Stripe charge.dispute.funds_withdrawn received"
-        );
-        // 通过 payment_intent 作废一次性购买的佣金
         await handleStripeRefundOrDispute({
           eventId: event.id,
           chargeId: dispute.charge ?? null,
           paymentIntentId: dispute.payment_intent ?? null,
-          invoiceId: null, // 订阅拒付通过 invoice.voided 处理
+          invoiceId: null,
           reason: `dispute:${dispute.reason ?? "unknown"}`,
         });
-        return new BaseWebhookResult({
-          status: "REFUNDED",
-          gatewayTransactionId: dispute.payment_intent ?? undefined,
-          rawData: dispute,
-        });
+        return [{
+          type: "payment.refunded",
+          transactionId: dispute.payment_intent ?? undefined,
+          raw: dispute,
+          providerEventId: event.id,
+        }];
       }
 
-      // 订阅发票作废：作废对应的续费佣金
+      // ── Invoice voided ──
       case "invoice.voided": {
-        const invoice = event.data.object as {
-          id: string;
-          subscription?: string | null;
-        };
-        logger.info(
-          { invoiceId: invoice.id, subscriptionId: invoice.subscription },
-          "Stripe invoice.voided received"
-        );
+        const invoice = event.data.object as { id: string; subscription?: string | null };
         if (invoice.id) {
           await handleStripeRefundOrDispute({
             eventId: event.id,
@@ -531,163 +385,127 @@ export const stripeProvider: PaymentProvider = {
             reason: "invoice_voided",
           });
         }
-        return null; // invoice.voided 不需要更新 payment 状态
+        return [{ type: "ignored", raw: invoice }];
       }
 
-      default:
-        logger.info({ type: event.type }, "Stripe payment webhook event ignored");
-        return null;
-    }
-  },
-
-  async handleSubscriptionWebhook(req: Request) {
-    const stripe = getStripe();
-    const signature = req.headers.get("stripe-signature");
-    if (!signature) return null;
-    const body = await req.text();
-    const event = stripe.webhooks.constructEvent(
-      body,
-      signature,
-      getStripeWebhookSecret()
-    );
-    logger.info(
-      { type: event.type, id: event.id },
-      "Stripe subscription webhook received"
-    );
-
-    switch (event.type) {
+      // ── Subscription invoice succeeded ──
       case "invoice.payment_succeeded": {
         const invoice = event.data.object;
-        // 新版 Stripe SDK: subscription 字段移到 parent.subscription_details.subscription
         const subscriptionId = extractSubscriptionIdFromInvoice(invoice);
         const isRenewal = invoice.billing_reason === "subscription_cycle";
-        const subscriptionPeriod = isRenewal ? 2 : 1;
 
-        logger.info(
-          {
-            id: invoice.id,
+        // Stripe early-convert trial: billing_reason=subscription_update + amount_paid>0
+        // We check DB to see if current cycle is TRIAL
+        const isSubscriptionUpdate =
+          invoice.billing_reason === "subscription_update" && (invoice.amount_paid ?? 0) > 0;
+
+        let isTrialConvert = false;
+        if (isSubscriptionUpdate && subscriptionId) {
+          const sub = await db.userSubscription.findFirst({
+            where: { gatewaySubscriptionId: subscriptionId },
+            include: { cycles: { where: { status: "ACTIVE" }, orderBy: { sequenceNumber: "desc" }, take: 1 } },
+          });
+          isTrialConvert = sub?.cycles[0]?.type === "TRIAL";
+        }
+
+        if (isRenewal || isTrialConvert) {
+          return [{
+            type: "subscription.renewed",
+            transactionId: invoice.id,
             subscriptionId,
-            billingReason: invoice.billing_reason,
-            subscriptionPeriod,
-            amountPaid: invoice.amount_paid,
-            currency: invoice.currency,
-          },
-          "Stripe invoice.payment_succeeded parsed"
-        );
+            amount: invoice.amount_paid ?? undefined,
+            currency: invoice.currency ?? undefined,
+            raw: invoice,
+            providerEventId: event.id,
+          }];
+        }
 
-        return new BaseWebhookResult({
-          status: "SUCCEEDED",
-          gatewayTransactionId: invoice.id,
-          gatewaySubscriptionId: subscriptionId,
-          subscriptionPeriod,
-          amount: invoice.amount_paid ?? undefined,
-          currency: invoice.currency ?? undefined,
-          rawData: invoice,
-          isSubscription: true,
-        });
+        // Initial subscription invoice — already handled by checkout.session.completed
+        return [{ type: "ignored", raw: invoice }];
       }
 
+      // ── Subscription invoice failed ──
       case "invoice.payment_failed": {
         const invoice = event.data.object;
-        // 新版 Stripe SDK: subscription 字段移到 parent.subscription_details.subscription
         const subscriptionId = extractSubscriptionIdFromInvoice(invoice);
-
-        logger.info(
-          {
-            id: invoice.id,
-            subscriptionId,
-            billingReason: invoice.billing_reason,
-            amountDue: invoice.amount_due,
-            currency: invoice.currency,
-          },
-          "Stripe invoice.payment_failed parsed"
-        );
-
-        return new BaseWebhookResult({
-          status: "FAILED",
-          gatewayTransactionId: invoice.id,
-          gatewaySubscriptionId: subscriptionId,
-          subscriptionPeriod: 0,
+        return [{
+          type: "subscription.payment_failed",
+          transactionId: invoice.id,
+          subscriptionId,
           amount: invoice.amount_due ?? undefined,
           currency: invoice.currency ?? undefined,
-          rawData: invoice,
-          isSubscription: true,
-        });
+          raw: invoice,
+          providerEventId: event.id,
+        }];
       }
 
+      // ── Subscription lifecycle ──
       case "customer.subscription.updated":
       case "customer.subscription.created": {
         const sub = stripeSubscriptionSchema.parse(event.data.object);
-        logger.info(
-          { id: sub.id, status: sub.status },
-          "Stripe subscription parsed"
-        );
-
-        // 订阅状态映射：
-        // - trialing/active -> SUCCEEDED（订阅有效/试用期）
-        // - canceled -> EXPIRED（订阅已取消）
-        // - 其余 -> FAILED（用于 PAST_DUE 等标记）
         const normalizedStatus =
-          sub.status === "active" || sub.status === "trialing"
-            ? "SUCCEEDED"
-            : sub.status === "canceled"
-              ? "EXPIRED"
-              : "FAILED";
+          sub.status === "active" || sub.status === "trialing" ? "SUCCEEDED"
+            : sub.status === "canceled" ? "EXPIRED" : "FAILED";
 
         const cancelAt = typeof sub.cancel_at === "number" ? new Date(sub.cancel_at * 1000) : null;
         const canceledAt = typeof sub.canceled_at === "number" ? new Date(sub.canceled_at * 1000) : null;
         const endedAt = typeof sub.ended_at === "number" ? new Date(sub.ended_at * 1000) : null;
-        const cancelAtPeriodEnd =
-          sub.cancel_at_period_end === true || cancelAt != null;
+        const cancelAtPeriodEnd = sub.cancel_at_period_end === true || cancelAt != null;
 
-        const normalizedData: NormalizedSubscriptionWebhookData = {
-          cancelAtPeriodEnd,
-          cancelAt,
-          canceledAt,
-          endedAt,
-        };
-
-        return new BaseWebhookResult({
-          status: normalizedStatus,
-          gatewaySubscriptionId: sub.id,
-          rawData: sub,
-          isSubscription: true,
-          normalizedData,
-        });
+        if (normalizedStatus === "EXPIRED") {
+          return [{
+            type: "subscription.canceled",
+            subscriptionId: sub.id,
+            subscription: { cancelAtPeriodEnd, cancelAt, canceledAt, endedAt },
+            raw: sub,
+            providerEventId: event.id,
+          }];
+        }
+        return [{
+          type: "subscription.updated",
+          subscriptionId: sub.id,
+          subscription: { cancelAtPeriodEnd, cancelAt, canceledAt, endedAt },
+          raw: sub,
+          providerEventId: event.id,
+        }];
       }
+
       case "customer.subscription.deleted": {
         const sub = stripeSubscriptionSchema.parse(event.data.object);
-        logger.info(
-          { id: sub.id, status: sub.status },
-          "Stripe subscription deleted parsed"
-        );
-
         const cancelAt = typeof sub.cancel_at === "number" ? new Date(sub.cancel_at * 1000) : null;
         const canceledAt = typeof sub.canceled_at === "number" ? new Date(sub.canceled_at * 1000) : null;
         const endedAt = typeof sub.ended_at === "number" ? new Date(sub.ended_at * 1000) : null;
-        const cancelAtPeriodEnd =
-          sub.cancel_at_period_end === true || cancelAt != null;
-
-        const normalizedData: NormalizedSubscriptionWebhookData = {
-          cancelAtPeriodEnd,
-          cancelAt,
-          canceledAt,
-          endedAt,
-        };
-
-        return new BaseWebhookResult({
-          status: "EXPIRED",
-          gatewaySubscriptionId: sub.id,
-          rawData: sub,
-          isSubscription: true,
-          normalizedData,
-        });
+        return [{
+          type: "subscription.canceled",
+          subscriptionId: sub.id,
+          subscription: {
+            cancelAtPeriodEnd: sub.cancel_at_period_end === true || cancelAt != null,
+            cancelAt,
+            canceledAt,
+            endedAt,
+          },
+          raw: sub,
+          providerEventId: event.id,
+        }];
       }
+
+      // ── EFW: handle internally, don't propagate ──
+      case "radar.early_fraud_warning.created": {
+        try {
+          const warning = event.data.object;
+          await import("@/server/risk/services/handle-early-fraud-warning").then(m =>
+            m.handleEarlyFraudWarning(warning),
+          );
+        } catch (err) {
+          logger.error({ err, eventId: event.id }, "EFW handling failed");
+        }
+        return [{ type: "ignored", raw: event.data.object, providerEventId: event.id }];
+      }
+
+      // ── Ignored ──
+      case "payment_intent.succeeded":
       default:
-        logger.info({ type: event.type }, "Stripe subscription webhook event ignored");
-        return null;
+        return [{ type: "ignored", raw: event.data?.object ?? null, providerEventId: event.id }];
     }
   },
 };
-
-

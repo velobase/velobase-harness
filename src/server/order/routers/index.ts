@@ -15,6 +15,7 @@ import { getCryptoCheckoutPreviewProcedure } from "./procedures/get-crypto-check
 import { getCryptoCurrenciesProcedure } from "./procedures/get-crypto-currencies";
 import { estimateCryptoPriceProcedure } from "./procedures/estimate-crypto-price";
 import { createCryptoInvoiceProcedure } from "./procedures/create-crypto-invoice";
+import { getAvailableGatewaysProcedure } from "./procedures/get-available-gateways";
 
 export const orderRouter = createTRPCRouter({
   // Order CRUD
@@ -42,4 +43,7 @@ export const orderRouter = createTRPCRouter({
   getCryptoCurrencies: getCryptoCurrenciesProcedure,
   getEstimate: estimateCryptoPriceProcedure,
   createCryptoInvoice: createCryptoInvoiceProcedure,
+
+  // Gateway availability
+  getAvailableGateways: getAvailableGatewaysProcedure,
 });

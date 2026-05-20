@@ -1,19 +1,17 @@
-import type { PaymentProvider } from "./types";
+import type { PaymentAdapter } from "./types";
 
-const providers = new Map<string, PaymentProvider>();
+const adapters = new Map<string, PaymentAdapter>();
 
-export function registerProvider(name: string, provider: PaymentProvider) {
-  providers.set(name.toUpperCase(), provider);
+export function registerAdapter(name: string, adapter: PaymentAdapter) {
+  adapters.set(name.toUpperCase(), adapter);
 }
 
-export function hasProvider(name: string): boolean {
-  return providers.has(name.toUpperCase());
+export function hasAdapter(name: string): boolean {
+  return adapters.has(name.toUpperCase());
 }
 
-export function getProvider(name: string): PaymentProvider {
-  const p = providers.get(name.toUpperCase());
-  if (!p) throw new Error(`Payment provider not found: ${name}`);
-  return p;
+export function getAdapter(name: string): PaymentAdapter {
+  const a = adapters.get(name.toUpperCase());
+  if (!a) throw new Error(`Payment adapter not found: ${name}`);
+  return a;
 }
-
-
