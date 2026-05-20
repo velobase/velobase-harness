@@ -20,13 +20,14 @@ import { confirmPaymentById } from "./confirm-payment";
 import { resolvePaymentGateway } from "./resolve-gateway";
 import { getProductPriceForCountry } from "@/server/product/services/get-price-for-currency";
 import { resolveClientCountryCode } from "@/server/lib/resolve-client-country";
+import type { PaymentGateway } from "../providers/types";
 
 interface CheckoutParams {
   userId: string;
   productId: string;
   successUrl: string;
   cancelUrl: string;
-  gateway?: "STRIPE" | "NOWPAYMENTS";
+  gateway?: PaymentGateway;
   cryptoCurrency?: string;
   quantity?: number;
   // 业务元信息（例如下载付费墙的 videoId/source），仅存入 payment.extra，在履约阶段使用
@@ -59,6 +60,8 @@ export interface CheckoutConflictResult {
 
 function getCheckoutSessionId(extra: unknown): string | undefined {
   if (!extra || typeof extra !== "object") return undefined;
+  const gatewayCheckoutId = (extra as { gatewayCheckoutId?: unknown }).gatewayCheckoutId;
+  if (typeof gatewayCheckoutId === "string" && gatewayCheckoutId.length > 0) return gatewayCheckoutId;
   const stripeObj = (extra as { stripe?: unknown }).stripe;
   if (!stripeObj || typeof stripeObj !== "object") return undefined;
   const cs = (stripeObj as { checkoutSessionId?: unknown }).checkoutSessionId;
@@ -451,7 +454,8 @@ export async function checkout({
   }
   const finalAmountCents = baseAmountCents + tronSurchargeCents;
 
-  // For Stripe gateway, ensure we have a Stripe Customer for this user
+  // For Stripe gateway, ensure we have a Stripe Customer for this user.
+  // TODO(provider abstraction): move provider-specific customer preparation behind PaymentProvider.
   let stripeCustomerId: string | undefined;
   if (gateway === "STRIPE") {
     stripeCustomerId = await getOrCreateStripeCustomer(userId);
@@ -664,6 +668,20 @@ export async function checkout({
 
   if (finalMetadata) {
     nextExtra.metadata = finalMetadata;
+  }
+
+  const gatewayCheckoutId = session.gatewayCheckoutId ?? session.checkoutSessionId;
+  if (gatewayCheckoutId) {
+    nextExtra.gatewayCheckoutId = gatewayCheckoutId;
+  }
+
+  if (session.providerExtra) {
+    nextExtra[gateway.toLowerCase()] = {
+      ...((typeof nextExtra[gateway.toLowerCase()] === "object" && nextExtra[gateway.toLowerCase()] !== null)
+        ? (nextExtra[gateway.toLowerCase()] as Record<string, unknown>)
+        : {}),
+      ...session.providerExtra,
+    };
   }
 
   if (session.checkoutSessionId) {

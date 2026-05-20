@@ -115,9 +115,9 @@ async function handleStripeRefundOrDispute(params: {
 }
 
 export const stripeProvider: PaymentProvider = {
-  async confirmPayment(params: { checkoutSessionId?: string; gatewayTransactionId?: string }) {
+  async confirmPayment(params: { gatewayCheckoutId?: string; checkoutSessionId?: string; gatewayTransactionId?: string }) {
     const stripe = getStripe();
-    const checkoutSessionId = params.checkoutSessionId;
+    const checkoutSessionId = params.gatewayCheckoutId ?? params.checkoutSessionId;
     const gatewayTransactionId = params.gatewayTransactionId;
 
     // Prefer Checkout Session when available (subscription mode)
@@ -206,6 +206,7 @@ export const stripeProvider: PaymentProvider = {
       // 交易主 ID：PaymentIntent
       gatewayTransactionId: session.payment_intent as string | undefined,
       // 补偿用的 Checkout Session ID
+      gatewayCheckoutId: session.id,
       checkoutSessionId: session.id,
     };
   },
@@ -323,6 +324,7 @@ export const stripeProvider: PaymentProvider = {
       paymentUrl: session.url!,
       gatewaySubscriptionId: session.subscription as string,
       // 订阅场景同样记录 Checkout Session ID，方便后续排查或补偿
+      gatewayCheckoutId: session.id,
       checkoutSessionId: session.id,
     };
   },

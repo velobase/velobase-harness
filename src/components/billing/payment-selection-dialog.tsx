@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Drawer, DrawerContent, DrawerDescription, DrawerHeader, DrawerTitle } from '@/components/ui/drawer'
 import { useIsMobile } from '@/hooks/use-mobile'
 import { cn } from '@/lib/utils'
-import { CreditCard, Wallet, ChevronRight, ShieldCheck, Zap, Loader2 } from 'lucide-react'
+import { CreditCard, Wallet, ChevronRight, ShieldCheck, Zap, Loader2, Receipt } from 'lucide-react'
 import { usePaymentDialogStore, type PaymentMethod } from '@/stores/payment-dialog-store'
 
 export function PaymentSelectionDialog() {
@@ -44,12 +44,12 @@ export function PaymentSelectionDialog() {
         return
       }
 
-      // Stripe checkout
-      if (method === 'stripe') {
+      // Hosted card checkout
+      if (method === 'stripe' || method === 'lemonsqueezy') {
         try {
           const result = await checkoutMutation.mutateAsync({
             productId,
-            gateway: 'STRIPE',
+            gateway: method === 'stripe' ? 'STRIPE' : 'LEMONSQUEEZY',
             successUrl: `${window.location.origin}/payment/success`,
             cancelUrl: window.location.href,
           })
@@ -82,7 +82,17 @@ export function PaymentSelectionDialog() {
         selectedLoading={loadingMethod === 'stripe'}
         recommended
       />
-      
+
+      <PaymentOption
+        icon={Receipt}
+        title="LemonSqueezy"
+        description="Merchant of Record checkout"
+        badges={['Taxes handled', 'Secure']}
+        onClick={() => handlePayment('lemonsqueezy')}
+        loading={loadingMethod !== null}
+        selectedLoading={loadingMethod === 'lemonsqueezy'}
+      />
+
       <PaymentOption
         icon={Wallet}
         title="Cryptocurrency"

@@ -389,9 +389,9 @@ export async function getNowPaymentsPaymentStatus(npPaymentId: string): Promise<
 }
 
 export const nowpaymentsProvider: PaymentProvider = {
-  async confirmPayment(params: { checkoutSessionId?: string; gatewayTransactionId?: string }) {
-    // checkoutSessionId or gatewayTransactionId is the NowPayments payment_id
-    const npPaymentId = params.checkoutSessionId ?? params.gatewayTransactionId;
+  async confirmPayment(params: { gatewayCheckoutId?: string; checkoutSessionId?: string; gatewayTransactionId?: string }) {
+    // gatewayCheckoutId/checkoutSessionId or gatewayTransactionId is the NowPayments payment_id
+    const npPaymentId = params.gatewayCheckoutId ?? params.checkoutSessionId ?? params.gatewayTransactionId;
     if (!npPaymentId) {
       return { isPaid: false };
     }

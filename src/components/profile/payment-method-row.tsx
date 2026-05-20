@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { CreditCard, Wallet, ChevronRight, Loader2 } from "lucide-react";
+import { CreditCard, Receipt, Wallet, ChevronRight, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { api } from "@/trpc/react";
 import {
@@ -13,10 +13,11 @@ import {
 } from "@/components/ui/drawer";
 import { cn } from "@/lib/utils";
 
-type PaymentPreference = "STRIPE" | "NOWPAYMENTS";
+type PaymentPreference = "STRIPE" | "LEMONSQUEEZY" | "NOWPAYMENTS";
 
 const OPTIONS: { value: PaymentPreference; label: string; icon: React.ElementType }[] = [
   { value: "STRIPE", label: "Credit Card", icon: CreditCard },
+  { value: "LEMONSQUEEZY", label: "LemonSqueezy", icon: Receipt },
   { value: "NOWPAYMENTS", label: "Cryptocurrency", icon: Wallet },
 ];
 
@@ -41,7 +42,8 @@ export function PaymentMethodRow() {
   });
 
   const rawValue = data?.preference ?? "AUTO";
-  const currentValue: PaymentPreference = rawValue === "NOWPAYMENTS" ? "NOWPAYMENTS" : "STRIPE";
+  const currentValue: PaymentPreference =
+    rawValue === "NOWPAYMENTS" || rawValue === "LEMONSQUEEZY" ? rawValue : "STRIPE";
   const currentOption = OPTIONS.find((o) => o.value === currentValue) ?? OPTIONS[0]!;
   const CurrentIcon = currentOption.icon;
 

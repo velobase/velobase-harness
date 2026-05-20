@@ -1,6 +1,6 @@
 // Avoid importing Prisma types directly to keep provider generic
 
-export type PaymentGateway = "STRIPE" | "NOWPAYMENTS";
+export type PaymentGateway = "STRIPE" | "NOWPAYMENTS" | "LEMONSQUEEZY";
 
 export type PaymentStatus =
   | "PENDING"
@@ -14,10 +14,19 @@ export interface CreatePaymentResult {
   paymentUrl: string;
   gatewayTransactionId?: string;
   /**
+   * Provider-specific hosted checkout/session identifier.
+   * For Stripe this is the Checkout Session ID (cs_...).
+   * For LemonSqueezy this is the Checkout ID.
+   * For NowPayments this may be the provider payment ID once known.
+   */
+  gatewayCheckoutId?: string;
+  /**
    * Optional provider-specific checkout/session identifier.
    * For Stripe this is the Checkout Session ID (cs_...).
+   * @deprecated Use gatewayCheckoutId.
    */
   checkoutSessionId?: string;
+  providerExtra?: Record<string, unknown>;
 }
 
 export interface CreateSubscriptionResult {
@@ -29,16 +38,25 @@ export interface CreateSubscriptionResult {
    */
   gatewayTransactionId?: string;
   /**
+   * Provider-specific hosted checkout/session identifier.
+   * @deprecated-compatible replacement for checkoutSessionId.
+   */
+  gatewayCheckoutId?: string;
+  /**
    * Optional provider-specific checkout/session identifier.
    * For Stripe this is the Checkout Session ID (cs_...).
+   * @deprecated Use gatewayCheckoutId.
    */
   checkoutSessionId?: string;
+  providerExtra?: Record<string, unknown>;
 }
 
 export type ProductInterval = "month" | "year";
 export interface ProductSnapshot {
   name?: string;
   interval?: ProductInterval;
+  metadata?: unknown;
+  [key: string]: unknown;
 }
 
 export interface ProviderOrder {
@@ -65,6 +83,7 @@ export interface ProviderPayment {
 
 export interface PaymentWebhookResult {
   getStatus(): PaymentStatus;
+  getGatewayCheckoutId(): string | undefined;
   getGatewayTransactionId(): string | undefined;
   getGatewaySubscriptionId(): string | undefined;
   getSubscriptionPeriod(): number; // 0: N/A, 1: initial, >1: renewal
@@ -76,6 +95,7 @@ export interface PaymentWebhookResult {
 
 export interface SubscriptionWebhookResult {
   getStatus(): PaymentStatus;
+  getGatewayCheckoutId(): string | undefined;
   getGatewaySubscriptionId(): string | undefined;
   getRawData(): unknown;
   getData(): unknown;
@@ -100,6 +120,7 @@ export interface PaymentProvider {
    * Should NOT mutate local DB; only queries provider and returns the paid status + any discovered IDs.
    */
   confirmPayment?(params: {
+    gatewayCheckoutId?: string;
     checkoutSessionId?: string;
     gatewayTransactionId?: string;
   }): Promise<{
@@ -117,6 +138,7 @@ export interface PaymentProvider {
 
 export class BaseWebhookResult implements PaymentWebhookResult, SubscriptionWebhookResult {
   private status: PaymentStatus;
+  private gatewayCheckoutId?: string;
   private gatewayTransactionId?: string;
   private gatewaySubscriptionId?: string;
   private subscriptionPeriod: number;
@@ -128,6 +150,7 @@ export class BaseWebhookResult implements PaymentWebhookResult, SubscriptionWebh
 
   constructor(args: {
     status: PaymentStatus;
+    gatewayCheckoutId?: string;
     gatewayTransactionId?: string;
     gatewaySubscriptionId?: string;
     subscriptionPeriod?: number;
@@ -138,6 +161,7 @@ export class BaseWebhookResult implements PaymentWebhookResult, SubscriptionWebh
     normalizedData?: NormalizedSubscriptionWebhookData;
   }) {
     this.status = args.status;
+    this.gatewayCheckoutId = args.gatewayCheckoutId;
     this.gatewayTransactionId = args.gatewayTransactionId;
     this.gatewaySubscriptionId = args.gatewaySubscriptionId;
     this.subscriptionPeriod = args.subscriptionPeriod ?? 0;
@@ -149,6 +173,7 @@ export class BaseWebhookResult implements PaymentWebhookResult, SubscriptionWebh
   }
 
   getStatus() { return this.status; }
+  getGatewayCheckoutId() { return this.gatewayCheckoutId; }
   getGatewayTransactionId() { return this.gatewayTransactionId; }
   getGatewaySubscriptionId() { return this.gatewaySubscriptionId; }
   getSubscriptionPeriod() { return this.subscriptionPeriod; }
@@ -160,11 +185,13 @@ export class BaseWebhookResult implements PaymentWebhookResult, SubscriptionWebh
     if (this.isSubscription) {
       return {
         status: this.status,
+        ...(this.gatewayCheckoutId ? { gateway_checkout_id: this.gatewayCheckoutId } : {}),
         gateway_subscription_id: this.gatewaySubscriptionId,
       };
     }
     return {
       status: this.status,
+      ...(this.gatewayCheckoutId ? { gateway_checkout_id: this.gatewayCheckoutId } : {}),
       gateway_transaction_id: this.gatewayTransactionId,
       ...(this.gatewaySubscriptionId ? { gateway_subscription_id: this.gatewaySubscriptionId } : {}),
       ...(this.subscriptionPeriod ? { subscription_period: this.subscriptionPeriod } : {}),

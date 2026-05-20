@@ -224,7 +224,7 @@ export const accountRouter = createTRPCRouter({
   setPaymentGatewayPreference: protectedProcedure
     .input(
       z.object({
-        preference: z.enum(['AUTO', 'STRIPE', 'TELEGRAM_STARS', 'NOWPAYMENTS']),
+        preference: z.enum(['AUTO', 'STRIPE', 'LEMONSQUEEZY', 'TELEGRAM_STARS', 'NOWPAYMENTS']),
       })
     )
     .mutation(async ({ ctx, input }) => {

@@ -1,12 +1,12 @@
 "use client";
 
 import * as React from "react";
-import { CreditCard, Wallet } from "lucide-react";
+import { CreditCard, Receipt, Wallet } from "lucide-react";
 import { toast } from "sonner";
 import { api } from "@/trpc/react";
 import { cn } from "@/lib/utils";
 
-type PaymentPreference = "STRIPE" | "NOWPAYMENTS";
+type PaymentPreference = "STRIPE" | "LEMONSQUEEZY" | "NOWPAYMENTS";
 
 const OPTIONS: { value: PaymentPreference; label: string; description: string; icon: React.ElementType }[] = [
   {
@@ -14,6 +14,12 @@ const OPTIONS: { value: PaymentPreference; label: string; description: string; i
     label: "Credit Card",
     description: "Pay securely with Stripe",
     icon: CreditCard,
+  },
+  {
+    value: "LEMONSQUEEZY",
+    label: "LemonSqueezy",
+    description: "Merchant of Record checkout",
+    icon: Receipt,
   },
   {
     value: "NOWPAYMENTS",
@@ -35,7 +41,8 @@ export function PaymentPreferenceSelect() {
   });
 
   const rawValue = data?.preference ?? "AUTO";
-  const currentValue: PaymentPreference = rawValue === "NOWPAYMENTS" ? "NOWPAYMENTS" : "STRIPE";
+  const currentValue: PaymentPreference =
+    rawValue === "NOWPAYMENTS" || rawValue === "LEMONSQUEEZY" ? rawValue : "STRIPE";
 
   const handleSelect = (value: PaymentPreference) => {
     if (value === currentValue || mutation.isPending) return;
