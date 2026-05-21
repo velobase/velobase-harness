@@ -67,25 +67,11 @@ Product configuration is managed through `prisma/seed-products.ts` (source of tr
 - Keep provider-specific customer, checkout, invoice, and webhook parsing in adapter modules.
 - Keep new adapters selectable through `resolvePaymentGateway()` and the adapter registry.
 
-## Configuration
+## Third-Party Component Configuration
 
-Common environment variables:
+Payment providers are optional third-party components. You do not need to integrate all platforms at the same time. Configure only the provider you want to enable; `src/server/order/services/init-providers.ts` registers each adapter only when that provider's required environment variables are present.
 
-- `STRIPE_SECRET_KEY`
-- `STRIPE_WEBHOOK_SECRET`
-- `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`
-- `NOWPAYMENTS_API_KEY`
-- `NOWPAYMENTS_IPN_SECRET`
-- `NOWPAYMENTS_PAY_CURRENCY`
-- `LEMONSQUEEZY_API_KEY`
-- `LEMONSQUEEZY_STORE_ID`
-- `LEMONSQUEEZY_WEBHOOK_SECRET`
-- `LEMONSQUEEZY_TEST_MODE`
-- `FORCE_PAYMENT_GATEWAY`
-
-Update `src/env.js`, `.env.example`, and adapter registration when adding payment configuration.
-
-`FORCE_PAYMENT_GATEWAY` is for local testing and can force `STRIPE`, `NOWPAYMENTS`, or `LEMONSQUEEZY`.
+When adding payment configuration, update `src/env.js`, `.env.example`, adapter registration, and the relevant provider documentation.
 
 ## Provider Selection
 
@@ -99,6 +85,32 @@ Priority order:
 4. Default `STRIPE`.
 
 Frontend entry points should pass a gateway only when the user explicitly chooses a method. Otherwise, let the backend resolver choose.
+
+`FORCE_PAYMENT_GATEWAY` is for local testing and can force `STRIPE`, `NOWPAYMENTS`, or `LEMONSQUEEZY`.
+
+## Stripe
+
+Stripe is an optional card payment and subscription provider. Configure these variables when enabling Stripe:
+
+```env
+STRIPE_SECRET_KEY=sk_test_...
+STRIPE_WEBHOOK_SECRET=whsec_...
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_...
+```
+
+The webhook should point at `/api/webhooks/stripe`. Stripe supports `confirmPayment()` polling compensation, so local success pages can actively confirm the Stripe Checkout Session when webhooks are delayed.
+
+## NowPayments
+
+NowPayments is an optional crypto payment provider. Configure these variables when enabling NowPayments:
+
+```env
+NOWPAYMENTS_API_KEY=
+NOWPAYMENTS_IPN_SECRET=
+NOWPAYMENTS_PAY_CURRENCY=usdttrc20
+```
+
+The IPN/webhook should point at `/api/webhooks/nowpayments`. `NOWPAYMENTS_PAY_CURRENCY` is the default payout currency; the code default is used when it is not set.
 
 ## LemonSqueezy
 
@@ -148,7 +160,24 @@ Example `Product.metadata`:
 1. Create a LemonSqueezy store.
 2. Create products and variants in LemonSqueezy. The variant price does not need to match the local database price (it will be overridden by `custom_price`).
 3. Add the variant ID to local product metadata using one of the supported keys above.
-4. Configure `LEMONSQUEEZY_API_KEY`, `LEMONSQUEEZY_STORE_ID`, and `LEMONSQUEEZY_WEBHOOK_SECRET`.
+4. Configure LemonSqueezy environment variables:
+
+```env
+LEMONSQUEEZY_API_KEY=
+LEMONSQUEEZY_STORE_ID=
+LEMONSQUEEZY_WEBHOOK_SECRET=
+LEMONSQUEEZY_TEST_MODE=true
+```
+
+Optional local Dashboard smoke-test fallback:
+
+```env
+LEMONSQUEEZY_TEST_VARIANT_ID=
+LEMONSQUEEZY_TEST_SUBSCRIPTION_VARIANT_ID=
+```
+
+Production should configure real variant IDs through `Product.metadata` and should not rely on the test fallback.
+
 5. Configure LemonSqueezy webhooks to point at `/api/webhooks/lemonsqueezy`.
 
 Recommended webhook events:

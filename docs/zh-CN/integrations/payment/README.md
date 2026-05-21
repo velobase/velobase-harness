@@ -67,25 +67,11 @@ Checkout 从数据库读取价格后传给 adapter。Stripe 使用动态 `price_
 - Provider-specific customer、checkout、invoice 和 webhook parsing 应留在 adapter modules 中。
 - 新 adapter 必须通过 `resolvePaymentGateway()` 和 adapter registry 选择。
 
-## 配置
+## 三方组件配置方式
 
-常见环境变量：
+支付 provider 是可选三方组件，不需要同时接入所有平台。只配置你要启用的 provider；`src/server/order/services/init-providers.ts` 会根据该 provider 所需环境变量是否齐全来注册对应 adapter。
 
-- `STRIPE_SECRET_KEY`
-- `STRIPE_WEBHOOK_SECRET`
-- `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`
-- `NOWPAYMENTS_API_KEY`
-- `NOWPAYMENTS_IPN_SECRET`
-- `NOWPAYMENTS_PAY_CURRENCY`
-- `LEMONSQUEEZY_API_KEY`
-- `LEMONSQUEEZY_STORE_ID`
-- `LEMONSQUEEZY_WEBHOOK_SECRET`
-- `LEMONSQUEEZY_TEST_MODE`
-- `FORCE_PAYMENT_GATEWAY`
-
-新增支付配置时，同步更新 `src/env.js`、`.env.example` 和 adapter registration。
-
-`FORCE_PAYMENT_GATEWAY` 仅用于本地测试，可强制为 `STRIPE`、`NOWPAYMENTS` 或 `LEMONSQUEEZY`。
+新增支付配置时，同步更新 `src/env.js`、`.env.example`、adapter registration 和对应 provider 文档。
 
 ## Provider 选择
 
@@ -99,6 +85,32 @@ Gateway resolution 位于 `src/server/order/services/resolve-gateway.ts`。
 4. 默认 `STRIPE`。
 
 前端入口只有在用户显式选择支付方式时才应传 gateway；否则应让后端 resolver 决定。
+
+`FORCE_PAYMENT_GATEWAY` 仅用于本地测试，可强制为 `STRIPE`、`NOWPAYMENTS` 或 `LEMONSQUEEZY`。
+
+## Stripe
+
+Stripe 是可选的银行卡支付和订阅 provider。启用 Stripe 时配置：
+
+```env
+STRIPE_SECRET_KEY=sk_test_...
+STRIPE_WEBHOOK_SECRET=whsec_...
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_...
+```
+
+Webhook 指向 `/api/webhooks/stripe`。Stripe 支持 `confirmPayment()` 轮询补偿，因此本地测试时即使 webhook 延迟，成功页也可以通过 Stripe Checkout Session 主动确认支付状态。
+
+## NowPayments
+
+NowPayments 是可选的加密货币支付 provider。启用 NowPayments 时配置：
+
+```env
+NOWPAYMENTS_API_KEY=
+NOWPAYMENTS_IPN_SECRET=
+NOWPAYMENTS_PAY_CURRENCY=usdttrc20
+```
+
+IPN/webhook 指向 `/api/webhooks/nowpayments`。`NOWPAYMENTS_PAY_CURRENCY` 是默认收款币种，不配置时使用代码默认值。
 
 ## LemonSqueezy
 
@@ -148,7 +160,24 @@ LemonSqueezy variant 负责告诉 LemonSqueezy 使用哪个 hosted checkout/prod
 1. 创建 LemonSqueezy store。
 2. 在 LemonSqueezy 中创建 product 和 variant。Variant 价格无需与本地数据库一致（会被 `custom_price` 覆盖）。
 3. 使用上述支持的 key 之一，将 variant ID 写入本地 product metadata。
-4. 配置 `LEMONSQUEEZY_API_KEY`、`LEMONSQUEEZY_STORE_ID` 和 `LEMONSQUEEZY_WEBHOOK_SECRET`。
+4. 配置 LemonSqueezy 环境变量：
+
+```env
+LEMONSQUEEZY_API_KEY=
+LEMONSQUEEZY_STORE_ID=
+LEMONSQUEEZY_WEBHOOK_SECRET=
+LEMONSQUEEZY_TEST_MODE=true
+```
+
+本地 Dashboard smoke test 可选配置：
+
+```env
+LEMONSQUEEZY_TEST_VARIANT_ID=
+LEMONSQUEEZY_TEST_SUBSCRIPTION_VARIANT_ID=
+```
+
+生产环境应通过 `Product.metadata` 配置真实 variant ID，不应依赖测试 fallback。
+
 5. 在 LemonSqueezy 配置 webhook，指向 `/api/webhooks/lemonsqueezy`。
 
 推荐订阅的 webhook events：
