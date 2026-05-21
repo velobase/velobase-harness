@@ -157,7 +157,12 @@ export function PaymentTestDialog({ open, onOpenChange }: PaymentTestDialogProps
 
   const findTestProduct = (type: "CREDITS_PACKAGE" | "SUBSCRIPTION") => {
     const items = productsQuery.data?.products ?? [];
-    return items.find((p: { type: string }) => p.type === type) ?? items[0] ?? null;
+    return (
+      items.find((p: { type: string; price?: number | null }) => p.type === type && (p.price ?? 0) > 0) ??
+      items.find((p: { type: string }) => p.type === type) ??
+      items[0] ??
+      null
+    );
   };
 
   const runAction = async (actionName: string, fn: () => Promise<TestResult>) => {
@@ -238,7 +243,9 @@ export function PaymentTestDialog({ open, onOpenChange }: PaymentTestDialogProps
     runAction(t("confirmPayment"), async () => {
       const fetched = await listPaymentsQuery.refetch();
       const payments = fetched.data?.payments ?? [];
-      const pendingPayment = payments.find((p: { status: string }) => p.status === "PENDING");
+      const pendingPayment = payments.find((p: { status: string; paymentGateway?: string | null }) =>
+        p.status === "PENDING" && p.paymentGateway === selectedGateway
+      );
       if (!pendingPayment) return { action: t("confirmPayment"), status: "error" as const, message: t("resultNoPending"), timestamp: new Date() };
 
       const result = await confirmPaymentMutation.mutateAsync({ paymentId: pendingPayment.id });
