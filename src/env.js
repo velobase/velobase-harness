@@ -51,6 +51,8 @@ export const env = createEnv({
     LEMONSQUEEZY_STORE_ID: z.string().optional(),
     LEMONSQUEEZY_WEBHOOK_SECRET: z.string().optional(),
     LEMONSQUEEZY_TEST_MODE: z.string().optional().transform((val) => val == null ? undefined : val === "true"),
+    LEMONSQUEEZY_TEST_VARIANT_ID: z.string().optional(),
+    LEMONSQUEEZY_TEST_SUBSCRIPTION_VARIANT_ID: z.string().optional(),
     // Google Ads
     GOOGLE_ADS_CLIENT_ID: z.string().optional(),
     GOOGLE_ADS_CLIENT_SECRET: z.string().optional(),
@@ -147,6 +149,8 @@ export const env = createEnv({
     LEMONSQUEEZY_STORE_ID: process.env.LEMONSQUEEZY_STORE_ID,
     LEMONSQUEEZY_WEBHOOK_SECRET: process.env.LEMONSQUEEZY_WEBHOOK_SECRET,
     LEMONSQUEEZY_TEST_MODE: process.env.LEMONSQUEEZY_TEST_MODE,
+    LEMONSQUEEZY_TEST_VARIANT_ID: process.env.LEMONSQUEEZY_TEST_VARIANT_ID,
+    LEMONSQUEEZY_TEST_SUBSCRIPTION_VARIANT_ID: process.env.LEMONSQUEEZY_TEST_SUBSCRIPTION_VARIANT_ID,
     GOOGLE_ADS_CLIENT_ID: process.env.GOOGLE_ADS_CLIENT_ID,
     GOOGLE_ADS_CLIENT_SECRET: process.env.GOOGLE_ADS_CLIENT_SECRET,
     GOOGLE_ADS_DEVELOPER_TOKEN: process.env.GOOGLE_ADS_DEVELOPER_TOKEN,

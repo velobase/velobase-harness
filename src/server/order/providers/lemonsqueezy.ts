@@ -27,16 +27,24 @@ function requireStoreId(): string {
 
 function getVariantId(params: CheckoutRequest): string {
   const meta = params.productMetadata;
-  if (!meta || typeof meta !== "object") throw new Error("LemonSqueezy variant id is required in product metadata");
-  const nested = meta.lemonsqueezy && typeof meta.lemonsqueezy === "object"
+  const nested = meta?.lemonsqueezy && typeof meta.lemonsqueezy === "object"
     ? (meta.lemonsqueezy as JsonRecord) : {};
-  const candidate =
-    nested.variantId ?? nested.variant_id ??
-    (meta as JsonRecord).lemonsqueezyVariantId ??
-    (meta as JsonRecord).lemonsqueezy_variant_id ??
-    (meta as JsonRecord).lemonSqueezyVariantId;
+  const candidate = meta && typeof meta === "object"
+    ? nested.variantId ?? nested.variant_id ??
+      (meta as JsonRecord).lemonsqueezyVariantId ??
+      (meta as JsonRecord).lemonsqueezy_variant_id ??
+      (meta as JsonRecord).lemonSqueezyVariantId
+    : undefined;
   if (typeof candidate === "number" && Number.isFinite(candidate)) return String(candidate);
   if (typeof candidate === "string" && candidate.trim().length > 0) return candidate.trim();
+
+  if (env.NODE_ENV !== "production") {
+    const testVariantId = params.mode === "subscription"
+      ? env.LEMONSQUEEZY_TEST_SUBSCRIPTION_VARIANT_ID
+      : env.LEMONSQUEEZY_TEST_VARIANT_ID;
+    if (testVariantId && testVariantId.trim().length > 0) return testVariantId.trim();
+  }
+
   throw new Error("LemonSqueezy variant id is required in product metadata");
 }
 

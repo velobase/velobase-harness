@@ -12,34 +12,48 @@ Supported providers:
 
 Payment providers are integrated through the order provider layer:
 
-- `src/server/order/providers/types.ts` defines the `PaymentProvider` contract.
-- `src/server/order/providers/registry.ts` registers and resolves providers by gateway name.
-- `src/server/order/services/init-providers.ts` registers configured providers.
-- `src/server/order/services/checkout.ts` owns order/payment creation and calls provider checkout methods.
-- `src/server/order/services/handle-webhooks.ts` owns provider-neutral webhook orchestration, payment status updates, subscription renewal handling, and fulfillment dispatch.
+- `src/server/order/providers/types.ts` defines the `PaymentAdapter` contract, `CheckoutRequest/Response`, and `WebhookEvent` types.
+- `src/server/order/providers/registry.ts` registers and resolves adapters by gateway name.
+- `src/server/order/services/init-providers.ts` registers configured adapters based on environment variables.
+- `src/server/order/services/checkout.ts` owns order/payment creation and calls adapter checkout methods.
+- `src/server/order/services/webhook-pipeline.ts` parses webhooks via adapters, normalizes into `WebhookEvent`, and dispatches to single-responsibility event handlers.
+- `src/server/order/services/webhook-handlers/` contains individual handlers: `payment-succeeded`, `payment-failed`, `payment-refunded`, `subscription-renewed`, `subscription-updated`, `subscription-canceled`, `cashflow`.
+- `src/server/order/services/webhook-route-handler.ts` provides a generic route handler for all webhook endpoints.
 - `src/server/fulfillment/**` owns entitlement and credits delivery after successful payment.
 
-Providers should hide platform details behind `PaymentProvider`. Product, order, membership, and fulfillment services should not import provider SDKs directly.
+Adapters should hide platform details behind `PaymentAdapter`. Product, order, membership, and fulfillment services should not import provider SDKs directly.
 
-## Provider Contract
+## Adapter Contract
 
-Each provider implements:
+Each adapter implements `PaymentAdapter`:
 
-- `createPayment()` for one-time purchases.
-- `createSubscription()` for subscription purchases.
-- `handlePaymentWebhook()` for one-time payment or initial checkout events.
-- `handleSubscriptionWebhook()` for subscription lifecycle and renewal events.
-- Optional `confirmPayment()` for webhook-delay compensation.
-- Optional `expireCheckoutSession()` when the provider supports hosted checkout expiration.
+- `createCheckout(params)` for both one-time and subscription purchases (determined by `params.mode`).
+- `parseWebhook(req)` to verify signatures and normalize raw provider events into `WebhookEvent[]`.
+- Optional `confirmPayment(checkoutId)` for webhook-delay compensation polling.
+- Optional `expireCheckout(checkoutId)` when the provider supports hosted checkout expiration.
+- Optional `ensureCustomer(userId, email?)` for providers that require a customer object (e.g. Stripe).
 
-Provider results should return normalized IDs:
+`parseWebhook` returns an array of `WebhookEvent` with a standardized `type` field:
 
-- `gatewayTransactionId`: provider payment, order, invoice, payment intent, or equivalent cashflow identifier.
-- `gatewaySubscriptionId`: provider subscription identifier.
-- `gatewayCheckoutId`: hosted checkout/session identifier.
-- `providerExtra`: provider-specific metadata to persist under `Payment.extra`.
+- `payment.succeeded`, `payment.failed`, `payment.refunded`
+- `subscription.activated`, `subscription.renewed`, `subscription.payment_failed`
+- `subscription.updated`, `subscription.canceled`
+- `cashflow`, `ignored`
 
-Do not make generic order or fulfillment code inspect raw provider payloads when a normalized field can be added to the provider result instead.
+Each adapter maps provider-specific events into these normalized types. The webhook pipeline and event handlers are completely provider-neutral.
+
+## Pricing
+
+All prices and subscription intervals are stored in the database, not hard-coded in payment code.
+
+- `Product.price` (cents), `Product.originalPrice`, `Product.interval` (week/month/year).
+- `ProductPrice` for multi-currency pricing (USD/EUR/GBP/CHF/AUD), resolved by user country.
+- `SubscriptionPlan.interval`, `intervalCount`, `creditsPerPeriod` for subscription billing cycles and credit grants.
+- `ProductCreditsPackage.creditsAmount` for one-time credit packages.
+
+Checkout reads pricing from the database and passes it to the adapter. Stripe uses dynamic `price_data` (no pre-created Stripe products needed). Changing a price in the database takes effect on the next checkout.
+
+Product configuration is managed through `prisma/seed-products.ts` (source of truth for initial setup) and the Admin API (`updateProduct` for price, status, trial settings).
 
 ## Rules
 
@@ -50,8 +64,8 @@ Do not make generic order or fulfillment code inspect raw provider payloads when
 - Frontend confirmation is only compensating polling.
 - Entitlement delivery goes through fulfillment and billing services.
 - Do not grant credits directly in webhook handlers.
-- Keep provider-specific customer, checkout, invoice, and webhook parsing in provider modules.
-- Keep new providers selectable through `resolvePaymentGateway()` and the provider registry.
+- Keep provider-specific customer, checkout, invoice, and webhook parsing in adapter modules.
+- Keep new adapters selectable through `resolvePaymentGateway()` and the adapter registry.
 
 ## Configuration
 
@@ -69,7 +83,7 @@ Common environment variables:
 - `LEMONSQUEEZY_TEST_MODE`
 - `FORCE_PAYMENT_GATEWAY`
 
-Update `src/env.js`, `.env.example`, and provider registration when adding payment configuration.
+Update `src/env.js`, `.env.example`, and adapter registration when adding payment configuration.
 
 `FORCE_PAYMENT_GATEWAY` is for local testing and can force `STRIPE`, `NOWPAYMENTS`, or `LEMONSQUEEZY`.
 
@@ -81,7 +95,7 @@ Priority order:
 
 1. Explicit checkout input `gateway`.
 2. `FORCE_PAYMENT_GATEWAY`.
-3. User payment preference when the provider is registered.
+3. User payment preference when the adapter is registered.
 4. Default `STRIPE`.
 
 Frontend entry points should pass a gateway only when the user explicitly chooses a method. Otherwise, let the backend resolver choose.
@@ -90,15 +104,50 @@ Frontend entry points should pass a gateway only when the user explicitly choose
 
 LemonSqueezy is used as a Merchant of Record provider. It is best suited for simpler global SaaS billing where tax collection and remittance should be handled by the payment provider.
 
-Required setup:
+### Variant ID Configuration
+
+Unlike Stripe (which creates prices dynamically via `price_data`), LemonSqueezy requires products and variants to be pre-created in the LemonSqueezy dashboard. The local database product must reference the corresponding LemonSqueezy variant ID through `Product.metadata`.
+
+This means **two data sources must stay in sync**:
+
+1. **Local database**: `Product.price`, `Product.name`, `Product.interval`, etc.
+2. **LemonSqueezy dashboard**: product name, variant, and pricing configuration.
+
+The framework uses `custom_price` to override the LemonSqueezy variant price with the local database price, so **the actual charged amount always comes from your database**. The variant ID is only used as a checkout entry point.
+
+### Charged Amount Source
+
+The LemonSqueezy variant tells LemonSqueezy which hosted checkout/product to use, but it is not the source of truth for pricing inside the framework. When creating a checkout, the adapter sends the local order amount to LemonSqueezy as `custom_price`:
+
+- One-time credit package amounts come from `Product.price` / `ProductPrice`.
+- Subscription amounts come from the local subscription product price.
+- The LemonSqueezy dashboard variant price is overridden by `custom_price`.
+
+Therefore, developers should update product prices in the local database or Admin product configuration first. The LemonSqueezy variant price only needs to remain a valid checkout entry point.
+
+Supported metadata keys for the variant ID (any one will work):
+
+- `lemonsqueezy.variantId` (nested object)
+- `lemonsqueezy.variant_id` (nested object)
+- `lemonsqueezyVariantId` (flat key)
+- `lemonsqueezy_variant_id` (flat key)
+- `lemonSqueezyVariantId` (flat key)
+
+Example `Product.metadata`:
+
+```json
+{
+  "lemonsqueezy": {
+    "variantId": "123456"
+  }
+}
+```
+
+### Setup Steps
 
 1. Create a LemonSqueezy store.
-2. Create products and variants in LemonSqueezy.
-3. Add the variant ID to local product metadata. Supported metadata keys include:
-   - `lemonsqueezyVariantId`
-   - `lemonsqueezy_variant_id`
-   - `lemonsqueezy.variantId`
-   - `lemonsqueezy.variant_id`
+2. Create products and variants in LemonSqueezy. The variant price does not need to match the local database price (it will be overridden by `custom_price`).
+3. Add the variant ID to local product metadata using one of the supported keys above.
 4. Configure `LEMONSQUEEZY_API_KEY`, `LEMONSQUEEZY_STORE_ID`, and `LEMONSQUEEZY_WEBHOOK_SECRET`.
 5. Configure LemonSqueezy webhooks to point at `/api/webhooks/lemonsqueezy`.
 
@@ -114,9 +163,35 @@ Recommended webhook events:
 - `subscription_payment_failed`
 - `subscription_payment_recovered`
 
-Checkout creation uses LemonSqueezy `POST /v1/checkouts`. The provider passes local `orderId` and `paymentId` through `checkout_data.custom`; LemonSqueezy returns this data in webhook `meta.custom_data`, which lets the webhook map back to local payment rows.
+Checkout creation uses LemonSqueezy `POST /v1/checkouts`. The adapter passes local `orderId` and `paymentId` through `checkout_data.custom`; LemonSqueezy returns this data in webhook `meta.custom_data`, which lets the webhook pipeline map back to local payment rows.
 
 Webhook verification uses `X-Signature` and HMAC-SHA256 with `LEMONSQUEEZY_WEBHOOK_SECRET`.
+
+### Local Webhook Testing
+
+To test successful payment, subscription activation, renewal, or cancellation locally, LemonSqueezy must be able to reach the local Next.js webhook. ngrok is the simplest option:
+
+```bash
+ngrok http 3000
+```
+
+After ngrok gives you an HTTPS URL, for example `https://example.ngrok-free.app`, update local `.env` and restart the dev server:
+
+```env
+APP_URL=https://example.ngrok-free.app
+NEXTAUTH_URL=https://example.ngrok-free.app
+AUTH_URL=https://example.ngrok-free.app
+LEMONSQUEEZY_WEBHOOK_SECRET=your-local-webhook-secret
+```
+
+Configure the webhook in the LemonSqueezy dashboard:
+
+```text
+URL: https://example.ngrok-free.app/api/webhooks/lemonsqueezy
+Signing secret: your-local-webhook-secret
+```
+
+The signing secret must exactly match `LEMONSQUEEZY_WEBHOOK_SECRET`; otherwise `X-Signature` verification fails and the event will be ignored or fulfillment will not complete. If a payment has completed but local state does not change, resend the webhook from LemonSqueezy and check `PaymentWebhookLog`, the ngrok inspector, and the dev server logs.
 
 ## Stripe Versus LemonSqueezy
 
@@ -137,6 +212,14 @@ Do not assume Stripe subscription migration to LemonSqueezy is automatic. Existi
 
 ## Testing
 
+The dashboard page includes a **Payment Test** button (under Module Status > Payment) that opens an interactive test dialog. It supports:
+
+- Selecting a payment provider (only configured providers are selectable).
+- Creating one-time and subscription checkouts (opens real test checkout pages).
+- Confirming payment status via polling.
+- Querying orders, payments, credits balance, and subscription status.
+- Provider-specific tests (Stripe saved cards, NowPayments supported currencies).
+
 For payment changes, test:
 
 - Checkout creation.
@@ -145,9 +228,9 @@ For payment changes, test:
 - Duplicate webhook behavior.
 - Refund, renewal, or subscription state transitions when touched.
 
-For provider changes, also test:
+For adapter changes, also test:
 
-- Provider registration with and without required environment variables.
+- Adapter registration with and without required environment variables.
 - Gateway resolution via explicit input, `FORCE_PAYMENT_GATEWAY`, and user preference.
 - Webhook signature rejection for invalid signatures.
 - One-time purchase webhook mapping to `Payment` and `Order`.
