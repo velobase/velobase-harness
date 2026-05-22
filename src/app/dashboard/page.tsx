@@ -4,6 +4,7 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import {
   User,
   CreditCard,
@@ -13,10 +14,13 @@ import {
   Puzzle,
   CheckCircle2,
   XCircle,
+  FlaskConical,
 } from "lucide-react";
 import { Header } from "@/components/layout/header";
 import { Background } from "@/components/layout/background";
 import { cn } from "@/lib/utils";
+import { api } from "@/trpc/react";
+import { PaymentTestDialog } from "@/components/dashboard/payment-test-dialog";
 
 interface NavItem {
   title: string;
@@ -69,17 +73,14 @@ interface ModuleStatus {
   category: string;
 }
 
-function getModuleStatuses(): ModuleStatus[] {
-  // Client-side: read from a global exposed by the server, or infer from env
-  // For SSR/client rendering, we read NEXT_PUBLIC_ vars and infer
+function getStaticModuleStatuses(): ModuleStatus[] {
   return [
     { name: "PostHog", enabled: !!process.env.NEXT_PUBLIC_POSTHOG_KEY, category: "Analytics" },
     { name: "Google Ads", enabled: !!process.env.NEXT_PUBLIC_GOOGLE_ADS_MEASUREMENT_ID, category: "Analytics" },
-    { name: "Lark", enabled: false, category: "Messaging" }, // server-only env, defaults to unknown on client
+    { name: "Lark", enabled: false, category: "Messaging" },
     { name: "Telegram", enabled: !!process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME, category: "Messaging" },
-    { name: "NowPayments", enabled: false, category: "Payment" }, // server-only env
-    { name: "Affiliate", enabled: true, category: "Features" }, // on by default
-    { name: "AI Chat", enabled: true, category: "Features" }, // on by default if any LLM key
+    { name: "Affiliate", enabled: true, category: "Features" },
+    { name: "AI Chat", enabled: true, category: "Features" },
   ];
 }
 
@@ -126,8 +127,25 @@ function PageSection({ title, items }: { title: string; items: NavItem[] }) {
 }
 
 function ModuleStatusPanel() {
-  const [modules] = useState(() => getModuleStatuses());
-  const categories = [...new Set(modules.map((m) => m.category))];
+  const t = useTranslations("paymentTest");
+  const [staticModules] = useState(() => getStaticModuleStatuses());
+  const [paymentTestOpen, setPaymentTestOpen] = useState(false);
+  const gatewaysQuery = api.order.getAvailableGateways.useQuery();
+
+  const paymentModules: ModuleStatus[] = gatewaysQuery.data
+    ? [
+        { name: "Stripe", enabled: gatewaysQuery.data.STRIPE, category: "Payment" },
+        { name: "NowPayments", enabled: gatewaysQuery.data.NOWPAYMENTS, category: "Payment" },
+        { name: "LemonSqueezy", enabled: gatewaysQuery.data.LEMONSQUEEZY, category: "Payment" },
+      ]
+    : [
+        { name: "Stripe", enabled: false, category: "Payment" },
+        { name: "NowPayments", enabled: false, category: "Payment" },
+        { name: "LemonSqueezy", enabled: false, category: "Payment" },
+      ];
+
+  const allModules = [...staticModules, ...paymentModules];
+  const categories = [...new Set(allModules.map((m) => m.category))];
 
   return (
     <div>
@@ -139,11 +157,25 @@ function ModuleStatusPanel() {
         <div className="space-y-4">
           {categories.map((cat) => (
             <div key={cat}>
-              <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">
-                {cat}
-              </h3>
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                  {cat}
+                </h3>
+                {cat === "Payment" && (
+                  <button
+                    onClick={() => setPaymentTestOpen(true)}
+                    className={cn(
+                      "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-all",
+                      "bg-primary/10 text-primary hover:bg-primary/20 active:scale-[0.97]",
+                    )}
+                  >
+                    <FlaskConical className="w-3 h-3" />
+                    {t("title")}
+                  </button>
+                )}
+              </div>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                {modules
+                {allModules
                   .filter((m) => m.category === cat)
                   .map((mod) => (
                     <div
@@ -173,6 +205,7 @@ function ModuleStatusPanel() {
           Module availability is determined by environment configuration. Server-only modules show client-side inference.
         </p>
       </div>
+      <PaymentTestDialog open={paymentTestOpen} onOpenChange={setPaymentTestOpen} />
     </div>
   );
 }

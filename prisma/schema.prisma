@@ -22,6 +22,7 @@ enum UserOfferState {
 enum UserPaymentGatewayPreference {
   AUTO
   STRIPE
+  LEMONSQUEEZY
   TELEGRAM_STARS
   NOWPAYMENTS
 }
