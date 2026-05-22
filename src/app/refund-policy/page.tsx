@@ -2,149 +2,242 @@ import { LegalLayout } from "@/components/layout/legal-layout";
 
 export default function RefundPolicyPage() {
   return (
-    <LegalLayout title="Refund Policy" lastUpdated="January 15, 2026">
+    <LegalLayout title="Refund Policy" lastUpdated="May 21, 2026">
       <section>
-        <h3>1. General Policy</h3>
+        <h3>1. Template Notice</h3>
         <p>
-          AI SaaS operates on a credit-based system. Due to the nature of AI video generation, which requires
-          significant and irreversible GPU computing resources, <strong>all credit purchases are final and
-          non-refundable once credits have been used</strong>.
+          This Refund Policy is a template for applications built with Velobase
+          Harness. It should be customized before production use to match your
+          actual products, prices, payment providers, refund windows,
+          consumer-law obligations, and support process.
         </p>
-        <p>
-          By purchasing credits or subscribing to our service, you acknowledge and agree that:
-        </p>
-        <ul>
-          <li>AI-generated results are inherently unpredictable and may vary in quality</li>
-          <li>GPU costs are incurred immediately upon generation, regardless of your satisfaction with the result</li>
-          <li>Subjective dissatisfaction with AI output quality does not constitute grounds for a refund</li>
-        </ul>
       </section>
 
       <section>
-        <h3>2. Subscriptions</h3>
+        <h3>2. General Policy</h3>
         <p>
-          You may cancel your subscription at any time through your account settings. Cancellation will take effect
-          at the end of your current billing period.
+          The application may sell credit packs, subscriptions, usage-based
+          entitlements, digital services, AI-powered features, or other products
+          configured by the application owner. Unless the checkout page or
+          applicable law says otherwise:
         </p>
         <ul>
           <li>
-            <strong>No Prorated Refunds:</strong> We do not provide prorated refunds for partial billing periods.
-            Once a billing cycle begins, the full amount is charged and non-refundable.
+            Used credits, consumed entitlements, completed usage, and delivered
+            digital services are generally non-refundable.
           </li>
           <li>
-            <strong>Renewal Charges:</strong> It is your responsibility to cancel before renewal. Refund requests
-            for renewal charges will only be considered if: (a) the request is made within 48 hours of the charge,
-            AND (b) zero credits from the new billing cycle have been used.
+            Unused credit packs or subscription renewals may be eligible for
+            review within the refund windows listed below.
           </li>
           <li>
-            <strong>Annual Subscriptions:</strong> Annual subscription purchases are non-refundable after 7 days
-            from the purchase date, or if any credits have been used, whichever occurs first.
+            Refunds are returned through the original payment processor when
+            technically available.
+          </li>
+          <li>
+            Nothing in this policy limits non-waivable rights under applicable
+            consumer protection law.
           </li>
         </ul>
       </section>
 
       <section>
-        <h3>3. Credit Packs (One-Time Purchases)</h3>
+        <h3>3. Payment Processors</h3>
         <p>
-          Credit pack purchases are final and non-refundable. Refunds will only be considered if:
-        </p>
-        <ul>
-          <li>The request is made within 24 hours of purchase</li>
-          <li>No credits from the pack have been used</li>
-          <li>This is your first refund request</li>
-        </ul>
-        <p>
-          <strong>Note:</strong> Each account is entitled to a maximum of one (1) courtesy refund. Subsequent
-          refund requests for credit packs will not be honored.
+          Payments may be processed by third-party providers such as Stripe,
+          NowPayments, LemonSqueezy, or other providers configured by the
+          application owner. Refund availability, timing, currency conversion,
+          blockchain finality, processor fees, and chargeback handling may vary
+          by provider.
         </p>
       </section>
 
       <section>
-        <h3>4. Technical Issues</h3>
+        <h3>4. Subscriptions</h3>
         <p>
-          We will restore credits <strong>only</strong> in the following verified technical failure scenarios:
+          You may cancel a subscription through account settings or the payment
+          provider flow when available. Cancellation generally takes effect at
+          the end of the current billing period and prevents future renewals.
         </p>
         <ul>
           <li>
-            <strong>Complete Generation Failure:</strong> The system failed to produce any output due to a
-            server-side error (not client-side issues such as browser crashes or network disconnection).
+            <strong>No automatic prorated refunds:</strong> Unless required by
+            law or expressly stated at checkout, we do not automatically provide
+            prorated refunds for partial billing periods.
           </li>
           <li>
-            <strong>Corrupted Output:</strong> The generated video file is completely unplayable or corrupted
-            due to a system error (verified by our technical team).
+            <strong>Renewal charges:</strong> Renewal refund requests may be
+            considered if the request is made within forty-eight (48) hours of
+            the renewal charge and no credits, entitlements, or paid features
+            from the new period have been used.
           </li>
-        </ul>
-        <p>
-          The following do <strong>NOT</strong> qualify for refunds or credit restoration:
-        </p>
-        <ul>
-          <li>AI output that does not match your expectations or creative vision</li>
-          <li>Artifacts, distortions, or imperfections that are inherent to AI generation</li>
-          <li>User error in prompt input, image upload, or settings configuration</li>
-          <li>Slow generation times or queue delays</li>
-          <li>Browser or client-side technical issues</li>
+          <li>
+            <strong>Annual subscriptions:</strong> Annual subscription refund
+            requests may be considered within seven (7) days of purchase if no
+            included credits, entitlements, or paid features have been used.
+          </li>
         </ul>
       </section>
 
       <section>
-        <h3>5. How to Request a Refund</h3>
+        <h3>5. Credit Packs & One-Time Purchases</h3>
         <p>
-          If you believe you qualify for a refund under this policy, submit your request within{" "}
-          <strong>7 days</strong> of the transaction. Requests submitted after 7 days will not be considered.
+          Credit pack and one-time digital purchases are generally final once
+          credits or entitlements are used. Refunds may be considered if all of
+          the following are true:
         </p>
         <ul>
           <li>
-            <strong>Email:</strong> <a href="mailto:support@example.com">support@example.com</a>
+            The request is made within twenty-four (24) hours of purchase.
           </li>
           <li>
-            <strong>Required Information:</strong> Your account email, transaction ID or date, and specific
-            reason for the request with supporting evidence (e.g., screenshot of error, generation ID).
+            No credits, entitlements, downloads, generated outputs, or paid
+            features from the purchase have been used.
+          </li>
+          <li>
+            The request is not part of a pattern of refund abuse, fraud,
+            duplicate-account use, or promotion abuse.
           </li>
         </ul>
         <p>
-          All refund requests are reviewed at our sole discretion. We reserve the right to deny any request
-          that does not meet the criteria outlined in this policy.
+          Courtesy refunds, if offered, are discretionary and may be limited to
+          one per account, household, payment method, or related group of
+          accounts.
         </p>
       </section>
 
       <section>
-        <h3>6. Chargebacks & Disputes</h3>
+        <h3>6. Technical Issues & Credit Restoration</h3>
         <p>
-          Filing a chargeback or payment dispute without first contacting us constitutes a violation of these
-          terms. If you initiate a chargeback:
+          We may restore credits, retry a job, or issue a refund when a verified
+          server-side technical failure prevents delivery of the purchased
+          service. Examples may include:
         </p>
         <ul>
-          <li>Your account will be immediately suspended pending investigation</li>
-          <li>All unused credits will be forfeited</li>
-          <li>You may be permanently banned from the platform</li>
-          <li>We reserve the right to pursue recovery of disputed amounts plus associated fees</li>
+          <li>
+            The system charged credits but failed to create or complete the
+            requested job due to a server-side error.
+          </li>
+          <li>
+            The system produced an inaccessible, corrupted, or missing output
+            due to a verified service error.
+          </li>
+          <li>
+            Duplicate billing occurred for the same order or subscription
+            period.
+          </li>
         </ul>
         <p>
-          Please contact our support team first—we are committed to resolving legitimate issues fairly.
-        </p>
-      </section>
-
-      <section>
-        <h3>7. Fraud & Abuse</h3>
-        <p>
-          We actively monitor for refund abuse patterns. The following behaviors will result in permanent
-          account termination without refund:
+          The following usually do not qualify for refunds or credit
+          restoration:
         </p>
         <ul>
-          <li>Submitting multiple refund requests across accounts</li>
-          <li>Creating new accounts to circumvent refund limits</li>
-          <li>Providing false or misleading information in refund requests</li>
-          <li>Systematically requesting refunds after consuming services</li>
-          <li>Any form of payment fraud or unauthorized transactions</li>
+          <li>
+            Subjective dissatisfaction with AI outputs or product results.
+          </li>
+          <li>
+            Expected variability, artifacts, limitations, or inaccuracies of AI
+            systems.
+          </li>
+          <li>
+            User error, incorrect prompt input, wrong file upload, unsupported
+            settings, or accidental purchase.
+          </li>
+          <li>
+            Browser, network, device, wallet, email, or client-side issues
+            outside our control.
+          </li>
+          <li>
+            Temporary queue delays, rate limits, maintenance windows, or
+            third-party provider outages unless required by law or expressly
+            promised in a separate agreement.
+          </li>
         </ul>
       </section>
 
       <section>
-        <h3>8. Policy Updates</h3>
+        <h3>7. How to Request a Refund</h3>
         <p>
-          We reserve the right to modify this Refund Policy at any time. Changes will be effective immediately
-          upon posting. Your continued use of the service after any changes constitutes acceptance of the
-          updated policy.
+          If you believe you qualify for a refund, submit your request within
+          seven (7) days of the transaction unless a different period is
+          required by law or stated at checkout.
+        </p>
+        <ul>
+          <li>
+            <strong>Email:</strong>{" "}
+            <a href="mailto:support@example.com">support@example.com</a>
+          </li>
+          <li>
+            <strong>Required information:</strong> Account email, order ID or
+            transaction ID, payment provider, purchase date, affected product or
+            job ID, and a clear explanation with supporting evidence where
+            available.
+          </li>
+        </ul>
+        <p>
+          Replace this email address with the application owner&apos;s real
+          support contact before production use.
+        </p>
+      </section>
+
+      <section>
+        <h3>8. Chargebacks & Payment Disputes</h3>
+        <p>
+          Please contact support before initiating a chargeback or payment
+          dispute so we can investigate and resolve legitimate issues. If a
+          chargeback or dispute is opened, we may temporarily suspend access to
+          the affected account, subscription, credits, or orders while the
+          processor review is pending.
+        </p>
+        <p>
+          We may deny future purchases, withhold affiliate payouts, reverse
+          promotional credits, or close accounts involved in fraud, unauthorized
+          payments, refund abuse, duplicate-account abuse, or repeated
+          unsupported disputes.
+        </p>
+      </section>
+
+      <section>
+        <h3>9. Fraud & Abuse</h3>
+        <p>
+          The following behavior may result in denied refunds, credit reversal,
+          account suspension, or termination:
+        </p>
+        <ul>
+          <li>Submitting false or misleading refund information.</li>
+          <li>
+            Opening multiple accounts to obtain repeated refunds, trials,
+            promotions, or affiliate rewards.
+          </li>
+          <li>Consuming credits or services and then claiming non-use.</li>
+          <li>
+            Using stolen payment methods, unauthorized wallets, compromised
+            cards, or fraudulent chargebacks.
+          </li>
+          <li>
+            Coordinated abuse across related accounts, devices, payment methods,
+            or referral networks.
+          </li>
+        </ul>
+      </section>
+
+      <section>
+        <h3>10. Statutory Rights</h3>
+        <p>
+          Some jurisdictions provide mandatory cancellation, withdrawal,
+          cooling-off, or refund rights that cannot be waived by contract. If
+          those laws apply, this policy will be interpreted to preserve those
+          rights. Add any required regional notices before launch.
+        </p>
+      </section>
+
+      <section>
+        <h3>11. Policy Updates</h3>
+        <p>
+          We may update this Refund Policy from time to time. Material changes
+          should be communicated through the application, email, or another
+          reasonable method. Changes do not retroactively reduce refund rights
+          for purchases already made unless permitted by law.
         </p>
       </section>
     </LegalLayout>

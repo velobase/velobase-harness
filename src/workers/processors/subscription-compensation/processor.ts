@@ -11,16 +11,15 @@ import type { Job } from "bullmq";
 import type Stripe from "stripe";
 import { createLogger } from "@/lib/logger";
 import { db } from "@/server/db";
-import { BaseWebhookResult } from "@/server/order/providers/types";
 import type { SubscriptionCompensationJobData } from "../../queues/subscription-compensation.queue";
-import type { PaymentWebhookResult } from "@/server/order/providers/types";
-import { handleStripeSubscriptionRenewal } from "@/server/order/services/handle-webhooks";
+import { onSubscriptionRenewed } from "@/server/order/services/webhook-handlers/subscription-renewed";
 import { getStripe } from "@/server/order/services/stripe/client";
+import type { WebhookEvent } from "@/server/order/providers/types";
 
 const logger = createLogger("subscription-compensation");
 
 export async function processSubscriptionCompensationJob(
-  job: Job<SubscriptionCompensationJobData>
+  job: Job<SubscriptionCompensationJobData>,
 ): Promise<void> {
   const { type, subscriptionId } = job.data;
 
@@ -34,24 +33,10 @@ export async function processSubscriptionCompensationJob(
   }
 }
 
-/**
- * 扫描存在异常状态的 Stripe 订阅：
- * - gateway = STRIPE
- * - ACTIVE TRIAL 周期存在
- * - 尚未创建 REGULAR 周期
- */
 async function scanAndCompensateSubscriptions(): Promise<void> {
   const subscriptions = await db.userSubscription.findMany({
-    where: {
-      gateway: "STRIPE",
-      deletedAt: null,
-      status: "ACTIVE",
-    },
-    include: {
-      cycles: {
-        orderBy: { sequenceNumber: "desc" },
-      },
-    },
+    where: { gateway: "STRIPE", deletedAt: null, status: "ACTIVE" },
+    include: { cycles: { orderBy: { sequenceNumber: "desc" } } },
     take: 50,
   });
 
@@ -60,19 +45,13 @@ async function scanAndCompensateSubscriptions(): Promise<void> {
     return;
   }
 
-  logger.info(
-    { count: subscriptions.length },
-    "Scanning subscriptions for potential compensation"
-  );
+  logger.info({ count: subscriptions.length }, "Scanning subscriptions for potential compensation");
 
   for (const sub of subscriptions) {
     try {
       await compensateSubscriptionIfNeeded(sub.id);
     } catch (error) {
-      logger.error(
-        { subscriptionId: sub.id, error },
-        "Failed to compensate subscription"
-      );
+      logger.error({ subscriptionId: sub.id, error }, "Failed to compensate subscription");
     }
   }
 }
@@ -81,20 +60,10 @@ async function compensateSingleSubscription(subscriptionId: string): Promise<voi
   await compensateSubscriptionIfNeeded(subscriptionId);
 }
 
-/**
- * 对单个订阅做补偿判断与执行：
- * - 仍然只有 TRIAL 周期（ACTIVE）
- * - Stripe 侧已经有付费的 invoice （billing_reason=subscription_update 或 subscription_cycle）
- * - 则构造一个 PaymentWebhookResult，复用 handleSubscriptionWebhook 现有逻辑
- */
 async function compensateSubscriptionIfNeeded(subscriptionId: string): Promise<void> {
   const subscription = await db.userSubscription.findUnique({
     where: { id: subscriptionId },
-    include: {
-      cycles: {
-        orderBy: { sequenceNumber: "desc" },
-      },
-    },
+    include: { cycles: { orderBy: { sequenceNumber: "desc" } } },
   });
 
   if (!subscription) {
@@ -102,83 +71,46 @@ async function compensateSubscriptionIfNeeded(subscriptionId: string): Promise<v
     return;
   }
 
-  if (subscription.gateway !== "STRIPE" || !subscription.gatewaySubscriptionId) {
-    return;
-  }
+  if (subscription.gateway !== "STRIPE" || !subscription.gatewaySubscriptionId) return;
 
-  const activeTrial = subscription.cycles.find(
-    (c) => c.status === "ACTIVE" && c.type === "TRIAL"
-  );
-  const hasRegularCycle = subscription.cycles.some((c) => c.type === "REGULAR");
+  const activeTrial = subscription.cycles.find(c => c.status === "ACTIVE" && c.type === "TRIAL");
+  const hasRegularCycle = subscription.cycles.some(c => c.type === "REGULAR");
+  if (!activeTrial || hasRegularCycle) return;
 
-  // 只处理：仍在 TRIAL，且尚未有 REGULAR 周期的订阅
-  if (!activeTrial || hasRegularCycle) {
-    return;
-  }
-
-  // 查询 Stripe 侧该订阅的最近 invoice，判断是否已经产生过实际扣款
   let invoices: Stripe.ApiList<Stripe.Invoice> | null = null;
   try {
-    invoices = await getStripe().invoices.list({
-      subscription: subscription.gatewaySubscriptionId,
-      limit: 5,
-    });
+    invoices = await getStripe().invoices.list({ subscription: subscription.gatewaySubscriptionId, limit: 5 });
   } catch (error) {
-    logger.warn(
-      {
-        subscriptionId: subscription.id,
-        gatewaySubscriptionId: subscription.gatewaySubscriptionId,
-        error,
-      },
-      "Failed to list invoices from Stripe"
-    );
+    logger.warn({ subscriptionId: subscription.id, error }, "Failed to list invoices from Stripe");
     return;
   }
 
-  if (!invoices || invoices.data.length === 0) {
-    return;
-  }
+  if (!invoices || invoices.data.length === 0) return;
 
-  // 寻找一张已支付且有实际扣款的 invoice
   const paidInvoice = invoices.data.find(
-    (inv) =>
-      inv.status === "paid" &&
-      (inv.amount_paid ?? 0) > 0 &&
-      (inv.billing_reason === "subscription_update" ||
-        inv.billing_reason === "subscription_cycle")
+    inv => inv.status === "paid" && (inv.amount_paid ?? 0) > 0 &&
+      (inv.billing_reason === "subscription_update" || inv.billing_reason === "subscription_cycle"),
   );
 
-  if (!paidInvoice) {
-    return;
-  }
+  if (!paidInvoice) return;
 
-  // 构造一个“伪” PaymentWebhookResult，模拟 invoice.payment_succeeded 事件，
-  // 并将 subscriptionPeriod 设置为 2，让 handleSubscriptionWebhook 将其视为续费/正式周期开始。
-  const result: PaymentWebhookResult = new BaseWebhookResult({
-    status: "SUCCEEDED",
-    gatewayTransactionId: paidInvoice.id,
-    gatewaySubscriptionId: subscription.gatewaySubscriptionId,
-    subscriptionPeriod: 2,
+  // Construct a normalized WebhookEvent for the renewal handler
+  const event: WebhookEvent = {
+    type: "subscription.renewed",
+    transactionId: paidInvoice.id,
+    subscriptionId: subscription.gatewaySubscriptionId,
     amount: paidInvoice.amount_paid ?? undefined,
     currency: paidInvoice.currency ?? undefined,
-    rawData: paidInvoice,
-    isSubscription: true,
-  });
+    raw: paidInvoice,
+  };
 
-  logger.info(
-    {
-      subscriptionId: subscription.id,
-      gatewaySubscriptionId: subscription.gatewaySubscriptionId,
-      invoiceId: paidInvoice.id,
-      billingReason: paidInvoice.billing_reason,
-      amountPaid: paidInvoice.amount_paid,
-    },
-    "Triggering subscription renewal compensation via worker"
-  );
+  logger.info({
+    subscriptionId: subscription.id,
+    gatewaySubscriptionId: subscription.gatewaySubscriptionId,
+    invoiceId: paidInvoice.id,
+    billingReason: paidInvoice.billing_reason,
+    amountPaid: paidInvoice.amount_paid,
+  }, "Triggering subscription renewal compensation via worker");
 
-  // 直接复用现有的续费履约逻辑
-  await handleStripeSubscriptionRenewal(result);
+  await onSubscriptionRenewed(event, "STRIPE");
 }
-
-
-

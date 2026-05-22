@@ -16,7 +16,7 @@ export type PaymentStatus =
   | "FAILED"
   | "EXPIRED"
   | "REFUNDED";
-export type PaymentGateway = "STRIPE" | "NOWPAYMENTS";
+export type { PaymentGateway } from "../providers/types";
 
 // Product types
 export type ProductInterval = "month" | "year";
