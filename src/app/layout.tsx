@@ -1,7 +1,13 @@
 import "@/styles/globals.css";
+import "@fontsource-variable/inter";
+import "@fontsource-variable/jetbrains-mono";
+import "@fontsource/poppins/400.css";
+import "@fontsource/poppins/500.css";
+import "@fontsource/poppins/600.css";
+import "@fontsource/poppins/700.css";
+import "@fontsource/poppins/800.css";
 
 import { type Metadata, type Viewport } from "next";
-import { Inter, JetBrains_Mono, Poppins } from "next/font/google";
 import Script from "next/script";
 import { Suspense } from "react";
 import { NextIntlClientProvider } from "next-intl";
@@ -43,28 +49,6 @@ export const viewport: Viewport = {
   userScalable: false,
 };
 
-// Inter 字体用于正文 - ChatGPT 风格
-const inter = Inter({
-  subsets: ["latin"],
-  variable: "--font-inter",
-  display: "swap",
-});
-
-// JetBrains Mono 用于代码块 - 优秀的等宽字体
-const jetbrainsMono = JetBrains_Mono({
-  subsets: ["latin"],
-  variable: "--font-mono",
-  display: "swap",
-});
-
-// Poppins 用于标题 - 圆润现代的字体
-const poppins = Poppins({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800"],
-  variable: "--font-poppins",
-  display: "swap",
-});
-
 export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
@@ -88,7 +72,6 @@ export default async function RootLayout({
     <html
       lang={locale}
       data-eea={isEea ? "1" : "0"}
-      className={`${inter.variable} ${jetbrainsMono.variable} ${poppins.variable}`}
       suppressHydrationWarning
     >
       <head>

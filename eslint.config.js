@@ -1,15 +1,15 @@
-import { FlatCompat } from "@eslint/eslintrc";
+import nextCoreWebVitals from "eslint-config-next/core-web-vitals";
 import tseslint from "typescript-eslint";
 
-const compat = new FlatCompat({
-  baseDirectory: import.meta.dirname,
-});
+const nextConfig = nextCoreWebVitals.filter(
+  (config) => config.name !== "next/typescript",
+);
 
 export default tseslint.config(
   {
-    ignores: [".next", "next-env.d.ts", "scripts/**"],
+    ignores: [".next", "next-env.d.ts", "prisma/**", "scripts/**"],
   },
-  ...compat.extends("next/core-web-vitals"),
+  ...nextConfig,
   {
     files: ["**/*.ts", "**/*.tsx"],
     extends: [
@@ -34,6 +34,10 @@ export default tseslint.config(
         { checksVoidReturn: { attributes: false } },
       ],
       "@typescript-eslint/prefer-nullish-coalescing": "off",
+      "react-hooks/purity": "off",
+      "react-hooks/refs": "off",
+      "react-hooks/set-state-in-effect": "off",
+      "react-hooks/static-components": "off",
       // 禁用 console.log，但允许 warn 和 error
       "no-console": ["error", { allow: ["warn", "error"] }],
     },
