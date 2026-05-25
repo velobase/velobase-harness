@@ -6,12 +6,12 @@
 @custom-variant tall (@media (min-height: 700px));
 
 @theme {
-  --font-sans: var(--font-inter), "PingFang SC", "Noto Sans CJK SC", "Source Han Sans SC",
+  --font-sans: "Inter Variable", "PingFang SC", "Noto Sans CJK SC", "Source Han Sans SC",
     "Microsoft YaHei", ui-sans-serif, system-ui, sans-serif,
     "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
-  --font-mono: var(--font-mono), ui-monospace, "SF Mono", "Menlo", "Monaco", 
+  --font-mono: "JetBrains Mono Variable", ui-monospace, "SF Mono", "Menlo", "Monaco",
     "Cascadia Code", "Consolas", "Courier New", monospace;
-  --font-poppins: var(--font-poppins), ui-sans-serif, system-ui, sans-serif;
+  --font-poppins: "Poppins", ui-sans-serif, system-ui, sans-serif;
 }
 
 @theme inline {
