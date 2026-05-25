@@ -321,7 +321,7 @@ export const authConfig = {
         const utmSource = cookieStore.get("utm_source")?.value;
 
         // Affiliate referral binding (write-once, permanent)
-        // - cookie set in middleware.ts: app_ref
+        // - cookie set in proxy.ts: app_ref
         // - only bind on new user
         // - ignore invalid/self-ref
         try {

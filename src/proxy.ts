@@ -27,7 +27,7 @@ function safeRefHost(referer: string | null): string | null {
   }
 }
 
-export function middleware(req: NextRequest) {
+export function proxy(req: NextRequest) {
   const url = req.nextUrl;
   let changed = false;
   const res = NextResponse.next();
@@ -133,5 +133,3 @@ export const config = {
     "/((?!_next/static|_next/image|favicon.ico|favicon.svg|public/).*)",
   ],
 };
-
-
