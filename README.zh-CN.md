@@ -4,7 +4,7 @@
 
 Velobase Harness 是面向 AI SaaS 的应用框架：T3 Stack 基础、计费与积分、支付、后台任务、增长集成，以及和 Velobase Cloud / Launchpad 打通的部署路径。
 
-[![Next.js](https://img.shields.io/badge/Next.js-15-black)](https://nextjs.org)
+[![Next.js](https://img.shields.io/badge/Next.js-16-black)](https://nextjs.org)
 [![React](https://img.shields.io/badge/React-19-61dafb)](https://react.dev)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-blue)](https://www.typescriptlang.org)
 [![pnpm](https://img.shields.io/badge/pnpm-10-f69220)](https://pnpm.io)
@@ -14,7 +14,7 @@ Velobase Harness 是面向 AI SaaS 的应用框架：T3 Stack 基础、计费与
 
 Velobase Harness 不是空白脚手架，而是一套能直接承接 AI SaaS 产品开发的应用底座。它尽量把通用基础设施、计费、支付、队列、增长和部署路径先解决，让 AI 和开发者把精力放在产品差异化功能上。
 
-- **现代 T3 基础:** Next.js 15、React 19、TypeScript、tRPC、Prisma、NextAuth、Tailwind CSS、pnpm。
+- **现代 T3 基础:** Next.js 16、React 19、TypeScript、tRPC、Prisma、NextAuth、Tailwind CSS、pnpm。
 - **Web + Worker 默认运行时:** Web 承接应用 HTTP/API，BullMQ Worker 承接异步任务；Hono API 保留为可选独立入口。
 - **可插拔模块:** Google Ads、PostHog、Lark、Telegram、NowPayments、Affiliate、Touch、AI Chat 可按环境变量启停。
 - **计费与积分:** 订单、订阅、积分账本、权益发放、现金流水、优惠码和 `@velobaseai/billing` 已接入。

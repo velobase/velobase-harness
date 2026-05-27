@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="public/banner.gif" alt="Velobase Harness" />
+  <img src="public/banner.gif" alt="Velobase Harness — open-source AI SaaS boilerplate with built-in ad attribution, affiliate engine, and usage-based billing" />
 </p>
 
 <p align="center">
@@ -7,7 +7,7 @@
 </p>
 
 <p align="center">
-  <a href="https://nextjs.org"><img src="https://img.shields.io/badge/Next.js-15-black" alt="Next.js" /></a>
+  <a href="https://nextjs.org"><img src="https://img.shields.io/badge/Next.js-16-black" alt="Next.js" /></a>
   <a href="https://react.dev"><img src="https://img.shields.io/badge/React-19-61dafb" alt="React" /></a>
   <a href="https://www.typescriptlang.org"><img src="https://img.shields.io/badge/TypeScript-5-blue" alt="TypeScript" /></a>
   <a href="https://pnpm.io"><img src="https://img.shields.io/badge/pnpm-10-f69220" alt="pnpm" /></a>
