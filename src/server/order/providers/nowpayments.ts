@@ -81,7 +81,7 @@ function deepSortObject(value: unknown): unknown {
   return out;
 }
 
-function verifyNowPaymentsSignature(rawBody: string, secret: string, signatureHeader: string | null) {
+export function verifyNowPaymentsSignature(rawBody: string, secret: string, signatureHeader: string | null) {
   if (!signatureHeader) return false;
   let parsed: unknown;
   try {
@@ -92,7 +92,13 @@ function verifyNowPaymentsSignature(rawBody: string, secret: string, signatureHe
   const sorted = deepSortObject(parsed);
   const message = JSON.stringify(sorted);
   const digest = crypto.createHmac("sha512", secret).update(message).digest("hex");
-  return digest === signatureHeader;
+  try {
+    const expected = Buffer.from(digest, "hex");
+    const actual = Buffer.from(signatureHeader, "hex");
+    return expected.length === actual.length && crypto.timingSafeEqual(expected, actual);
+  } catch {
+    return false;
+  }
 }
 
 function mapNowPaymentsStatus(status: string) {
@@ -513,5 +519,4 @@ export const nowpaymentsProvider: PaymentProvider = {
     return null;
   },
 };
-
 

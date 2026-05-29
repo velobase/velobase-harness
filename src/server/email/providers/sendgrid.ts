@@ -1,5 +1,6 @@
 import sgMail from "@sendgrid/mail";
 import { logger } from "@/lib/logger";
+import { APP_NAME } from "@/config/brand";
 import type { EmailProvider, SendEmailParams, SendEmailResult } from "../types";
 
 const apiKey = process.env.SENDGRID_API_KEY;
@@ -10,8 +11,8 @@ if (apiKey) {
 const defaultFrom =
   process.env.EMAIL_FROM ??
   (process.env.NODE_ENV === "production"
-    ? "AI SaaS App <noreply@example.com>"
-    : "AI SaaS App <support@example.com>");
+    ? undefined
+    : `${APP_NAME} <onboarding@resend.dev>`);
 
 export const sendgridProvider: EmailProvider = {
   name: "sendgrid",
@@ -27,6 +28,9 @@ export const sendgridProvider: EmailProvider = {
 
     const to = Array.isArray(params.to) ? params.to : [params.to];
     const from = params.from ?? defaultFrom;
+    if (!from) {
+      throw new Error("EMAIL_FROM is required in production");
+    }
 
     logger.info({ to, provider: "sendgrid" }, "Sending email via SendGrid");
 

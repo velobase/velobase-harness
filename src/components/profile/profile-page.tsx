@@ -12,6 +12,7 @@ import { useAuthStore } from "@/components/auth/store/auth-store";
 import { logout } from "@/lib/logout";
 import { PaymentMethodRow } from "./payment-method-row";
 import { DeleteAccountDialog } from "./delete-account-dialog";
+import { SUPPORT_EMAIL, supportMailto } from "@/config/brand";
 
 export function ProfilePage() {
   const { data: session, status } = useSession();
@@ -119,11 +120,11 @@ export function ProfilePage() {
             <span className="font-medium">Join Discord</span>
           </a>
           <a 
-            href="mailto:support@example.com"
+            href={supportMailto()}
             className="flex items-center p-4 hover:bg-muted/50 transition-colors"
           >
             <Mail className="w-5 h-5 mr-3 text-primary" />
-            <span className="font-medium">support@example.com</span>
+            <span className="font-medium">{SUPPORT_EMAIL}</span>
           </a>
         </div>
       </div>

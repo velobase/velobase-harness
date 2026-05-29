@@ -144,7 +144,6 @@ IF you touch anti-abuse, captcha, rate limiting, IP, country, or security bounda
 
 ### Debugging
 
-- For production issues, ask the user for the latest Velobase Cloud runtime or deploy logs first.
+- For production issues, ask the user for the latest runtime or deploy logs first.
 - Reproduce with the local Docker database workflow before pushing a fix when possible.
 - Use `docs/en/debugging/online-local-debug.md` for the full workflow.
-

@@ -11,6 +11,7 @@ import type { ParsedMail } from "mailparser";
 import { Readable } from "stream";
 import { logger } from "@/lib/logger";
 import type { ParsedEmail } from "../types";
+import { SUPPORT_EMAIL } from "@/config/brand";
 
 // Helper function to parse email
 async function parseEmail(stream: NodeJS.ReadableStream): Promise<ParsedMail | null> {
@@ -31,7 +32,7 @@ interface ImapBox {
 
 // 飞书 IMAP 配置
 const IMAP_CONFIG = {
-  user: process.env.SUPPORT_EMAIL_ADDRESS ?? "support@example.com",
+  user: process.env.SUPPORT_EMAIL_ADDRESS ?? SUPPORT_EMAIL,
   password: process.env.SUPPORT_EMAIL_PASSWORD ?? "",
   host: process.env.SUPPORT_IMAP_HOST ?? "imap.larksuite.com",
   port: parseInt(process.env.SUPPORT_IMAP_PORT ?? "993", 10),
@@ -256,4 +257,3 @@ export async function getMaxUid(): Promise<number> {
     imap.connect();
   });
 }
-

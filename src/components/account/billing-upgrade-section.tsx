@@ -7,6 +7,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useAuthStore } from '@/components/auth/store/auth-store';
 import { Button } from '@/components/ui/button';
 import { useSubscriptionProducts } from '@/hooks/use-pricing-products';
+import { supportMailto } from '@/config/brand';
 
 type BillingInterval = 'MONTH' | 'YEAR';
 
@@ -89,11 +90,10 @@ export function BillingUpgradeSection({ userTier }: BillingUpgradeSectionProps) 
             </p>
           </div>
           <Button variant="outline" className="flex-shrink-0" asChild>
-            <a href="mailto:support@example.com">Contact Sales</a>
+            <a href={supportMailto()}>Contact Sales</a>
           </Button>
         </div>
       </div>
     </div>
   );
 }
-

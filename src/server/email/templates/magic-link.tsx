@@ -1,10 +1,11 @@
 import * as React from "react";
+import { APP_NAME } from "@/config/brand";
 
 interface MagicLinkEmailTemplateProps {
   url: string;
 }
 
-const BRAND_NAME = "AI SaaS App";
+const BRAND_NAME = APP_NAME;
 
 /**
  * Magic Link Email Template (React version for Resend)
@@ -15,7 +16,7 @@ export function MagicLinkEmailTemplate({ url }: MagicLinkEmailTemplateProps) {
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <title>Sign in to AI SaaS App</title>
+        <title>Sign in to {BRAND_NAME}</title>
       </head>
       <body
         style={{
@@ -56,7 +57,7 @@ export function MagicLinkEmailTemplate({ url }: MagicLinkEmailTemplateProps) {
                   letterSpacing: "-0.5px",
                 }}
               >
-                AI SaaS App
+                {BRAND_NAME}
               </h1>
             </td>
           </tr>
@@ -105,7 +106,7 @@ export function MagicLinkEmailTemplate({ url }: MagicLinkEmailTemplateProps) {
                         boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1)",
                       }}
                     >
-                      Sign in to AI SaaS App
+                      Sign in to {BRAND_NAME}
                     </a>
                   </td>
                 </tr>
@@ -241,4 +242,3 @@ export function renderMagicLinkHtml(url: string): string {
   </body>
 </html>`;
 }
-

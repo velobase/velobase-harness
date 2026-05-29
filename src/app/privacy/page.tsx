@@ -1,4 +1,5 @@
 import { LegalLayout } from "@/components/layout/legal-layout";
+import { SUPPORT_EMAIL, supportMailto } from "@/config/brand";
 
 export default function PrivacyPage() {
   return (
@@ -77,7 +78,7 @@ export default function PrivacyPage() {
       <section>
         <h3>Contact & Support</h3>
         <p>
-          For any privacy-related questions or data requests, please reach out to our dedicated team at <a href="mailto:support@example.com">support@example.com</a>. We typically respond within 24 hours.
+          For any privacy-related questions or data requests, please reach out to our dedicated team at <a href={supportMailto()}>{SUPPORT_EMAIL}</a>. We typically respond within 24 hours.
         </p>
       </section>
     </LegalLayout>

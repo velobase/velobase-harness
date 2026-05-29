@@ -2,6 +2,7 @@
 
 import { ShieldCheck } from 'lucide-react'
 import { motion } from 'framer-motion'
+import { SUPPORT_EMAIL } from '@/config/brand'
 
 interface CryptoPaymentFooterProps {
   isWaiting: boolean
@@ -37,7 +38,7 @@ export function CryptoPaymentFooter({
 
         <div className="flex flex-col items-center gap-1 text-xs text-muted-foreground/60">
           <span>Need help?</span>
-          <span className="font-medium text-muted-foreground">support@example.com</span>
+          <span className="font-medium text-muted-foreground">{SUPPORT_EMAIL}</span>
         </div>
 
         <div className="text-[11px] text-muted-foreground/70 text-center leading-snug">
@@ -56,4 +57,3 @@ export function CryptoPaymentFooter({
     </footer>
   )
 }
-

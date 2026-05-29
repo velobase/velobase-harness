@@ -5,6 +5,7 @@ import { AppLogo } from "@/components/ui/app-logo";
 import { Button } from "@/components/ui/button";
 import { ShieldX, Trash2, Mail } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { supportMailto } from "@/config/brand";
 
 export default function BlockedPage() {
   const t = useTranslations("auth");
@@ -55,7 +56,7 @@ export default function BlockedPage() {
             <Button
               variant="outline"
               className="w-full"
-              onClick={() => window.location.href = "mailto:support@example.com"}
+              onClick={() => window.location.href = supportMailto()}
             >
               <Mail className="mr-2 h-4 w-4" />
               {tCommon("contactSupport")}

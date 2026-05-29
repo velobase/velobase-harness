@@ -1,4 +1,5 @@
 import { LegalLayout } from "@/components/layout/legal-layout";
+import { SUPPORT_EMAIL, supportMailto } from "@/config/brand";
 
 export default function RefundPolicyPage() {
   return (
@@ -94,7 +95,7 @@ export default function RefundPolicyPage() {
         </p>
         <ul>
           <li>
-            <strong>Email:</strong> <a href="mailto:support@example.com">support@example.com</a>
+            <strong>Email:</strong> <a href={supportMailto()}>{SUPPORT_EMAIL}</a>
           </li>
           <li>
             <strong>Required Information:</strong> Your account email, transaction ID or date, and specific

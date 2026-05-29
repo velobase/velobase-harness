@@ -5,6 +5,7 @@
 import nodemailer from "nodemailer";
 import type { Transporter } from "nodemailer";
 import { logger } from "@/lib/logger";
+import { APP_NAME, SUPPORT_EMAIL } from "@/config/brand";
 
 // 飞书 SMTP 配置
 const SMTP_CONFIG = {
@@ -12,12 +13,12 @@ const SMTP_CONFIG = {
   port: parseInt(process.env.SUPPORT_SMTP_PORT ?? "465", 10),
   secure: true,
   auth: {
-    user: process.env.SUPPORT_EMAIL_ADDRESS ?? "support@example.com",
+    user: process.env.SUPPORT_EMAIL_ADDRESS ?? SUPPORT_EMAIL,
     pass: process.env.SUPPORT_EMAIL_PASSWORD ?? "",
   },
 };
 
-const FROM_ADDRESS = process.env.SUPPORT_EMAIL_FROM ?? "AI SaaS App Support <support@example.com>";
+const FROM_ADDRESS = process.env.SUPPORT_EMAIL_FROM ?? `${APP_NAME} Support <${SUPPORT_EMAIL}>`;
 
 let transporter: Transporter | null = null;
 
@@ -133,7 +134,7 @@ export function generateReplyHtml(content: string): string {
 </head>
 <body>
   <div class="header">
-    <div class="logo">🎬 AI SaaS App</div>
+    <div class="logo">${APP_NAME}</div>
   </div>
   
   <div class="content">
@@ -141,11 +142,10 @@ export function generateReplyHtml(content: string): string {
   </div>
   
   <div class="footer">
-    <p>AI SaaS App – Your AI-powered workspace</p>
-    <p><a href="https://example.com">example.com</a></p>
+    <p>${APP_NAME}</p>
+    <p><a href="mailto:${SUPPORT_EMAIL}">${SUPPORT_EMAIL}</a></p>
   </div>
 </body>
 </html>
   `.trim();
 }
-

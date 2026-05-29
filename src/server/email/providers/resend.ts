@@ -1,5 +1,6 @@
 import { Resend } from "resend";
 import { logger } from "@/lib/logger";
+import { APP_NAME } from "@/config/brand";
 import type { EmailProvider, SendEmailParams, SendEmailResult } from "../types";
 
 const apiKey = process.env.RESEND_API_KEY;
@@ -8,8 +9,8 @@ const resend = apiKey ? new Resend(apiKey) : null;
 const defaultFrom =
   process.env.EMAIL_FROM ??
   (process.env.NODE_ENV === "production"
-    ? "AI SaaS App <noreply@example.com>"
-    : "AI SaaS App <onboarding@resend.dev>");
+    ? undefined
+    : `${APP_NAME} <onboarding@resend.dev>`);
 
 export const resendProvider: EmailProvider = {
   name: "resend",
@@ -25,6 +26,9 @@ export const resendProvider: EmailProvider = {
 
     const to = Array.isArray(params.to) ? params.to : [params.to];
     const from = params.from ?? defaultFrom;
+    if (!from) {
+      throw new Error("EMAIL_FROM is required in production");
+    }
 
     logger.info({ to, provider: "resend" }, "Sending email via Resend");
 

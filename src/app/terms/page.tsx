@@ -1,4 +1,5 @@
 import { LegalLayout } from "@/components/layout/legal-layout";
+import { SUPPORT_EMAIL, supportMailto } from "@/config/brand";
 
 export default function TermsPage() {
   return (
@@ -148,7 +149,7 @@ export default function TermsPage() {
         <h3>11. Dispute Resolution</h3>
         <p>
           Before initiating any legal proceeding, you agree to first contact us at{" "}
-          <a href="mailto:support@example.com">support@example.com</a> and attempt to resolve the dispute informally
+          <a href={supportMailto()}>{SUPPORT_EMAIL}</a> and attempt to resolve the dispute informally
           for at least thirty (30) days. Filing a chargeback or payment dispute without first attempting informal
           resolution is a material breach of these Terms.
         </p>
@@ -166,7 +167,7 @@ export default function TermsPage() {
       <section>
         <h3>13. Contact Us</h3>
         <p>
-          If you have any questions about these Terms, please contact us at <a href="mailto:support@example.com">support@example.com</a>.
+          If you have any questions about these Terms, please contact us at <a href={supportMailto()}>{SUPPORT_EMAIL}</a>.
         </p>
       </section>
     </LegalLayout>

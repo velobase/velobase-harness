@@ -18,7 +18,7 @@ const TEST_LOGIN_EMAIL = "testadmin@example.com";
 const TEST_LOGIN_PASSWORD = "Testadmin2024!";
 
 export const TEST_ACCOUNT_LOGIN_ENABLED =
-  env.NEXT_PUBLIC_DISABLE_TEST_LOGIN !== "true";
+  env.NEXT_PUBLIC_DISABLE_TEST_LOGIN === "false";
 
 export const COMMON_EMAIL_DOMAINS = [
   "outlook.com",
@@ -358,7 +358,7 @@ export function useLogin() {
       }
       console.error(err);
       track(AUTH_EVENTS.LOGIN_FAILED, { method: "test_credentials", reason: "unknown" });
-      setError("Invalid test account credentials. Run database seed first.");
+      setError("Unable to sign in with the test account.");
     } finally {
       setIsLoading(false);
     }
@@ -435,4 +435,3 @@ export function useLogin() {
     getEmailProvider,
   };
 }
-

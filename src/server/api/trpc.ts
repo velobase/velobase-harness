@@ -128,21 +128,43 @@ export const publicProcedure = t.procedure.use(timingMiddleware);
  */
 export const protectedProcedure = t.procedure
   .use(timingMiddleware)
-  .use(({ ctx, next }) => {
-    if (!ctx.session?.user) {
+  .use(async ({ ctx, next }) => {
+    if (!ctx.session?.user?.id) {
       throw new TRPCError({ code: "UNAUTHORIZED" });
     }
-    // Check if user is blocked (defensive check - normally blocked users can't login)
-    if (ctx.session.user.isBlocked) {
+
+    const authzUser = await ctx.db.user.findUnique({
+      where: { id: ctx.session.user.id },
+      select: {
+        id: true,
+        isAdmin: true,
+        isBlocked: true,
+        isPrimaryDeviceAccount: true,
+      },
+    });
+
+    if (!authzUser) {
+      throw new TRPCError({ code: "UNAUTHORIZED" });
+    }
+
+    if (authzUser.isBlocked) {
       throw new TRPCError({ 
         code: "FORBIDDEN", 
         message: "Your account has been suspended. Please contact support." 
       });
     }
+
     return next({
       ctx: {
-        // infers the `session` as non-nullable
-        session: { ...ctx.session, user: ctx.session.user },
+        session: {
+          ...ctx.session,
+          user: {
+            ...ctx.session.user,
+            isAdmin: authzUser.isAdmin,
+            isBlocked: authzUser.isBlocked,
+            isPrimaryDeviceAccount: authzUser.isPrimaryDeviceAccount,
+          },
+        },
       },
     });
   });

@@ -1,4 +1,5 @@
 import { buildManageSubscriptionUrl } from "./utils";
+import { APP_NAME } from "@/config/brand";
 
 export function renderSubscriptionRenewalReminderEmail(params: {
   periodEndAtIso: string;
@@ -16,7 +17,7 @@ export function renderSubscriptionRenewalReminderEmail(params: {
     "",
     "If you have any questions, reply to this email.",
     "",
-    "AI SaaS App",
+    APP_NAME,
   ].join("\n");
 
   const html = `<!doctype html>
@@ -24,7 +25,7 @@ export function renderSubscriptionRenewalReminderEmail(params: {
   <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; background:#f8fafc; padding:24px;">
     <div style="max-width:520px; margin:0 auto; background:#fff; border-radius:12px; border:1px solid #e2e8f0; overflow:hidden;">
       <div style="padding:20px 24px; background:linear-gradient(135deg,#f97316 0%,#dc2626 100%); color:#fff;">
-        <div style="font-size:18px; font-weight:700;">AI SaaS App</div>
+        <div style="font-size:18px; font-weight:700;">${APP_NAME}</div>
         <div style="opacity:.95; margin-top:6px;">Subscription renewal reminder</div>
       </div>
       <div style="padding:24px;">
@@ -48,5 +49,4 @@ export function renderSubscriptionRenewalReminderEmail(params: {
 
   return { subject, text, html };
 }
-
 

@@ -3,6 +3,7 @@ import { Mail, MessageCircle, ArrowRight } from "lucide-react";
 import { Header } from "@/components/layout/header";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { Background } from "@/components/layout/background";
+import { supportMailto } from "@/config/brand";
 
 export default function SupportPage() {
   return (
@@ -27,7 +28,7 @@ export default function SupportPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-lg mx-auto">
             {/* Email */}
               <a
-                href="mailto:support@example.com"
+                href={supportMailto()}
               className="group flex items-center justify-between p-6 rounded-2xl bg-white/50 dark:bg-black/20 border border-border/50 hover:border-orange-500/30 hover:bg-orange-50/50 dark:hover:bg-orange-950/10 transition-all duration-300"
               >
               <div className="flex items-center gap-4">

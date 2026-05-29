@@ -20,6 +20,10 @@ import { getClientIpFromHeaders } from "@/server/features/cdn-adapters";
 import { verifyPassword } from "./password";
 import { isPasswordLoginAllowed } from "./password-login-allowlist";
 import { SIGNUP_DISABLED } from "@/config/decommission";
+import { APP_NAME } from "@/config/brand";
+
+const INVALID_CREDENTIALS_ERROR = "Invalid email or password";
+const DUMMY_PASSWORD_HASH = "$2b$12$mzq4zQ1MzF0bDU7ytBisteBt7YDnfG3/BaXI7hVQj.4XAZvaGPrbW";
 
 function classifyFirstTouch(params: {
   refHost?: string | null;
@@ -106,7 +110,6 @@ export const authConfig = {
 
     /**
      * Password Login Provider (仅白名单邮箱)
-     * - 用于空中云汇等合作方测试
      * - 只允许 password-login-allowlist.ts 中配置的邮箱
      * - 审核完成后清空白名单即可关闭
      */
@@ -119,19 +122,12 @@ export const authConfig = {
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) {
-          throw new Error("Email and password are required");
+          throw new Error(INVALID_CREDENTIALS_ERROR);
         }
 
         const email = (credentials.email as string).toLowerCase().trim();
         const password = credentials.password as string;
 
-        // 1. 强制白名单检查
-        if (!isPasswordLoginAllowed(email)) {
-          logger.warn({ email }, "Password login attempt for non-allowlisted email");
-          throw new Error("Password login is not available for this account");
-        }
-
-        // 2. 查用户
         const user = await db.user.findUnique({
           where: { email },
           select: {
@@ -147,25 +143,26 @@ export const authConfig = {
           },
         });
 
-        if (!user) {
-          logger.warn({ email }, "Password login: user not found");
-          throw new Error("Invalid email or password");
-        }
+        const allowlisted = isPasswordLoginAllowed(email);
+        const passwordHash = allowlisted && user?.passwordHash ? user.passwordHash : DUMMY_PASSWORD_HASH;
+        const valid = await verifyPassword(password, passwordHash);
 
-        if (user.isBlocked) {
-          throw new Error("Your account has been suspended");
-        }
-
-        if (!user.passwordHash) {
-          logger.warn({ email }, "Password login: no password set for user");
-          throw new Error("Invalid email or password");
-        }
-
-        // 3. 校验密码
-        const valid = await verifyPassword(password, user.passwordHash);
-        if (!valid) {
-          logger.warn({ email }, "Password login: invalid password");
-          throw new Error("Invalid email or password");
+        if (!allowlisted || !user || user.isBlocked || !user.passwordHash || !valid) {
+          logger.warn(
+            {
+              reason: !allowlisted
+                ? "not_allowlisted"
+                : !user
+                  ? "not_found"
+                  : user.isBlocked
+                    ? "blocked"
+                    : !user.passwordHash
+                      ? "missing_password"
+                      : "invalid_password",
+            },
+            "Password login failed",
+          );
+          throw new Error(INVALID_CREDENTIALS_ERROR);
         }
 
         logger.info({ email, userId: user.id }, "Password login successful");
@@ -200,7 +197,7 @@ export const authConfig = {
           pass: process.env.RESEND_API_KEY ?? "" 
         },
       },
-      from: process.env.EMAIL_FROM ?? "App <noreply@example.com>",
+      from: process.env.EMAIL_FROM ?? `${APP_NAME} <onboarding@resend.dev>`,
       // Magic Link expires in 15 minutes
       maxAge: 15 * 60,
       // Custom email sending via Resend SDK with rate limiting
@@ -231,10 +228,10 @@ export const authConfig = {
         try {
           await sendEmail({
             to: email,
-            subject: "Sign in to AI SaaS App",
+            subject: `Sign in to ${APP_NAME}`,
             react: MagicLinkEmailTemplate({ url }),
             html: renderMagicLinkHtml(url),
-            text: `Sign in to AI SaaS App\n\nClick the link below:\n${url}\n\nThis link expires in 15 minutes.`,
+            text: `Sign in to ${APP_NAME}\n\nClick the link below:\n${url}\n\nThis link expires in 15 minutes.`,
           });
           logger.info({ email }, "Magic link email sent");
 

@@ -4,6 +4,7 @@ import { env } from "@/server/shared/env";
 import { redis } from "@/server/redis";
 import { logger } from "@/server/shared/telemetry/logger";
 import { createNowPaymentsPayment, getNowPaymentsMinAmount } from "../providers/nowpayments";
+import { APP_NAME } from "@/config/brand";
 
 function toNumber(value: unknown): number | undefined {
   if (typeof value === "number" && Number.isFinite(value)) return value;
@@ -163,7 +164,7 @@ export async function createCryptoInvoice(params: { userId: string; paymentId: s
               return typeof n === "string" ? n : null;
             })()
           : null;
-      return name ? `AI SaaS App - ${name} - ${payment.order.id}` : `App Order ${payment.order.id}`;
+      return name ? `${APP_NAME} - ${name} - ${payment.order.id}` : `${APP_NAME} Order ${payment.order.id}`;
     })();
 
     const created = await createNowPaymentsPayment({
@@ -263,4 +264,3 @@ export async function createCryptoInvoice(params: { userId: string; paymentId: s
     await redis.del(lockKey).catch(() => undefined);
   }
 }
-

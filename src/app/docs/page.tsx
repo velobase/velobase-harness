@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ArrowLeft, BookOpen, Rocket } from "lucide-react";
+import { supportMailto } from "@/config/brand";
 
 export default function DocsPage() {
   return (
@@ -95,7 +96,7 @@ export default function DocsPage() {
           <p className="mt-12 text-sm text-slate-500 dark:text-slate-500">
             Want to be notified when docs are ready?{" "}
             <a
-              href="mailto:support@example.com?subject=Notify me about docs"
+              href={supportMailto("Notify me about docs")}
               className="text-orange-600 dark:text-orange-400 hover:underline font-medium"
             >
               Let us know
@@ -106,4 +107,3 @@ export default function DocsPage() {
     </div>
   );
 }
-
