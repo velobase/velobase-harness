@@ -21,6 +21,14 @@ velobase-cloud github connect
 
 The CLI uses browser-based login and stores local credentials under `~/.velobase-cloud/`.
 
+Check project slot and billing status:
+
+```bash
+velobase-cloud billing
+```
+
+Velobase Cloud uses a project/month model. Each initialized project consumes one project slot and receives dedicated PostgreSQL, dedicated Redis, and an app compute budget. New accounts can use free trial slots; when no slot is available, the CLI links you to the billing page to purchase a project slot.
+
 ## 3. Initialize The Project
 
 Run this from your Harness repository root:
@@ -29,7 +37,7 @@ Run this from your Harness repository root:
 velobase-cloud init
 ```
 
-`init` scans the project, detects Velobase Harness, creates a Cloud project and infrastructure, writes `.github/workflows/deploy-velobase.yml`, configures GitHub secrets when possible, and stores project binding under `.velobase/config.json`.
+`init` scans the project, detects Velobase Harness, consumes an available project slot, creates a Cloud project and dedicated infrastructure, writes `.github/workflows/deploy-velobase.yml`, configures GitHub secrets when possible, and stores project binding under `.velobase/config.json`.
 
 ## 4. Adapt For Cloud
 
@@ -94,11 +102,13 @@ velobase-cloud deploy trigger --branch main --watch
 
 Confirm the active GitHub Actions workflow when switching deployment modes:
 
-- Single-service deployment uses `.github/workflows/deploy-velobase.yml`. It builds one unified image and uses the image or Cloud environment `SERVICE_MODE` value.
-- Multi-service deployment uses `.github/workflows/deploy-velobase-multi.yml`. It builds and deploys Web and Worker services by default.
+- Single-service deployment uses `.github/workflows/deploy-velobase.yml`. It builds one unified image and assigns the default app budget to the `app` service.
+- Multi-service deployment uses `.github/workflows/deploy-velobase-multi.yml`. It builds and deploys `web`, `api`, and `worker` services by default and splits the app budget evenly across them.
 - Keep only one deployment workflow listening to `push` on `main`. Disable the inactive workflow, remove its `push` trigger, or leave it as `workflow_dispatch` only to avoid duplicate deployments from one commit.
 
-The default multi-service deployment is Web + Worker with `exposed_service` set to `web`. Add the API service only when standalone Hono routes are active; then include an API service entry with `mode: "api"`, `port: 3002`, and `health: "/health"`. Keep `exposed_service` as `web` unless the primary domain (`{subdomain}.velobase.app`) should route directly to API.
+The Deploy API requires every service to declare `cpu_request`, `memory_request`, `cpu_limit`, and `memory_limit`. The default app budget is `970m` CPU and `2355Mi` memory. The three-service template defaults each service to `323m` and `785Mi` with `request == limit`. If you change resources, edit the workflow service entries and keep the sum of requests within the project app budget.
+
+The default multi-service deployment is Web + API + Worker with `exposed_service` set to `web`. Keep the API service only when standalone Hono routes are active. If the project does not run a separate API service, remove that service entry and redistribute resources to Web/Worker. Keep `exposed_service` as `web` unless the primary domain (`{subdomain}.velobase.app`) should route directly to API.
 
 ## 8. Operate
 
@@ -110,9 +120,11 @@ velobase-cloud deploy runs
 velobase-cloud logs deploy
 velobase-cloud logs pods
 velobase-cloud env list
+velobase-cloud billing
 velobase-cloud deploy rollback <deployment-id>
 ```
 
 - Check Web and Worker health endpoints. Check API health only when the optional API service is enabled.
+- If commands return `PROJECT_OVERDUE`, restore the project subscription before deploying or applying environment changes.
 - Confirm required modules initialize from logs.
 - For production issues, collect Cloud runtime logs first, then follow `docs/en/debugging/online-local-debug.md`.
