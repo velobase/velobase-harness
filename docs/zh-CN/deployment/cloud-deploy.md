@@ -103,12 +103,12 @@ velobase-cloud deploy trigger --branch main --watch
 切换部署模式时，需要确认当前启用的 GitHub Actions workflow：
 
 - 单服务部署使用 `.github/workflows/deploy-velobase.yml`。它构建一个统一镜像，并把默认 App 预算分配给 `app` 服务。
-- 多服务部署使用 `.github/workflows/deploy-velobase-multi.yml`。它默认构建并部署 `web`、`api`、`worker` 服务，并把 App 预算平均分配给三个服务。
+- 多服务部署使用 `.github/workflows/deploy-velobase-multi.yml`。它默认构建并部署 `web`、`worker` 服务，并把 App 预算平均分配给这两个服务。
 - 同一时间只保留一个部署 workflow 监听 `main` 分支的 `push`。另一个 workflow 应禁用、移除 `push` 触发，或只保留 `workflow_dispatch`，避免一次提交触发重复部署。
 
-Deploy API 要求每个服务显式声明 `cpu_request`、`memory_request`、`cpu_limit` 和 `memory_limit`。默认 App 预算是 `970m` CPU 和 `2355Mi` 内存；三服务模板默认每个服务 `323m` 和 `785Mi`，并使用 `request == limit`。如需调整资源，修改 workflow 中对应服务的资源字段，但所有服务 request 之和必须不超过项目 App 预算。
+Deploy API 要求每个服务显式声明 `cpu_request`、`memory_request`、`cpu_limit` 和 `memory_limit`。默认 App 预算是 `970m` CPU 和 `2355Mi` 内存；双服务模板默认每个服务 `485m` 和 `1177Mi`，并使用 `request == limit`。如需调整资源，修改 workflow 中对应服务的资源字段，但所有服务 request 之和必须不超过项目 App 预算。
 
-默认多服务部署是 Web + API + Worker，`exposed_service` 设置为 `web`。只有在独立 Hono routes 已启用时才保留 API 服务；如果项目没有独立 API 服务，请删除 API 条目并把剩余资源重新分配给 Web/Worker。除非主域名（`{subdomain}.velobase.app`）确实要直接路由到 API，否则 `exposed_service` 仍保持 `web`。
+默认多服务部署是 Web + Worker，`exposed_service` 设置为 `web`。只有在独立 Hono routes 已启用时才增加 API 服务；此时在 services 中加入 `mode: "api"`、`port: 3002` 的 API 条目，并重新把 App 预算分配给 Web、API 和 Worker。除非主域名（`{subdomain}.velobase.app`）确实要直接路由到 API，否则 `exposed_service` 仍保持 `web`。
 
 ## 8. 运维
 

@@ -103,12 +103,12 @@ velobase-cloud deploy trigger --branch main --watch
 Confirm the active GitHub Actions workflow when switching deployment modes:
 
 - Single-service deployment uses `.github/workflows/deploy-velobase.yml`. It builds one unified image and assigns the default app budget to the `app` service.
-- Multi-service deployment uses `.github/workflows/deploy-velobase-multi.yml`. It builds and deploys `web`, `api`, and `worker` services by default and splits the app budget evenly across them.
+- Multi-service deployment uses `.github/workflows/deploy-velobase-multi.yml`. It builds and deploys `web` and `worker` services by default and splits the app budget evenly across them.
 - Keep only one deployment workflow listening to `push` on `main`. Disable the inactive workflow, remove its `push` trigger, or leave it as `workflow_dispatch` only to avoid duplicate deployments from one commit.
 
-The Deploy API requires every service to declare `cpu_request`, `memory_request`, `cpu_limit`, and `memory_limit`. The default app budget is `970m` CPU and `2355Mi` memory. The three-service template defaults each service to `323m` and `785Mi` with `request == limit`. If you change resources, edit the workflow service entries and keep the sum of requests within the project app budget.
+The Deploy API requires every service to declare `cpu_request`, `memory_request`, `cpu_limit`, and `memory_limit`. The default app budget is `970m` CPU and `2355Mi` memory. The two-service template defaults each service to `485m` and `1177Mi` with `request == limit`. If you change resources, edit the workflow service entries and keep the sum of requests within the project app budget.
 
-The default multi-service deployment is Web + API + Worker with `exposed_service` set to `web`. Keep the API service only when standalone Hono routes are active. If the project does not run a separate API service, remove that service entry and redistribute resources to Web/Worker. Keep `exposed_service` as `web` unless the primary domain (`{subdomain}.velobase.app`) should route directly to API.
+The default multi-service deployment is Web + Worker with `exposed_service` set to `web`. Add the API service only when standalone Hono routes are active; then include an API service entry with `mode: "api"` and `port: 3002`, and redistribute the app budget across Web, API, and Worker. Keep `exposed_service` as `web` unless the primary domain (`{subdomain}.velobase.app`) should route directly to API.
 
 ## 8. Operate
 
