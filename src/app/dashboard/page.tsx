@@ -2,8 +2,9 @@
 
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, type ComponentType } from "react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import {
   User,
   CreditCard,
@@ -16,71 +17,15 @@ import {
 } from "lucide-react";
 import { Header } from "@/components/layout/header";
 import { Background } from "@/components/layout/background";
+import { WavespeedTestPanel } from "@/components/dashboard/wavespeed-test-panel";
 import { cn } from "@/lib/utils";
 
 interface NavItem {
   title: string;
   href: string;
-  icon: React.ComponentType<{ className?: string }>;
+  icon: ComponentType<{ className?: string }>;
   description: string;
   badge?: string;
-}
-
-const frameworkPages: NavItem[] = [
-  {
-    title: "Overview",
-    href: "/dashboard",
-    icon: Activity,
-    description: "System status & quick actions",
-  },
-  {
-    title: "Profile",
-    href: "/account/profile",
-    icon: User,
-    description: "Manage your profile & account",
-  },
-  {
-    title: "Billing",
-    href: "/account/billing",
-    icon: CreditCard,
-    description: "Subscription, credits & payment history",
-  },
-  {
-    title: "Settings",
-    href: "/account/settings",
-    icon: Settings,
-    description: "Account settings & integrations",
-  },
-];
-
-const adminPages: NavItem[] = [
-  {
-    title: "Admin Dashboard",
-    href: "/admin",
-    icon: ShieldCheck,
-    description: "Users, orders, products, promos",
-    badge: "Admin",
-  },
-];
-
-interface ModuleStatus {
-  name: string;
-  enabled: boolean;
-  category: string;
-}
-
-function getModuleStatuses(): ModuleStatus[] {
-  // Client-side: read from a global exposed by the server, or infer from env
-  // For SSR/client rendering, we read NEXT_PUBLIC_ vars and infer
-  return [
-    { name: "PostHog", enabled: !!process.env.NEXT_PUBLIC_POSTHOG_KEY, category: "Analytics" },
-    { name: "Google Ads", enabled: !!process.env.NEXT_PUBLIC_GOOGLE_ADS_MEASUREMENT_ID, category: "Analytics" },
-    { name: "Lark", enabled: false, category: "Messaging" }, // server-only env, defaults to unknown on client
-    { name: "Telegram", enabled: !!process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME, category: "Messaging" },
-    { name: "NowPayments", enabled: false, category: "Payment" }, // server-only env
-    { name: "Affiliate", enabled: true, category: "Features" }, // on by default
-    { name: "AI Chat", enabled: true, category: "Features" }, // on by default if any LLM key
-  ];
 }
 
 function PageCard({ item }: { item: NavItem }) {
@@ -88,25 +33,27 @@ function PageCard({ item }: { item: NavItem }) {
     <Link
       href={item.href}
       className={cn(
-        "group flex items-start gap-4 rounded-xl border border-border/50 bg-card/50 backdrop-blur-sm p-4",
-        "hover:bg-accent/50 hover:border-border hover:shadow-md transition-all duration-200",
+        "group border-border/50 bg-card/50 flex items-start gap-4 rounded-xl border p-4 backdrop-blur-sm",
+        "hover:bg-accent/50 hover:border-border transition-all duration-200 hover:shadow-md",
       )}
     >
-      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary group-hover:bg-primary/20 transition-colors">
+      <div className="bg-primary/10 text-primary group-hover:bg-primary/20 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg transition-colors">
         <item.icon className="h-5 w-5" />
       </div>
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
-          <h3 className="font-medium text-sm text-foreground group-hover:text-foreground">
+          <h3 className="text-foreground group-hover:text-foreground text-sm font-medium">
             {item.title}
           </h3>
           {item.badge && (
-            <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-orange-500/10 text-orange-500 border border-orange-500/20">
+            <span className="rounded border border-orange-500/20 bg-orange-500/10 px-1.5 py-0.5 text-[10px] font-medium text-orange-500">
               {item.badge}
             </span>
           )}
         </div>
-        <p className="text-xs text-muted-foreground mt-0.5">{item.description}</p>
+        <p className="text-muted-foreground mt-0.5 text-xs">
+          {item.description}
+        </p>
       </div>
     </Link>
   );
@@ -115,8 +62,10 @@ function PageCard({ item }: { item: NavItem }) {
 function PageSection({ title, items }: { title: string; items: NavItem[] }) {
   return (
     <div>
-      <h2 className="text-sm font-medium text-muted-foreground mb-3 px-1">{title}</h2>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+      <h2 className="text-muted-foreground mb-3 px-1 text-sm font-medium">
+        {title}
+      </h2>
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {items.map((item) => (
           <PageCard key={item.href} item={item} />
         ))}
@@ -126,39 +75,62 @@ function PageSection({ title, items }: { title: string; items: NavItem[] }) {
 }
 
 function ModuleStatusPanel() {
-  const [modules] = useState(() => getModuleStatuses());
+  const t = useTranslations("dashboard");
+  const modules = [
+    {
+      name: "PostHog",
+      enabled: !!process.env.NEXT_PUBLIC_POSTHOG_KEY,
+      category: t("categories.analytics"),
+    },
+    {
+      name: "Google Ads",
+      enabled: !!process.env.NEXT_PUBLIC_GOOGLE_ADS_MEASUREMENT_ID,
+      category: t("categories.analytics"),
+    },
+    { name: "Lark", enabled: false, category: t("categories.messaging") },
+    {
+      name: "Telegram",
+      enabled: !!process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME,
+      category: t("categories.messaging"),
+    },
+    { name: "NowPayments", enabled: false, category: t("categories.payment") },
+    { name: "Affiliate", enabled: true, category: t("categories.features") },
+    { name: "AI Chat", enabled: true, category: t("categories.features") },
+  ];
   const categories = [...new Set(modules.map((m) => m.category))];
 
   return (
     <div>
-      <h2 className="text-sm font-medium text-muted-foreground mb-3 px-1 flex items-center gap-2">
-        <Puzzle className="w-4 h-4" />
-        Module Status
+      <h2 className="text-muted-foreground mb-3 flex items-center gap-2 px-1 text-sm font-medium">
+        <Puzzle className="h-4 w-4" />
+        {t("moduleStatus")}
       </h2>
-      <div className="rounded-xl border border-border/50 bg-card/50 backdrop-blur-sm p-5">
+      <div className="border-border/50 bg-card/50 rounded-xl border p-5 backdrop-blur-sm">
         <div className="space-y-4">
           {categories.map((cat) => (
             <div key={cat}>
-              <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">
+              <h3 className="text-muted-foreground mb-2 text-xs font-medium tracking-wider uppercase">
                 {cat}
               </h3>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                 {modules
                   .filter((m) => m.category === cat)
                   .map((mod) => (
                     <div
                       key={mod.name}
-                      className="flex items-center gap-2 px-3 py-2 rounded-lg bg-background/50 border border-border/30"
+                      className="bg-background/50 border-border/30 flex items-center gap-2 rounded-lg border px-3 py-2"
                     >
                       {mod.enabled ? (
-                        <CheckCircle2 className="w-3.5 h-3.5 text-green-500 shrink-0" />
+                        <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-green-500" />
                       ) : (
-                        <XCircle className="w-3.5 h-3.5 text-muted-foreground/40 shrink-0" />
+                        <XCircle className="text-muted-foreground/40 h-3.5 w-3.5 shrink-0" />
                       )}
                       <span
                         className={cn(
                           "text-sm",
-                          mod.enabled ? "text-foreground" : "text-muted-foreground/60",
+                          mod.enabled
+                            ? "text-foreground"
+                            : "text-muted-foreground/60",
                         )}
                       >
                         {mod.name}
@@ -169,8 +141,8 @@ function ModuleStatusPanel() {
             </div>
           ))}
         </div>
-        <p className="text-[11px] text-muted-foreground/50 mt-4">
-          Module availability is determined by environment configuration. Server-only modules show client-side inference.
+        <p className="text-muted-foreground/50 mt-4 text-[11px]">
+          {t("moduleStatusNote")}
         </p>
       </div>
     </div>
@@ -178,6 +150,7 @@ function ModuleStatusPanel() {
 }
 
 export default function DashboardPage() {
+  const t = useTranslations("dashboard");
   const { data: session, status } = useSession();
   const router = useRouter();
 
@@ -189,32 +162,72 @@ export default function DashboardPage() {
 
   if (status === "loading" || !session) {
     return (
-      <div className="min-h-screen w-full bg-background flex items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+      <div className="bg-background flex min-h-screen w-full items-center justify-center">
+        <div className="border-primary h-8 w-8 animate-spin rounded-full border-2 border-t-transparent" />
       </div>
     );
   }
 
   const isAdmin = (session.user as { isAdmin?: boolean })?.isAdmin ?? false;
+  const frameworkPages: NavItem[] = [
+    {
+      title: t("pages.overview.title"),
+      href: "/dashboard",
+      icon: Activity,
+      description: t("pages.overview.description"),
+    },
+    {
+      title: t("pages.profile.title"),
+      href: "/account/profile",
+      icon: User,
+      description: t("pages.profile.description"),
+    },
+    {
+      title: t("pages.billing.title"),
+      href: "/account/billing",
+      icon: CreditCard,
+      description: t("pages.billing.description"),
+    },
+    {
+      title: t("pages.settings.title"),
+      href: "/account/settings",
+      icon: Settings,
+      description: t("pages.settings.description"),
+    },
+  ];
+  const adminPages: NavItem[] = [
+    {
+      title: t("pages.admin.title"),
+      href: "/admin",
+      icon: ShieldCheck,
+      description: t("pages.admin.description"),
+      badge: t("adminBadge"),
+    },
+  ];
 
   return (
-    <div className="min-h-dvh w-full bg-background text-foreground font-sans relative overflow-x-hidden">
+    <div className="bg-background text-foreground relative min-h-dvh w-full overflow-x-hidden font-sans">
       <Background />
       <Header />
 
-      <main className="relative z-10 w-full max-w-5xl mx-auto px-4 sm:px-6 pt-28 pb-16">
+      <main className="relative z-10 mx-auto w-full max-w-5xl px-4 pt-28 pb-16 sm:px-6">
         <div className="mb-8">
-          <h1 className="text-2xl font-semibold text-foreground">
-            Welcome back{session.user.name ? `, ${session.user.name}` : ""}
+          <h1 className="text-foreground text-2xl font-semibold">
+            {session.user.name
+              ? t("welcomeNamed", { name: session.user.name })
+              : t("welcome")}
           </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Manage your account and explore framework features.
-          </p>
+          <p className="text-muted-foreground mt-1 text-sm">{t("subtitle")}</p>
         </div>
 
         <div className="space-y-8">
-          <PageSection title="Framework" items={frameworkPages} />
-          {isAdmin && <PageSection title="Administration" items={adminPages} />}
+          <PageSection title={t("framework")} items={frameworkPages} />
+          {isAdmin && (
+            <>
+              <PageSection title={t("administration")} items={adminPages} />
+              <WavespeedTestPanel />
+            </>
+          )}
           <ModuleStatusPanel />
         </div>
       </main>

@@ -140,6 +140,86 @@
       "subtitleAccent": "Focus on your core feature. We handle the rest."
     }
   },
+  "dashboard": {
+    "welcome": "欢迎回来",
+    "welcomeNamed": "欢迎回来，{name}",
+    "subtitle": "管理账户并查看框架能力。",
+    "framework": "框架",
+    "administration": "管理",
+    "adminBadge": "管理员",
+    "moduleStatus": "模块状态",
+    "moduleStatusNote": "模块可用性由环境配置决定。仅服务端模块在客户端展示为推断状态。",
+    "categories": {
+      "analytics": "分析",
+      "messaging": "消息",
+      "payment": "支付",
+      "features": "功能"
+    },
+    "pages": {
+      "overview": {
+        "title": "概览",
+        "description": "系统状态和快捷入口"
+      },
+      "profile": {
+        "title": "个人资料",
+        "description": "管理资料和账户"
+      },
+      "billing": {
+        "title": "账单",
+        "description": "订阅、积分和支付记录"
+      },
+      "settings": {
+        "title": "设置",
+        "description": "账户设置和集成"
+      },
+      "admin": {
+        "title": "管理后台",
+        "description": "用户、订单、产品、优惠码"
+      }
+    },
+    "wavespeed": {
+      "title": "WaveSpeedAI 测试",
+      "description": "管理员可先检查 WaveSpeed 连接；完整生成链路默认优先写 R2，失败时回退到文件系统。",
+      "moduleEnabled": "模块已启用",
+      "moduleDisabled": "模块未启用",
+      "connectionConfigReady": "连接已就绪",
+      "connectionConfigMissing": "连接缺少 {count} 项",
+      "generationConfigReady": "生成已就绪",
+      "generationConfigMissing": "生成缺少 {count} 项",
+      "checkConnection": "检查连接",
+      "connectionConfig": "连接配置",
+      "generationConfig": "生成配置",
+      "optionalConfig": "可选配置",
+      "statusLoadFailed": "状态加载失败",
+      "connectionFailed": "连接失败",
+      "connectionSucceeded": "连接成功",
+      "connectionSummary": "WaveSpeed 已响应，返回 {count} 个可用模型。",
+      "sampleModels": "模型示例",
+      "model": "模型",
+      "aspectRatio": "比例",
+      "prompt": "提示词",
+      "defaultPrompt": "白色背景上的蓝色陶瓷马克杯，干净的商品摄影，柔和棚拍灯光",
+      "runGeneration": "运行试生成",
+      "generationFailed": "生成失败",
+      "generationDisabledHint": "试生成需要 Redis、模块启用，并启动 worker。存储默认优先 R2，失败时回退到文件系统。",
+      "latestTask": "最新任务",
+      "noTask": "还没有测试任务",
+      "loadingTask": "正在加载任务...",
+      "taskLoadFailed": "任务加载失败",
+      "taskId": "任务 ID",
+      "generatedAlt": "WaveSpeed 测试生成图片",
+      "openImage": "打开图片",
+      "waitingForWorker": "等待 Worker 输出",
+      "taskStatus": {
+        "queued": "排队中",
+        "running": "运行中",
+        "succeeded": "成功",
+        "failed": "失败",
+        "canceled": "已取消",
+        "timed_out": "已超时"
+      }
+    }
+  },
   "account": {
     "profile": "Profile",
     "settings": "Settings",

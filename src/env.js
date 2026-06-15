@@ -37,16 +37,29 @@ export const env = createEnv({
     OPENROUTER_API_KEY: z.string().optional(),
     OPENAI_API_KEY: z.string().optional(),
     OPENAI_BASE_URL: z.string().url().optional(),
+    WAVESPEED_API_KEY: z.string().optional(),
+    WAVESPEED_BASE_URL: z
+      .string()
+      .url()
+      .optional()
+      .default("https://api.wavespeed.ai"),
+    WAVESPEED_REQUEST_TIMEOUT_MS: z
+      .string()
+      .regex(/^\d+$/)
+      .optional()
+      .transform((val) => (val ? parseInt(val, 10) : 30000)),
     CDN_BASE_URL: z.string().url().optional(),
     STORAGE_PROVIDER: z
-      .enum(["aws", "aliyun", "gcs", "minio", "r2"])
+      .enum(["aws", "aliyun", "gcs", "minio", "r2", "filesystem"])
       .optional()
-      .default("aws"),
+      .default("r2"),
     STORAGE_REGION: z.string().optional(),
     STORAGE_BUCKET: z.string().optional(),
     STORAGE_ACCESS_KEY_ID: z.string().optional(),
     STORAGE_SECRET_ACCESS_KEY: z.string().optional(),
     STORAGE_ENDPOINT: z.string().optional(),
+    STORAGE_FILESYSTEM_ROOT: z.string().optional(),
+    STORAGE_FILESYSTEM_PUBLIC_BASE_URL: z.string().url().optional(),
     // Optional key prefix for shared-bucket deployments (not needed with per-tenant buckets)
     STORAGE_PATH_PREFIX: z.string().optional(),
     STRIPE_SECRET_KEY: z.string().optional(),
@@ -128,6 +141,7 @@ export const env = createEnv({
     SUPPORT_AUTOMATION_MODE: z.enum(["off", "auto", "on"]).optional(),
     CONVERSION_ALERT_MODE: z.enum(["off", "auto", "on"]).optional(),
     AI_CHAT_MODE: z.enum(["off", "auto", "on"]).optional(),
+    IMAGE_GENERATION_MODE: z.enum(["off", "auto", "on"]).optional(),
     NODE_ENV: z
       .enum(["development", "test", "production"])
       .default("development"),
@@ -175,6 +189,9 @@ export const env = createEnv({
     OPENROUTER_API_KEY: process.env.OPENROUTER_API_KEY,
     OPENAI_API_KEY: process.env.OPENAI_API_KEY,
     OPENAI_BASE_URL: process.env.OPENAI_BASE_URL,
+    WAVESPEED_API_KEY: process.env.WAVESPEED_API_KEY,
+    WAVESPEED_BASE_URL: process.env.WAVESPEED_BASE_URL,
+    WAVESPEED_REQUEST_TIMEOUT_MS: process.env.WAVESPEED_REQUEST_TIMEOUT_MS,
     CDN_BASE_URL: process.env.CDN_BASE_URL,
     STORAGE_PROVIDER: process.env.STORAGE_PROVIDER,
     STORAGE_REGION: process.env.STORAGE_REGION,
@@ -182,6 +199,9 @@ export const env = createEnv({
     STORAGE_ACCESS_KEY_ID: process.env.STORAGE_ACCESS_KEY_ID,
     STORAGE_SECRET_ACCESS_KEY: process.env.STORAGE_SECRET_ACCESS_KEY,
     STORAGE_ENDPOINT: process.env.STORAGE_ENDPOINT,
+    STORAGE_FILESYSTEM_ROOT: process.env.STORAGE_FILESYSTEM_ROOT,
+    STORAGE_FILESYSTEM_PUBLIC_BASE_URL:
+      process.env.STORAGE_FILESYSTEM_PUBLIC_BASE_URL,
     STORAGE_PATH_PREFIX: process.env.STORAGE_PATH_PREFIX,
     STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY,
     STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET,
@@ -238,6 +258,7 @@ export const env = createEnv({
     SUPPORT_AUTOMATION_MODE: process.env.SUPPORT_AUTOMATION_MODE,
     CONVERSION_ALERT_MODE: process.env.CONVERSION_ALERT_MODE,
     AI_CHAT_MODE: process.env.AI_CHAT_MODE,
+    IMAGE_GENERATION_MODE: process.env.IMAGE_GENERATION_MODE,
     NODE_ENV: process.env.NODE_ENV,
     NEXT_PUBLIC_APP_ENV: process.env.NEXT_PUBLIC_APP_ENV,
     NEXT_PUBLIC_APP_NAME: process.env.NEXT_PUBLIC_APP_NAME,
