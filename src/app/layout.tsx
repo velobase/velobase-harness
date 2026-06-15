@@ -35,6 +35,9 @@ export const metadata: Metadata = {
     { rel: "icon", url: "/favicon.ico", sizes: "any" },
     { rel: "icon", url: "/favicon.svg", type: "image/svg+xml" },
   ],
+  verification: {
+    google: "Q7Wx4Gyg9ijn7zkHm023_q37UctCg2kxAzjrs7jksyU",
+  },
 };
 
 export const viewport: Viewport = {
