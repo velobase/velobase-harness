@@ -1,0 +1,1 @@
+export { processImageGenerationJob } from "./processor";

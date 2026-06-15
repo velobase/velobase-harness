@@ -68,3 +68,5 @@ export {
   processGoogleAdsUploadJob,
   registerGoogleAdsUploadScheduler,
 } from "./google-ads-upload";
+
+export { processImageGenerationJob } from "./image-generation";

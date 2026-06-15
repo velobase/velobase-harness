@@ -53,6 +53,20 @@ export type EventPayload = {
   "fraud:efw": {
     warning: unknown;
   };
+  "image_generation:succeeded": {
+    taskId: string;
+    userId: string;
+    provider: string;
+    model: string;
+    assetIds: string[];
+  };
+  "image_generation:failed": {
+    taskId: string;
+    userId: string;
+    provider: string;
+    model: string;
+    errorMessage?: string;
+  };
 };
 
 type Handler<T> = (payload: T) => Promise<void>;

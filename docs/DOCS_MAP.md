@@ -24,6 +24,7 @@ English is canonical. Simplified Chinese mirrors should stay path-compatible wit
 | Database | `docs/en/integrations/database/README.md` | `docs/zh-CN/integrations/database/README.md` |
 | Storage | `docs/en/integrations/storage/README.md` | `docs/zh-CN/integrations/storage/README.md` |
 | Queue | `docs/en/integrations/queue/README.md` | `docs/zh-CN/integrations/queue/README.md` |
+| Image generation | `docs/en/integrations/image-generation/README.md` | `docs/zh-CN/integrations/image-generation/README.md` |
 | Analytics | `docs/en/integrations/analytics/README.md` | `docs/zh-CN/integrations/analytics/README.md` |
 | Ads | `docs/en/integrations/ads/README.md` | `docs/zh-CN/integrations/ads/README.md` |
 | Security | `docs/en/integrations/security/README.md` | `docs/zh-CN/integrations/security/README.md` |

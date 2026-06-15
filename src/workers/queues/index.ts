@@ -61,3 +61,10 @@ export {
   GOOGLE_ADS_UPLOAD_QUEUE_NAME,
   type GoogleAdsUploadJobData,
 } from "./google-ads-upload.queue";
+
+export {
+  enqueueImageGenerationTask,
+  imageGenerationQueue,
+  IMAGE_GENERATION_QUEUE_NAME,
+  type ImageGenerationJobData,
+} from "./image-generation.queue";

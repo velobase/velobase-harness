@@ -6,15 +6,16 @@ This directory contains the English canonical documentation for third-party inte
 
 ### Core Foundation
 
-| Integration   | Services                    | Purpose                                   | Docs                             |
-| ------------- | --------------------------- | ----------------------------------------- | -------------------------------- |
-| Auth          | NextAuth + Google + GitHub  | Signup, login, session                    | [auth](./auth/README.md)         |
-| Email         | Resend + SendGrid           | Auth email and notifications              | [email](./email/README.md)       |
-| Lark / Feishu | Lark Open Platform / Feishu | Internal notifications and approval cards | [lark](./lark/README.md)         |
-| Database      | Prisma + PostgreSQL + Redis | Persistence, cache, queue dependency      | [database](./database/README.md) |
-| Payment       | Stripe + NowPayments        | Orders, subscriptions, credits            | [payment](./payment/README.md)   |
-| Storage       | R2 / S3 / OSS / GCS / MinIO | Uploads and object storage                | [storage](./storage/README.md)   |
-| Queue         | Redis + BullMQ              | Async jobs, retries, scheduled work       | [queue](./queue/README.md)       |
+| Integration      | Services                    | Purpose                                   | Docs                                             |
+| ---------------- | --------------------------- | ----------------------------------------- | ------------------------------------------------ |
+| Auth             | NextAuth + Google + GitHub  | Signup, login, session                    | [auth](./auth/README.md)                         |
+| Email            | Resend + SendGrid           | Auth email and notifications              | [email](./email/README.md)                       |
+| Lark / Feishu    | Lark Open Platform / Feishu | Internal notifications and approval cards | [lark](./lark/README.md)                         |
+| Database         | Prisma + PostgreSQL + Redis | Persistence, cache, queue dependency      | [database](./database/README.md)                 |
+| Payment          | Stripe + NowPayments        | Orders, subscriptions, credits            | [payment](./payment/README.md)                   |
+| Storage          | R2 / S3 / OSS / GCS / MinIO | Uploads and object storage                | [storage](./storage/README.md)                   |
+| Queue            | Redis + BullMQ              | Async jobs, retries, scheduled work       | [queue](./queue/README.md)                       |
+| Image Generation | WaveSpeedAI                 | Provider-neutral image generation         | [image-generation](./image-generation/README.md) |
 
 ### Growth
 

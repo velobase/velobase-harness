@@ -226,25 +226,28 @@ model User {
   adClickProvider String?   @map("ad_click_provider") // e.g., "google"
   adClickTime     DateTime? @map("ad_click_time") // When the click happened
 
-  accounts             Account[]
-  activationCodes      ActivationCode[]
-  conversations        Conversation[]
-  documents            Document[]
-  githubConnections    GitHubConnection?
-  githubRepositories   GitHubRepository[]
-  imageAssets          ImageAsset[]
-  orders               Order[]               @relation("UserOrders")
-  payments             Payment[]             @relation("UserPayments")
-  posts                Post[]
-  projects             Project[]
-  sessions             Session[]
-  userAgents           UserAgent[]
-  stats                UserStats?
-  offers               UserOffer[]
-  attribution          UserAttribution?
-  touchSchedules            TouchSchedule[]
-  supportTickets            SupportTicket[]
-  notificationPreferences   UserNotificationPreference[]
+  accounts                Account[]
+  activationCodes         ActivationCode[]
+  conversations           Conversation[]
+  documents               Document[]
+  githubConnections       GitHubConnection?
+  githubRepositories      GitHubRepository[]
+  imageAssets             ImageAsset[]
+  imageGenerationTasks    ImageGenerationTask[]
+  imageGenerationAssets   ImageGenerationAsset[]
+  orders                  Order[]                      @relation("UserOrders")
+  payments                Payment[]                    @relation("UserPayments")
+  posts                   Post[]
+  projects                Project[]
+  sessions                Session[]
+  userAgents              UserAgent[]
+  stats                   UserStats?
+  offers                  UserOffer[]
+  attribution             UserAttribution?
+  touchSchedules          TouchSchedule[]
+  supportTickets          SupportTicket[]
+  notificationPreferences UserNotificationPreference[]
+
   @@index([createdAt])
   @@index([deviceKeyAtSignup, createdAt])
   @@index([utmSource])
@@ -531,39 +534,127 @@ model VerificationToken {
 }
 
 model ImageAsset {
-  id           String       @id @default(cuid())
-  userId       String       @map("user_id")
-  agentId      String?      @map("agent_id")
-  projectId    String?      @map("project_id")
-  storageKey   String       @unique @map("storage_key")
-  imageUrl     String       @map("image_url")
-  thumbnailUrl String?      @map("thumbnail_url")
-  contentType  String       @default("image/png") @map("content_type")
-  fileSize     Int?         @map("file_size")
-  width        Int?
-  height       Int?
-  type         String       @default("generate")
-  prompt       String
-  model        String       @default("doubao-seedream-4-0-250828")
-  parentId     String?      @map("parent_id")
-  size         String?
-  ratio        String?
-  watermark    Boolean      @default(false)
-  status       String       @default("completed")
-  error        String?
-  tags         String[]     @default([])
-  createdAt    DateTime     @default(now()) @map("created_at")
-  updatedAt    DateTime     @updatedAt @map("updated_at")
-  parent       ImageAsset?  @relation("ImageVersions", fields: [parentId], references: [id])
-  children     ImageAsset[] @relation("ImageVersions")
-  project      Project?     @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id              String                @id @default(cuid())
+  userId          String                @map("user_id")
+  agentId         String?               @map("agent_id")
+  projectId       String?               @map("project_id")
+  storageKey      String                @unique @map("storage_key")
+  imageUrl        String                @map("image_url")
+  thumbnailUrl    String?               @map("thumbnail_url")
+  contentType     String                @default("image/png") @map("content_type")
+  fileSize        Int?                  @map("file_size")
+  width           Int?
+  height          Int?
+  type            String                @default("generate")
+  prompt          String
+  model           String                @default("doubao-seedream-4-0-250828")
+  parentId        String?               @map("parent_id")
+  size            String?
+  ratio           String?
+  watermark       Boolean               @default(false)
+  status          String                @default("completed")
+  error           String?
+  tags            String[]              @default([])
+  createdAt       DateTime              @default(now()) @map("created_at")
+  updatedAt       DateTime              @updatedAt @map("updated_at")
+  parent          ImageAsset?           @relation("ImageVersions", fields: [parentId], references: [id])
+  children        ImageAsset[]          @relation("ImageVersions")
+  generationAsset ImageGenerationAsset?
+  project         Project?              @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user            User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([projectId, createdAt])
   @@index([parentId])
   @@index([prompt])
   @@map("image_assets")
+}
+
+enum ImageGenerationProvider {
+  WAVESPEED
+}
+
+enum ImageGenerationOperation {
+  TEXT_TO_IMAGE
+  IMAGE_TO_IMAGE
+  EDIT_IMAGE
+}
+
+enum ImageGenerationTaskStatus {
+  QUEUED
+  RUNNING
+  SUCCEEDED
+  FAILED
+  CANCELED
+  TIMED_OUT
+}
+
+model ImageGenerationTask {
+  id              String                    @id @default(cuid())
+  userId          String                    @map("user_id")
+  projectId       String?                   @map("project_id")
+  provider        ImageGenerationProvider
+  providerTaskId  String?                   @map("provider_task_id")
+  providerTaskUrl String?                   @map("provider_task_url")
+  model           String
+  operation       ImageGenerationOperation
+  status          ImageGenerationTaskStatus @default(QUEUED)
+  prompt          String                    @db.Text
+  negativePrompt  String?                   @map("negative_prompt") @db.Text
+  request         Json                      @default("{}")
+  providerOptions Json?                     @map("provider_options")
+  providerRaw     Json?                     @map("provider_raw")
+  errorMessage    String?                   @map("error_message") @db.Text
+  idempotencyKey  String?                   @unique @map("idempotency_key")
+  costUsd         Float?                    @map("cost_usd")
+  metadata        Json?
+  queuedAt        DateTime                  @default(now()) @map("queued_at")
+  startedAt       DateTime?                 @map("started_at")
+  completedAt     DateTime?                 @map("completed_at")
+  createdAt       DateTime                  @default(now()) @map("created_at")
+  updatedAt       DateTime                  @updatedAt @map("updated_at")
+  assets          ImageGenerationAsset[]
+  project         Project?                  @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  user            User                      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, status, createdAt])
+  @@index([projectId, createdAt])
+  @@index([provider, providerTaskId])
+  @@index([status, queuedAt])
+  @@map("image_generation_tasks")
+}
+
+model ImageGenerationAsset {
+  id             String                    @id @default(cuid())
+  taskId         String                    @map("task_id")
+  userId         String                    @map("user_id")
+  projectId      String?                   @map("project_id")
+  imageAssetId   String?                   @unique @map("image_asset_id")
+  provider       ImageGenerationProvider
+  providerTaskId String?                   @map("provider_task_id")
+  model          String
+  status         ImageGenerationTaskStatus
+  prompt         String                    @db.Text
+  sourceUrl      String?                   @map("source_url")
+  publicUrl      String?                   @map("public_url")
+  storageKey     String?                   @map("storage_key")
+  contentType    String?                   @map("content_type")
+  byteLength     Int?                      @map("byte_length")
+  costUsd        Float?                    @map("cost_usd")
+  providerRaw    Json?                     @map("provider_raw")
+  metadata       Json?
+  createdAt      DateTime                  @default(now()) @map("created_at")
+  updatedAt      DateTime                  @updatedAt @map("updated_at")
+  imageAsset     ImageAsset?               @relation(fields: [imageAssetId], references: [id], onDelete: SetNull)
+  project        Project?                  @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  task           ImageGenerationTask       @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user           User                      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([taskId])
+  @@index([userId, createdAt])
+  @@index([projectId, createdAt])
+  @@index([provider, providerTaskId])
+  @@map("image_generation_assets")
 }
 
 model ActivationCode {
@@ -588,21 +679,23 @@ model ActivationCode {
 }
 
 model Project {
-  id                 String               @id @default(cuid())
-  userId             String               @map("user_id")
-  name               String
-  description        String?
-  status             String               @default("active")
-  metadata           Json?
-  createdAt          DateTime             @default(now()) @map("created_at")
-  updatedAt          DateTime             @updatedAt @map("updated_at")
-  githubRepositoryId String?              @map("github_repository_id")
-  conversations      Conversation[]
-  documents          Document[]
-  imageAssets        ImageAsset[]
-  qualityScore       ProjectQualityScore?
-  githubRepository   GitHubRepository?    @relation(fields: [githubRepositoryId], references: [id])
-  user               User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id                    String                 @id @default(cuid())
+  userId                String                 @map("user_id")
+  name                  String
+  description           String?
+  status                String                 @default("active")
+  metadata              Json?
+  createdAt             DateTime               @default(now()) @map("created_at")
+  updatedAt             DateTime               @updatedAt @map("updated_at")
+  githubRepositoryId    String?                @map("github_repository_id")
+  conversations         Conversation[]
+  documents             Document[]
+  imageAssets           ImageAsset[]
+  imageGenerationTasks  ImageGenerationTask[]
+  imageGenerationAssets ImageGenerationAsset[]
+  qualityScore          ProjectQualityScore?
+  githubRepository      GitHubRepository?      @relation(fields: [githubRepositoryId], references: [id])
+  user                  User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([status])

@@ -6,15 +6,16 @@
 
 ### 核心基础
 
-| 集成        | 服务                              | 用途                   | 文档                             |
-| ----------- | --------------------------------- | ---------------------- | -------------------------------- |
-| Auth        | NextAuth + Google + GitHub        | 注册、登录、会话       | [auth](./auth/README.md)         |
-| Email       | Resend + SendGrid                 | 认证邮件和通知         | [email](./email/README.md)       |
-| Lark / 飞书 | Lark Open Platform / 飞书开放平台 | 内部通知和审核卡片     | [lark](./lark/README.md)         |
-| Database    | Prisma + PostgreSQL + Redis       | 持久化、缓存、队列依赖 | [database](./database/README.md) |
-| Payment     | Stripe + NowPayments              | 订单、订阅、积分       | [payment](./payment/README.md)   |
-| Storage     | R2 / S3 / OSS / GCS / MinIO       | 上传和对象存储         | [storage](./storage/README.md)   |
-| Queue       | Redis + BullMQ                    | 异步任务、重试、调度   | [queue](./queue/README.md)       |
+| 集成             | 服务                              | 用途                      | 文档                                             |
+| ---------------- | --------------------------------- | ------------------------- | ------------------------------------------------ |
+| Auth             | NextAuth + Google + GitHub        | 注册、登录、会话          | [auth](./auth/README.md)                         |
+| Email            | Resend + SendGrid                 | 认证邮件和通知            | [email](./email/README.md)                       |
+| Lark / 飞书      | Lark Open Platform / 飞书开放平台 | 内部通知和审核卡片        | [lark](./lark/README.md)                         |
+| Database         | Prisma + PostgreSQL + Redis       | 持久化、缓存、队列依赖    | [database](./database/README.md)                 |
+| Payment          | Stripe + NowPayments              | 订单、订阅、积分          | [payment](./payment/README.md)                   |
+| Storage          | R2 / S3 / OSS / GCS / MinIO       | 上传和对象存储            | [storage](./storage/README.md)                   |
+| Queue            | Redis + BullMQ                    | 异步任务、重试、调度      | [queue](./queue/README.md)                       |
+| Image Generation | WaveSpeedAI                       | Provider-neutral 图片生成 | [image-generation](./image-generation/README.md) |
 
 ### 增长能力
 

@@ -155,6 +155,23 @@ export const MODULE_DEFINITIONS = [
     loadFrameworkModule: async () =>
       (await import("@/server/modules/ai-chat")).aiChatModule,
   },
+  {
+    id: "image-generation",
+    kind: "feature",
+    label: "Image Generation",
+    modeEnv: "IMAGE_GENERATION_MODE",
+    config: [
+      "WAVESPEED_API_KEY",
+      "WAVESPEED_BASE_URL",
+      { anyOf: ["REDIS_URL", "REDIS_HOST"], name: "Redis connection" },
+    ],
+    loadFrameworkModule: async () =>
+      (await import("@/server/modules/image-generation")).imageGenerationModule,
+    loadWorkerContributions: async () =>
+      (
+        await import("@/workers/features/image-generation")
+      ).getImageGenerationWorkerContributions(),
+  },
 ] satisfies readonly ModuleDefinition[];
 
 const MODULE_ENV = {
@@ -170,6 +187,7 @@ const MODULE_ENV = {
   SUPPORT_AUTOMATION_MODE: env.SUPPORT_AUTOMATION_MODE,
   CONVERSION_ALERT_MODE: env.CONVERSION_ALERT_MODE,
   AI_CHAT_MODE: env.AI_CHAT_MODE,
+  IMAGE_GENERATION_MODE: env.IMAGE_GENERATION_MODE,
   SUPPORT_EMAIL_ADDRESS: env.SUPPORT_EMAIL_ADDRESS,
   SUPPORT_EMAIL_PASSWORD: env.SUPPORT_EMAIL_PASSWORD,
   SUPPORT_IMAP_HOST: env.SUPPORT_IMAP_HOST,
@@ -188,6 +206,10 @@ const MODULE_ENV = {
   ANTHROPIC_API_KEY: env.ANTHROPIC_API_KEY,
   OPENROUTER_API_KEY: env.OPENROUTER_API_KEY,
   OPENAI_API_KEY: env.OPENAI_API_KEY,
+  WAVESPEED_API_KEY: env.WAVESPEED_API_KEY,
+  WAVESPEED_BASE_URL: env.WAVESPEED_BASE_URL,
+  REDIS_URL: env.REDIS_URL,
+  REDIS_HOST: env.REDIS_HOST,
 } satisfies EnvReader;
 
 export const MODULE_STATES = resolveModuleStates(
@@ -242,6 +264,9 @@ export const MODULES = {
     },
     aiChat: {
       enabled: isModuleEnabled("ai-chat"),
+    },
+    imageGeneration: {
+      enabled: isModuleEnabled("image-generation"),
     },
   },
 } as const;

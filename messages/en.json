@@ -140,6 +140,86 @@
       "subtitleAccent": "Focus on your core feature. We handle the rest."
     }
   },
+  "dashboard": {
+    "welcome": "Welcome back",
+    "welcomeNamed": "Welcome back, {name}",
+    "subtitle": "Manage your account and explore framework features.",
+    "framework": "Framework",
+    "administration": "Administration",
+    "adminBadge": "Admin",
+    "moduleStatus": "Module Status",
+    "moduleStatusNote": "Module availability is determined by environment configuration. Server-only modules show client-side inference.",
+    "categories": {
+      "analytics": "Analytics",
+      "messaging": "Messaging",
+      "payment": "Payment",
+      "features": "Features"
+    },
+    "pages": {
+      "overview": {
+        "title": "Overview",
+        "description": "System status & quick actions"
+      },
+      "profile": {
+        "title": "Profile",
+        "description": "Manage your profile & account"
+      },
+      "billing": {
+        "title": "Billing",
+        "description": "Subscription, credits & payment history"
+      },
+      "settings": {
+        "title": "Settings",
+        "description": "Account settings & integrations"
+      },
+      "admin": {
+        "title": "Admin Dashboard",
+        "description": "Users, orders, products, promos"
+      }
+    },
+    "wavespeed": {
+      "title": "WaveSpeedAI Test",
+      "description": "Run an admin-only WaveSpeed check, then use the full image generation pipeline with R2-first storage and filesystem fallback.",
+      "moduleEnabled": "Module enabled",
+      "moduleDisabled": "Module disabled",
+      "connectionConfigReady": "Connection ready",
+      "connectionConfigMissing": "Connection missing {count}",
+      "generationConfigReady": "Generation ready",
+      "generationConfigMissing": "Generation missing {count}",
+      "checkConnection": "Check connection",
+      "connectionConfig": "Connection config",
+      "generationConfig": "Generation config",
+      "optionalConfig": "Optional config",
+      "statusLoadFailed": "Status failed",
+      "connectionFailed": "Connection failed",
+      "connectionSucceeded": "Connection succeeded",
+      "connectionSummary": "WaveSpeed responded and returned {count} available models.",
+      "sampleModels": "Sample models",
+      "model": "Model",
+      "aspectRatio": "Aspect ratio",
+      "prompt": "Prompt",
+      "defaultPrompt": "A simple blue ceramic mug on a white background, clean product photo, soft studio lighting",
+      "runGeneration": "Run test generation",
+      "generationFailed": "Generation failed",
+      "generationDisabledHint": "Test generation requires Redis, module enablement, and a running worker. Storage uses R2 first and falls back to the filesystem.",
+      "latestTask": "Latest task",
+      "noTask": "No test task yet",
+      "loadingTask": "Loading task...",
+      "taskLoadFailed": "Task failed to load",
+      "taskId": "Task ID",
+      "generatedAlt": "Generated WaveSpeed test image",
+      "openImage": "Open image",
+      "waitingForWorker": "Waiting for worker output",
+      "taskStatus": {
+        "queued": "Queued",
+        "running": "Running",
+        "succeeded": "Succeeded",
+        "failed": "Failed",
+        "canceled": "Canceled",
+        "timed_out": "Timed out"
+      }
+    }
+  },
   "account": {
     "profile": "Profile",
     "settings": "Settings",
