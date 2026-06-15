@@ -21,9 +21,6 @@ RUN npm install -g prisma@6.19.0 && \
     npm cache clean --force && \
     rm -rf /root/.cache
 
-# Copy .env file (created by CI from .env.{environment})
-COPY .env ./
-
 # Expose port
 EXPOSE 3000
 

@@ -3,8 +3,6 @@ node_modules
 .gitignore
 .next/cache
 .env*
-!.env
-!.env.production
 README.md
 .vscode
 .idea
