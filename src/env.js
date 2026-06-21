@@ -65,7 +65,18 @@ export const env = createEnv({
     STRIPE_SECRET_KEY: z.string().optional(),
     STRIPE_WEBHOOK_SECRET: z.string().optional(),
     // Force payment gateway for testing (bypasses default Stripe routing)
-    FORCE_PAYMENT_GATEWAY: z.enum(["STRIPE", "NOWPAYMENTS"]).optional(),
+    FORCE_PAYMENT_GATEWAY: z
+      .enum(["STRIPE", "NOWPAYMENTS", "LEMONSQUEEZY"])
+      .optional(),
+    LEMONSQUEEZY_API_KEY: z.string().optional(),
+    LEMONSQUEEZY_STORE_ID: z.string().optional(),
+    LEMONSQUEEZY_WEBHOOK_SECRET: z.string().optional(),
+    LEMONSQUEEZY_TEST_MODE: z
+      .string()
+      .optional()
+      .transform((val) => (val == null ? undefined : val === "true")),
+    LEMONSQUEEZY_TEST_VARIANT_ID: z.string().optional(),
+    LEMONSQUEEZY_TEST_SUBSCRIPTION_VARIANT_ID: z.string().optional(),
     NOWPAYMENTS_API_KEY: z.string().optional(),
     NOWPAYMENTS_IPN_SECRET: z.string().optional(),
     NOWPAYMENTS_PAY_CURRENCY: z.string().optional().default("usdttrc20"),
@@ -127,6 +138,23 @@ export const env = createEnv({
     TURNSTILE_SECRET_KEY: z.string().optional(),
     // Velobase Billing
     VELOBASE_API_KEY: z.string().optional(),
+    // Velobase Gateway (OpenAI-compatible model routing)
+    VELOBASE_GATEWAY_API_KEY: z.string().optional(),
+    VELOBASE_GATEWAY_BASE_URL: z
+      .string()
+      .url()
+      .optional()
+      .default("https://api.velobase.io/v1"),
+    VELOBASE_GATEWAY_DEFAULT_MODEL: z
+      .string()
+      .optional()
+      .default("deepseek/deepseek-v4-pro"),
+    VELOBASE_GATEWAY_TEST_CUSTOMER_ID: z.string().optional(),
+    VELOBASE_GATEWAY_REQUEST_TIMEOUT_MS: z
+      .string()
+      .regex(/^\d+$/)
+      .optional()
+      .transform((val) => (val ? parseInt(val, 10) : 30000)),
     // Module modes: off | auto | on
     POSTHOG_API_KEY: z.string().optional(),
     POSTHOG_MODE: z.enum(["off", "auto", "on"]).optional(),
@@ -135,12 +163,14 @@ export const env = createEnv({
     TELEGRAM_MODE: z.enum(["off", "auto", "on"]).optional(),
     STRIPE_MODE: z.enum(["off", "auto", "on"]).optional(),
     NOWPAYMENTS_MODE: z.enum(["off", "auto", "on"]).optional(),
+    LEMONSQUEEZY_MODE: z.enum(["off", "auto", "on"]).optional(),
     PAYMENT_RECONCILIATION_MODE: z.enum(["off", "auto", "on"]).optional(),
     AFFILIATE_MODE: z.enum(["off", "auto", "on"]).optional(),
     TOUCH_MODE: z.enum(["off", "auto", "on"]).optional(),
     SUPPORT_AUTOMATION_MODE: z.enum(["off", "auto", "on"]).optional(),
     CONVERSION_ALERT_MODE: z.enum(["off", "auto", "on"]).optional(),
     AI_CHAT_MODE: z.enum(["off", "auto", "on"]).optional(),
+    VELOBASE_GATEWAY_MODE: z.enum(["off", "auto", "on"]).optional(),
     IMAGE_GENERATION_MODE: z.enum(["off", "auto", "on"]).optional(),
     NODE_ENV: z
       .enum(["development", "test", "production"])
@@ -206,6 +236,13 @@ export const env = createEnv({
     STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY,
     STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET,
     FORCE_PAYMENT_GATEWAY: process.env.FORCE_PAYMENT_GATEWAY,
+    LEMONSQUEEZY_API_KEY: process.env.LEMONSQUEEZY_API_KEY,
+    LEMONSQUEEZY_STORE_ID: process.env.LEMONSQUEEZY_STORE_ID,
+    LEMONSQUEEZY_WEBHOOK_SECRET: process.env.LEMONSQUEEZY_WEBHOOK_SECRET,
+    LEMONSQUEEZY_TEST_MODE: process.env.LEMONSQUEEZY_TEST_MODE,
+    LEMONSQUEEZY_TEST_VARIANT_ID: process.env.LEMONSQUEEZY_TEST_VARIANT_ID,
+    LEMONSQUEEZY_TEST_SUBSCRIPTION_VARIANT_ID:
+      process.env.LEMONSQUEEZY_TEST_SUBSCRIPTION_VARIANT_ID,
     NOWPAYMENTS_API_KEY: process.env.NOWPAYMENTS_API_KEY,
     NOWPAYMENTS_IPN_SECRET: process.env.NOWPAYMENTS_IPN_SECRET,
     NOWPAYMENTS_PAY_CURRENCY: process.env.NOWPAYMENTS_PAY_CURRENCY,
@@ -245,6 +282,13 @@ export const env = createEnv({
     TELEGRAM_WEBHOOK_SECRET: process.env.TELEGRAM_WEBHOOK_SECRET,
     TURNSTILE_SECRET_KEY: process.env.TURNSTILE_SECRET_KEY,
     VELOBASE_API_KEY: process.env.VELOBASE_API_KEY,
+    VELOBASE_GATEWAY_API_KEY: process.env.VELOBASE_GATEWAY_API_KEY,
+    VELOBASE_GATEWAY_BASE_URL: process.env.VELOBASE_GATEWAY_BASE_URL,
+    VELOBASE_GATEWAY_DEFAULT_MODEL: process.env.VELOBASE_GATEWAY_DEFAULT_MODEL,
+    VELOBASE_GATEWAY_TEST_CUSTOMER_ID:
+      process.env.VELOBASE_GATEWAY_TEST_CUSTOMER_ID,
+    VELOBASE_GATEWAY_REQUEST_TIMEOUT_MS:
+      process.env.VELOBASE_GATEWAY_REQUEST_TIMEOUT_MS,
     POSTHOG_API_KEY: process.env.POSTHOG_API_KEY,
     POSTHOG_MODE: process.env.POSTHOG_MODE,
     GOOGLE_ADS_MODE: process.env.GOOGLE_ADS_MODE,
@@ -252,12 +296,14 @@ export const env = createEnv({
     TELEGRAM_MODE: process.env.TELEGRAM_MODE,
     STRIPE_MODE: process.env.STRIPE_MODE,
     NOWPAYMENTS_MODE: process.env.NOWPAYMENTS_MODE,
+    LEMONSQUEEZY_MODE: process.env.LEMONSQUEEZY_MODE,
     PAYMENT_RECONCILIATION_MODE: process.env.PAYMENT_RECONCILIATION_MODE,
     AFFILIATE_MODE: process.env.AFFILIATE_MODE,
     TOUCH_MODE: process.env.TOUCH_MODE,
     SUPPORT_AUTOMATION_MODE: process.env.SUPPORT_AUTOMATION_MODE,
     CONVERSION_ALERT_MODE: process.env.CONVERSION_ALERT_MODE,
     AI_CHAT_MODE: process.env.AI_CHAT_MODE,
+    VELOBASE_GATEWAY_MODE: process.env.VELOBASE_GATEWAY_MODE,
     IMAGE_GENERATION_MODE: process.env.IMAGE_GENERATION_MODE,
     NODE_ENV: process.env.NODE_ENV,
     NEXT_PUBLIC_APP_ENV: process.env.NEXT_PUBLIC_APP_ENV,

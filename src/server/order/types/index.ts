@@ -1,7 +1,18 @@
-import type { Order, Payment, Product, ProductType, ProductStatus } from "@prisma/client";
+import type {
+  Order,
+  Payment,
+  Product,
+  ProductType,
+  ProductStatus,
+} from "@prisma/client";
 
 // Order types
-export type OrderType = "NEW_PURCHASE" | "RENEWAL" | "UPGRADE" | "DOWNGRADE" | "PROMO_GRANT";
+export type OrderType =
+  | "NEW_PURCHASE"
+  | "RENEWAL"
+  | "UPGRADE"
+  | "DOWNGRADE"
+  | "PROMO_GRANT";
 export type OrderStatus =
   | "PENDING"
   | "FULFILLED"
@@ -16,7 +27,7 @@ export type PaymentStatus =
   | "FAILED"
   | "EXPIRED"
   | "REFUNDED";
-export type PaymentGateway = "STRIPE" | "NOWPAYMENTS";
+export type PaymentGateway = "STRIPE" | "NOWPAYMENTS" | "LEMONSQUEEZY";
 
 // Product types
 export type ProductInterval = "month" | "year";
@@ -88,4 +99,3 @@ export interface RefundPaymentRequest {
   amount?: number;
   reason?: string;
 }
-
