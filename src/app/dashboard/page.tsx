@@ -11,13 +11,10 @@ import {
   Settings,
   Activity,
   ShieldCheck,
-  Puzzle,
-  CheckCircle2,
-  XCircle,
 } from "lucide-react";
 import { Header } from "@/components/layout/header";
 import { Background } from "@/components/layout/background";
-import { WavespeedTestPanel } from "@/components/dashboard/wavespeed-test-panel";
+import { IntegrationModuleStatusPanel } from "@/components/dashboard/integration-module-status-panel";
 import { cn } from "@/lib/utils";
 
 interface NavItem {
@@ -69,81 +66,6 @@ function PageSection({ title, items }: { title: string; items: NavItem[] }) {
         {items.map((item) => (
           <PageCard key={item.href} item={item} />
         ))}
-      </div>
-    </div>
-  );
-}
-
-function ModuleStatusPanel() {
-  const t = useTranslations("dashboard");
-  const modules = [
-    {
-      name: "PostHog",
-      enabled: !!process.env.NEXT_PUBLIC_POSTHOG_KEY,
-      category: t("categories.analytics"),
-    },
-    {
-      name: "Google Ads",
-      enabled: !!process.env.NEXT_PUBLIC_GOOGLE_ADS_MEASUREMENT_ID,
-      category: t("categories.analytics"),
-    },
-    { name: "Lark", enabled: false, category: t("categories.messaging") },
-    {
-      name: "Telegram",
-      enabled: !!process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME,
-      category: t("categories.messaging"),
-    },
-    { name: "NowPayments", enabled: false, category: t("categories.payment") },
-    { name: "Affiliate", enabled: true, category: t("categories.features") },
-    { name: "AI Chat", enabled: true, category: t("categories.features") },
-  ];
-  const categories = [...new Set(modules.map((m) => m.category))];
-
-  return (
-    <div>
-      <h2 className="text-muted-foreground mb-3 flex items-center gap-2 px-1 text-sm font-medium">
-        <Puzzle className="h-4 w-4" />
-        {t("moduleStatus")}
-      </h2>
-      <div className="border-border/50 bg-card/50 rounded-xl border p-5 backdrop-blur-sm">
-        <div className="space-y-4">
-          {categories.map((cat) => (
-            <div key={cat}>
-              <h3 className="text-muted-foreground mb-2 text-xs font-medium tracking-wider uppercase">
-                {cat}
-              </h3>
-              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-                {modules
-                  .filter((m) => m.category === cat)
-                  .map((mod) => (
-                    <div
-                      key={mod.name}
-                      className="bg-background/50 border-border/30 flex items-center gap-2 rounded-lg border px-3 py-2"
-                    >
-                      {mod.enabled ? (
-                        <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-green-500" />
-                      ) : (
-                        <XCircle className="text-muted-foreground/40 h-3.5 w-3.5 shrink-0" />
-                      )}
-                      <span
-                        className={cn(
-                          "text-sm",
-                          mod.enabled
-                            ? "text-foreground"
-                            : "text-muted-foreground/60",
-                        )}
-                      >
-                        {mod.name}
-                      </span>
-                    </div>
-                  ))}
-              </div>
-            </div>
-          ))}
-        </div>
-        <p className="text-muted-foreground/50 mt-4 text-[11px]">
-          {t("moduleStatusNote")}
-        </p>
       </div>
     </div>
   );
@@ -225,10 +147,9 @@ export default function DashboardPage() {
           {isAdmin && (
             <>
               <PageSection title={t("administration")} items={adminPages} />
-              <WavespeedTestPanel />
+              <IntegrationModuleStatusPanel />
             </>
           )}
-          <ModuleStatusPanel />
         </div>
       </main>
     </div>

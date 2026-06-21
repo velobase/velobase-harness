@@ -1,18 +1,15 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import {
   AlertCircle,
+  BotMessageSquare,
   CheckCircle2,
-  Clock,
-  ExternalLink,
-  Image as ImageIcon,
   Loader2,
-  Play,
   RefreshCw,
+  SendHorizontal,
   XCircle,
-  Zap,
 } from "lucide-react";
 
 import { api } from "@/trpc/react";
@@ -23,20 +20,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 
-const TERMINAL_TASK_STATUSES = new Set([
-  "succeeded",
-  "failed",
-  "canceled",
-  "timed_out",
-]);
-
-export function WavespeedTestPanel() {
-  const t = useTranslations("dashboard.wavespeed");
+export function VelobaseGatewayTestPanel() {
+  const t = useTranslations("dashboard.velobaseGateway");
+  const [model, setModel] = useState("");
+  const [customerId, setCustomerId] = useState("");
   const [prompt, setPrompt] = useState(t("defaultPrompt"));
-  const [model, setModel] = useState("wavespeed-ai/flux-dev");
-  const [taskId, setTaskId] = useState<string | null>(null);
+  const [defaultsApplied, setDefaultsApplied] = useState(false);
 
-  const statusQuery = api.integrationDiagnostics.wavespeedStatus.useQuery(
+  const statusQuery = api.integrationDiagnostics.velobaseGatewayStatus.useQuery(
     undefined,
     {
       staleTime: 30_000,
@@ -44,25 +35,18 @@ export function WavespeedTestPanel() {
   );
 
   const connectionMutation =
-    api.integrationDiagnostics.testWavespeedConnection.useMutation();
+    api.integrationDiagnostics.testVelobaseGatewayConnection.useMutation();
 
-  const generationMutation =
-    api.integrationDiagnostics.runWavespeedImageTest.useMutation({
-      onSuccess: (task) => {
-        setTaskId(task.id);
-      },
-    });
+  const chatMutation =
+    api.integrationDiagnostics.runVelobaseGatewayChatTest.useMutation();
 
-  const taskQuery = api.integrationDiagnostics.imageGenerationTask.useQuery(
-    { taskId: taskId ?? "" },
-    {
-      enabled: Boolean(taskId),
-      refetchInterval: (query) => {
-        const status = query.state.data?.status;
-        return status && TERMINAL_TASK_STATUSES.has(status) ? false : 3000;
-      },
-    },
-  );
+  useEffect(() => {
+    if (!statusQuery.data || defaultsApplied) return;
+
+    setModel(statusQuery.data.defaultModel);
+    setCustomerId(statusQuery.data.defaultTestCustomerId ?? "");
+    setDefaultsApplied(true);
+  }, [defaultsApplied, statusQuery.data]);
 
   const missingConnectionConfig = useMemo(
     () =>
@@ -70,27 +54,23 @@ export function WavespeedTestPanel() {
       [],
     [statusQuery.data?.connectionConfig],
   );
-  const missingGenerationConfig = useMemo(
+  const missingSmokeConfig = useMemo(
     () =>
-      statusQuery.data?.generationConfig.filter((item) => !item.configured) ??
-      [],
-    [statusQuery.data?.generationConfig],
+      statusQuery.data?.smokeConfig.filter((item) => !item.configured) ?? [],
+    [statusQuery.data?.smokeConfig],
   );
-
-  const generatedAsset = taskQuery.data?.assets.find(
-    (asset) => asset.status === "succeeded",
-  );
-  const generatedImageUrl =
-    generatedAsset?.publicUrl ?? generatedAsset?.sourceUrl;
-  const canRun =
-    statusQuery.data?.generationConfigReady === true &&
+  const requiresCustomerHeader =
+    statusQuery.data?.requiresCustomerHeader ?? true;
+  const canRunChat =
+    statusQuery.data?.connectionConfigReady === true &&
+    model.trim().length > 0 &&
     prompt.trim().length > 0 &&
-    model.trim().length > 0;
+    (!requiresCustomerHeader || customerId.trim().length > 0);
 
   return (
     <div>
       <h2 className="text-muted-foreground mb-3 flex items-center gap-2 px-1 text-sm font-medium">
-        <Zap className="h-4 w-4" />
+        <BotMessageSquare className="h-4 w-4" />
         {t("title")}
       </h2>
 
@@ -122,15 +102,13 @@ export function WavespeedTestPanel() {
               </Badge>
               <Badge
                 variant={
-                  statusQuery.data?.generationConfigReady
-                    ? "outline"
-                    : "secondary"
+                  statusQuery.data?.smokeConfigReady ? "outline" : "secondary"
                 }
               >
-                {statusQuery.data?.generationConfigReady
-                  ? t("generationConfigReady")
-                  : t("generationConfigMissing", {
-                      count: missingGenerationConfig.length,
+                {statusQuery.data?.smokeConfigReady
+                  ? t("smokeConfigReady")
+                  : t("smokeConfigMissing", {
+                      count: missingSmokeConfig.length,
                     })}
               </Badge>
             </div>
@@ -167,10 +145,11 @@ export function WavespeedTestPanel() {
                 items={statusQuery.data?.connectionConfig ?? []}
               />
               <ConfigGroup
-                title={t("generationConfig")}
-                items={statusQuery.data?.generationConfig ?? []}
+                title={t("smokeConfig")}
+                items={statusQuery.data?.smokeConfig ?? []}
               />
             </div>
+
             {statusQuery.data?.optionalConfig.length ? (
               <ConfigGroup
                 title={t("optionalConfig")}
@@ -219,7 +198,7 @@ export function WavespeedTestPanel() {
             ) : null}
 
             <div className="border-border/50 space-y-3 border-t pt-4">
-              <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_160px]">
+              <div className="grid gap-3 sm:grid-cols-2">
                 <label className="space-y-1.5">
                   <span className="text-muted-foreground text-xs font-medium">
                     {t("model")}
@@ -231,9 +210,17 @@ export function WavespeedTestPanel() {
                 </label>
                 <label className="space-y-1.5">
                   <span className="text-muted-foreground text-xs font-medium">
-                    {t("aspectRatio")}
+                    {t("customerId")}
                   </span>
-                  <Input value="1:1" readOnly />
+                  <Input
+                    value={customerId}
+                    onChange={(event) => setCustomerId(event.target.value)}
+                    placeholder={
+                      requiresCustomerHeader
+                        ? t("customerRequired")
+                        : t("customerOptional")
+                    }
+                  />
                 </label>
               </div>
 
@@ -244,123 +231,96 @@ export function WavespeedTestPanel() {
                 <Textarea
                   value={prompt}
                   onChange={(event) => setPrompt(event.target.value)}
-                  className="min-h-24 resize-none"
+                  className="min-h-20 resize-none"
                 />
               </label>
 
               <Button
                 type="button"
                 onClick={() =>
-                  generationMutation.mutate({
+                  chatMutation.mutate({
+                    customerId: customerId.trim() || undefined,
+                    model: model.trim() || undefined,
                     prompt,
-                    model,
-                    aspectRatio: "1:1",
-                    quality: "medium",
-                    resolution: "1k",
-                    outputFormat: "png",
+                    maxTokens: 64,
                   })
                 }
-                disabled={!canRun || generationMutation.isPending}
+                disabled={!canRunChat || chatMutation.isPending}
               >
-                {generationMutation.isPending ? (
+                {chatMutation.isPending ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
-                  <Play className="h-4 w-4" />
+                  <SendHorizontal className="h-4 w-4" />
                 )}
-                {t("runGeneration")}
+                {t("runChat")}
               </Button>
 
-              {generationMutation.error ? (
+              {chatMutation.error ? (
                 <StatusAlert
                   variant="destructive"
-                  title={t("generationFailed")}
-                  message={generationMutation.error.message}
+                  title={t("chatFailed")}
+                  message={chatMutation.error.message}
                 />
               ) : null}
 
-              {!canRun ? (
+              {!canRunChat ? (
                 <p className="text-muted-foreground text-xs">
-                  {t("generationDisabledHint")}
+                  {t("chatDisabledHint")}
                 </p>
               ) : null}
             </div>
           </div>
 
-          <div className="border-border/50 bg-background/40 min-h-[240px] rounded-lg border p-4">
+          <div className="border-border/50 bg-background/40 min-h-[260px] rounded-lg border p-4">
             <div className="mb-3 flex items-center justify-between gap-3">
               <div className="flex items-center gap-2 text-sm font-medium">
-                <ImageIcon className="text-primary h-4 w-4" />
-                {t("latestTask")}
+                <BotMessageSquare className="text-primary h-4 w-4" />
+                {t("latestResult")}
               </div>
-              {taskQuery.data ? (
-                <TaskStatusBadge status={taskQuery.data.status} />
+              {chatMutation.data ? (
+                <Badge variant="default">{t("ok")}</Badge>
               ) : null}
             </div>
 
-            {!taskId ? (
+            {!chatMutation.data ? (
               <div className="text-muted-foreground flex h-[180px] items-center justify-center text-center text-sm">
-                {t("noTask")}
+                {t("noResult")}
               </div>
-            ) : null}
-
-            {taskId && taskQuery.isLoading ? (
-              <div className="text-muted-foreground flex h-[180px] items-center justify-center gap-2 text-sm">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                {t("loadingTask")}
-              </div>
-            ) : null}
-
-            {taskQuery.error ? (
-              <StatusAlert
-                variant="destructive"
-                title={t("taskLoadFailed")}
-                message={taskQuery.error.message}
-              />
-            ) : null}
-
-            {taskQuery.data ? (
-              <div className="space-y-3">
-                <div className="text-muted-foreground space-y-1 text-xs">
-                  <div>
-                    {t("taskId")}:{" "}
-                    <span className="text-foreground font-mono">
-                      {taskQuery.data.id}
-                    </span>
-                  </div>
-                  {taskQuery.data.errorMessage ? (
-                    <div className="text-destructive">
-                      {taskQuery.data.errorMessage}
-                    </div>
-                  ) : null}
+            ) : (
+              <div className="space-y-4">
+                <div className="bg-muted/30 text-foreground rounded-md p-3 text-sm">
+                  {chatMutation.data.message || t("emptyMessage")}
                 </div>
 
-                {generatedImageUrl ? (
-                  <div className="space-y-2">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={generatedImageUrl}
-                      alt={t("generatedAlt")}
-                      className="aspect-square w-full rounded-md object-cover"
-                    />
-                    <Button asChild variant="outline" size="sm">
-                      <a
-                        href={generatedImageUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        <ExternalLink className="h-4 w-4" />
-                        {t("openImage")}
-                      </a>
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="bg-muted/30 text-muted-foreground flex min-h-[120px] items-center justify-center gap-2 rounded-md text-sm">
-                    <Clock className="h-4 w-4" />
-                    {t("waitingForWorker")}
-                  </div>
-                )}
+                <DetailList
+                  title={t("usage")}
+                  rows={[
+                    [t("promptTokens"), chatMutation.data.usage.promptTokens],
+                    [
+                      t("completionTokens"),
+                      chatMutation.data.usage.completionTokens,
+                    ],
+                    [t("totalTokens"), chatMutation.data.usage.totalTokens],
+                  ]}
+                />
+
+                <DetailList
+                  title={t("billingHeaders")}
+                  rows={[
+                    [t("costCents"), chatMutation.data.billing.costCents],
+                    [t("costCredits"), chatMutation.data.billing.costCredits],
+                    [
+                      t("balanceCredits"),
+                      chatMutation.data.billing.balanceCredits,
+                    ],
+                    [
+                      t("transactionId"),
+                      chatMutation.data.billing.transactionId,
+                    ],
+                  ]}
+                />
               </div>
-            ) : null}
+            )}
           </div>
         </div>
       </div>
@@ -425,28 +385,30 @@ function StatusAlert({
   );
 }
 
-function TaskStatusBadge({ status }: { status: string }) {
-  const t = useTranslations("dashboard.wavespeed.taskStatus");
-  const isSuccess = status === "succeeded";
-  const isTerminal = TERMINAL_TASK_STATUSES.has(status);
+function DetailList({
+  title,
+  rows,
+}: {
+  title: string;
+  rows: Array<[string, string | number | undefined]>;
+}) {
+  const t = useTranslations("dashboard.velobaseGateway");
 
   return (
-    <Badge
-      variant={isSuccess ? "default" : isTerminal ? "secondary" : "outline"}
-    >
-      {status === "queued"
-        ? t("queued")
-        : status === "running"
-          ? t("running")
-          : status === "succeeded"
-            ? t("succeeded")
-            : status === "failed"
-              ? t("failed")
-              : status === "canceled"
-                ? t("canceled")
-                : status === "timed_out"
-                  ? t("timed_out")
-                  : status}
-    </Badge>
+    <div className="space-y-2">
+      <div className="text-muted-foreground text-xs font-medium uppercase">
+        {title}
+      </div>
+      <div className="space-y-1.5 text-xs">
+        {rows.map(([label, value]) => (
+          <div key={label} className="flex items-start justify-between gap-3">
+            <span className="text-muted-foreground">{label}</span>
+            <span className="text-foreground max-w-[180px] text-right font-mono break-all">
+              {value ?? t("notAvailable")}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }
