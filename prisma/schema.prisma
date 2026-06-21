@@ -22,16 +22,17 @@ enum UserOfferState {
 enum UserPaymentGatewayPreference {
   AUTO
   STRIPE
+  LEMONSQUEEZY
   TELEGRAM_STARS
   NOWPAYMENTS
 }
 
 enum BlockReason {
-  ABUSE_PROMPT    // Prompt 滥用检测
-  ABUSE_IMAGE     // 图片滥用检测  
-  FRAUD_EFW       // Stripe 早期欺诈预警
-  USER_REQUESTED  // 用户主动删除
-  ADMIN_MANUAL    // 管理员手动封禁
+  ABUSE_PROMPT // Prompt 滥用检测
+  ABUSE_IMAGE // 图片滥用检测
+  FRAUD_EFW // Stripe 早期欺诈预警
+  USER_REQUESTED // 用户主动删除
+  ADMIN_MANUAL // 管理员手动封禁
 }
 
 enum AffiliateEarningSourceType {
@@ -103,18 +104,18 @@ model Account {
 }
 
 model Conversation {
-  id                  String        @id @default(cuid())
-  userId              String?       @map("user_id")
-  projectId           String?       @map("project_id")
-  isGuest             Boolean       @default(false) @map("is_guest")
-  isArchived          Boolean       @default(false) @map("is_archived")
-  isShared            Boolean       @default(false) @map("is_shared")
-  sharedAt            DateTime?     @map("shared_at")
+  id                  String          @id @default(cuid())
+  userId              String?         @map("user_id")
+  projectId           String?         @map("project_id")
+  isGuest             Boolean         @default(false) @map("is_guest")
+  isArchived          Boolean         @default(false) @map("is_archived")
+  isShared            Boolean         @default(false) @map("is_shared")
+  sharedAt            DateTime?       @map("shared_at")
   title               String?
   metadata            Json?
-  activeInteractionId String?       @map("active_interaction_id")
-  createdAt           DateTime      @default(now()) @map("created_at")
-  updatedAt           DateTime      @updatedAt @map("updated_at")
+  activeInteractionId String?         @map("active_interaction_id")
+  createdAt           DateTime        @default(now()) @map("created_at")
+  updatedAt           DateTime        @updatedAt @map("updated_at")
   project             Project?        @relation(fields: [projectId], references: [id])
   user                User?           @relation(fields: [userId], references: [id], onDelete: Cascade)
   interactions        Interaction[]
@@ -424,20 +425,20 @@ model UserOffer {
 }
 
 model UserStats {
-  id                   String    @id @default(cuid())
-  userId               String    @unique @map("user_id")
-  totalPaidCents       Int       @default(0) @map("total_paid_cents")
-  ordersCount          Int       @default(0) @map("orders_count")
-  firstPaidAt          DateTime? @map("first_paid_at")
-  lastPaidAt           DateTime? @map("last_paid_at")
-  hasUsedProTrial      Boolean   @default(false) @map("has_used_pro_trial")
-  proTrialSource       String?   @map("pro_trial_source")
-  proTrialConverted    Boolean   @default(false) @map("pro_trial_converted")
-  hitPaywallCount      Int       @default(0) @map("hit_paywall_count")
-  canBypassBlur        Boolean   @default(false) @map("can_bypass_blur")
-  createdAt            DateTime  @default(now()) @map("created_at")
-  updatedAt            DateTime  @updatedAt @map("updated_at")
-  user                 User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id                String    @id @default(cuid())
+  userId            String    @unique @map("user_id")
+  totalPaidCents    Int       @default(0) @map("total_paid_cents")
+  ordersCount       Int       @default(0) @map("orders_count")
+  firstPaidAt       DateTime? @map("first_paid_at")
+  lastPaidAt        DateTime? @map("last_paid_at")
+  hasUsedProTrial   Boolean   @default(false) @map("has_used_pro_trial")
+  proTrialSource    String?   @map("pro_trial_source")
+  proTrialConverted Boolean   @default(false) @map("pro_trial_converted")
+  hitPaywallCount   Int       @default(0) @map("hit_paywall_count")
+  canBypassBlur     Boolean   @default(false) @map("can_bypass_blur")
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("user_stats")
 }
@@ -755,7 +756,7 @@ model Product {
   id                  String                      @id @default(uuid())
   name                String
   description         Json?
-  price               Int                         // USD price in cents (default/fallback)
+  price               Int // USD price in cents (default/fallback)
   originalPrice       Int                         @default(0) @map("original_price")
   currency            String                      @default("usd") // Default currency (kept for backward compatibility)
   type                ProductType
@@ -774,7 +775,7 @@ model Product {
   creditsPackage      ProductCreditsPackage?
   oneTimeEntitlements ProductOneTimeEntitlement[]
   productSubscription ProductSubscription?
-  prices              ProductPrice[]              // Multi-currency prices
+  prices              ProductPrice[] // Multi-currency prices
 
   @@index([status, isAvailable, deletedAt])
   @@index([type, status, deletedAt])
@@ -786,8 +787,8 @@ model Product {
 model ProductPrice {
   id             String   @id @default(uuid())
   productId      String   @map("product_id")
-  currency       String   // ISO 4217: "USD", "EUR", "GBP", "CHF"
-  amount         Int      // Price in smallest currency unit (cents/pence)
+  currency       String // ISO 4217: "USD", "EUR", "GBP", "CHF"
+  amount         Int // Price in smallest currency unit (cents/pence)
   originalAmount Int      @default(0) @map("original_amount") // For discount display
   createdAt      DateTime @default(now()) @map("created_at")
   updatedAt      DateTime @updatedAt @map("updated_at")
@@ -873,23 +874,23 @@ model PaymentWebhookLog {
 // - Append-only: do NOT update rows; add new rows for refunds/disputes.
 // - Use (gateway, externalId) as idempotency key to support safe replays/backfills.
 model PaymentTransaction {
-  id                    String   @id @default(uuid())
-  gateway               String
-  externalId            String   @map("external_id") // invoice id / payment_intent id / charge id
-  kind                  String   // e.g. ONE_OFF_CHARGE, SUBSCRIPTION_INITIAL_CHARGE, SUBSCRIPTION_RENEWAL_CHARGE, REFUND, DISPUTE
-  amount                Int      // in smallest unit (cents)
-  currency              String   @default("usd")
-  userId                String?  @map("user_id")
-  orderId               String?  @map("order_id")
-  paymentId             String?  @map("payment_id")
-  gatewaySubscriptionId String?  @map("gateway_subscription_id")
-  gatewayInvoiceId      String?  @map("gateway_invoice_id")
-  gatewayChargeId       String?  @map("gateway_charge_id")
-  gatewayPaymentIntentId String? @map("gateway_payment_intent_id")
-  occurredAt            DateTime @map("occurred_at") // gateway-side occurrence time
-  sourceEventId         String?  @map("source_event_id")
-  sourceEventType       String?  @map("source_event_type")
-  createdAt             DateTime @default(now()) @map("created_at") // inserted-at time
+  id                     String   @id @default(uuid())
+  gateway                String
+  externalId             String   @map("external_id") // invoice id / payment_intent id / charge id
+  kind                   String // e.g. ONE_OFF_CHARGE, SUBSCRIPTION_INITIAL_CHARGE, SUBSCRIPTION_RENEWAL_CHARGE, REFUND, DISPUTE
+  amount                 Int // in smallest unit (cents)
+  currency               String   @default("usd")
+  userId                 String?  @map("user_id")
+  orderId                String?  @map("order_id")
+  paymentId              String?  @map("payment_id")
+  gatewaySubscriptionId  String?  @map("gateway_subscription_id")
+  gatewayInvoiceId       String?  @map("gateway_invoice_id")
+  gatewayChargeId        String?  @map("gateway_charge_id")
+  gatewayPaymentIntentId String?  @map("gateway_payment_intent_id")
+  occurredAt             DateTime @map("occurred_at") // gateway-side occurrence time
+  sourceEventId          String?  @map("source_event_id")
+  sourceEventType        String?  @map("source_event_type")
+  createdAt              DateTime @default(now()) @map("created_at") // inserted-at time
 
   @@unique([gateway, externalId])
   @@index([userId])
@@ -1135,9 +1136,9 @@ model PromoCodeRedemption {
   createdAt        DateTime  @default(now()) @map("created_at")
   promoCode        PromoCode @relation(fields: [promoCodeId], references: [id])
 
+  @@unique([promoCodeId, userId])
   @@index([promoCodeId])
   @@index([userId])
-  @@unique([promoCodeId, userId])
   @@map("promo_code_redemptions")
 }
 
@@ -1275,8 +1276,8 @@ enum TouchChannel {
 
 enum TouchTriggerType {
   SCHEDULED // 定时触发
-  EVENT     // 事件触发
-  MANUAL    // 手动触发
+  EVENT // 事件触发
+  MANUAL // 手动触发
 }
 
 enum TouchScheduleStatus {
@@ -1428,10 +1429,10 @@ model TouchRecord {
 
 enum NotificationType {
   MARKETING_PROMO // 营销/促销邮件
-  PRODUCT_UPDATE  // 产品更新通知
-  NEWSLETTER      // 订阅内容/周报
-  BILLING_ALERT   // 账单提醒 (通常强制)
-  SYSTEM_NOTICE   // 系统通知
+  PRODUCT_UPDATE // 产品更新通知
+  NEWSLETTER // 订阅内容/周报
+  BILLING_ALERT // 账单提醒 (通常强制)
+  SYSTEM_NOTICE // 系统通知
 }
 
 model UserNotificationPreference {
@@ -1456,25 +1457,25 @@ model UserNotificationPreference {
 // ============================================================================
 
 enum SupportTicketStatus {
-  OPEN           // 待处理 (Initial state)
+  OPEN // 待处理 (Initial state)
   NEEDS_APPROVAL // 待审核 (AI proposed draft/action)
-  WAITING        // 待回复 (Waiting for customer)
-  SOLVED         // 已解决 (Done)
+  WAITING // 待回复 (Waiting for customer)
+  SOLVED // 已解决 (Done)
 }
 
 enum SupportActorType {
-  USER   // 客户
-  AI     // 模型
-  AGENT  // 人工
+  USER // 客户
+  AI // 模型
+  AGENT // 人工
   SYSTEM // 系统
 }
 
 enum SupportEventType {
   MESSAGE // 实际发生的对话 (Email, Chat)
-  DRAFT   // 拟定的回复/操作 (Internal only)
-  ACTION  // 工具调用 (Refund, Cancel, etc.)
-  NOTE    // 内部备注
-  SYSTEM  // 状态变更日志
+  DRAFT // 拟定的回复/操作 (Internal only)
+  ACTION // 工具调用 (Refund, Cancel, etc.)
+  NOTE // 内部备注
+  SYSTEM // 状态变更日志
 }
 
 model SupportTicket {

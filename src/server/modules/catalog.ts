@@ -69,6 +69,17 @@ export const MODULE_DEFINITIONS = [
       ).getStripeWorkerContributions(),
   },
   {
+    id: "lemonsqueezy",
+    kind: "integration",
+    label: "LemonSqueezy",
+    modeEnv: "LEMONSQUEEZY_MODE",
+    config: [
+      "LEMONSQUEEZY_API_KEY",
+      "LEMONSQUEEZY_STORE_ID",
+      "LEMONSQUEEZY_WEBHOOK_SECRET",
+    ],
+  },
+  {
     id: "nowpayments",
     kind: "integration",
     label: "NowPayments",
@@ -156,6 +167,20 @@ export const MODULE_DEFINITIONS = [
       (await import("@/server/modules/ai-chat")).aiChatModule,
   },
   {
+    id: "velobase-gateway",
+    kind: "integration",
+    label: "Velobase Gateway",
+    modeEnv: "VELOBASE_GATEWAY_MODE",
+    config: [
+      {
+        anyOf: ["VELOBASE_GATEWAY_API_KEY", "VELOBASE_API_KEY"],
+        name: "Velobase project or customer key",
+      },
+    ],
+    loadFrameworkModule: async () =>
+      (await import("@/server/modules/velobase-gateway")).velobaseGatewayModule,
+  },
+  {
     id: "image-generation",
     kind: "feature",
     label: "Image Generation",
@@ -180,6 +205,7 @@ const MODULE_ENV = {
   LARK_MODE: env.LARK_MODE,
   TELEGRAM_MODE: env.TELEGRAM_MODE,
   STRIPE_MODE: env.STRIPE_MODE,
+  LEMONSQUEEZY_MODE: env.LEMONSQUEEZY_MODE,
   NOWPAYMENTS_MODE: env.NOWPAYMENTS_MODE,
   PAYMENT_RECONCILIATION_MODE: env.PAYMENT_RECONCILIATION_MODE,
   AFFILIATE_MODE: env.AFFILIATE_MODE,
@@ -187,6 +213,7 @@ const MODULE_ENV = {
   SUPPORT_AUTOMATION_MODE: env.SUPPORT_AUTOMATION_MODE,
   CONVERSION_ALERT_MODE: env.CONVERSION_ALERT_MODE,
   AI_CHAT_MODE: env.AI_CHAT_MODE,
+  VELOBASE_GATEWAY_MODE: env.VELOBASE_GATEWAY_MODE,
   IMAGE_GENERATION_MODE: env.IMAGE_GENERATION_MODE,
   SUPPORT_EMAIL_ADDRESS: env.SUPPORT_EMAIL_ADDRESS,
   SUPPORT_EMAIL_PASSWORD: env.SUPPORT_EMAIL_PASSWORD,
@@ -201,11 +228,16 @@ const MODULE_ENV = {
   TELEGRAM_BOT_TOKEN: env.TELEGRAM_BOT_TOKEN,
   STRIPE_SECRET_KEY: env.STRIPE_SECRET_KEY,
   STRIPE_WEBHOOK_SECRET: env.STRIPE_WEBHOOK_SECRET,
+  LEMONSQUEEZY_API_KEY: env.LEMONSQUEEZY_API_KEY,
+  LEMONSQUEEZY_STORE_ID: env.LEMONSQUEEZY_STORE_ID,
+  LEMONSQUEEZY_WEBHOOK_SECRET: env.LEMONSQUEEZY_WEBHOOK_SECRET,
   NOWPAYMENTS_API_KEY: env.NOWPAYMENTS_API_KEY,
   NOWPAYMENTS_IPN_SECRET: env.NOWPAYMENTS_IPN_SECRET,
   ANTHROPIC_API_KEY: env.ANTHROPIC_API_KEY,
   OPENROUTER_API_KEY: env.OPENROUTER_API_KEY,
   OPENAI_API_KEY: env.OPENAI_API_KEY,
+  VELOBASE_API_KEY: env.VELOBASE_API_KEY,
+  VELOBASE_GATEWAY_API_KEY: env.VELOBASE_GATEWAY_API_KEY,
   WAVESPEED_API_KEY: env.WAVESPEED_API_KEY,
   WAVESPEED_BASE_URL: env.WAVESPEED_BASE_URL,
   REDIS_URL: env.REDIS_URL,
@@ -241,11 +273,19 @@ export const MODULES = {
       stripe: {
         enabled: isModuleEnabled("stripe"),
       },
+      lemonsqueezy: {
+        enabled: isModuleEnabled("lemonsqueezy"),
+      },
       nowpayments: {
         enabled: isModuleEnabled("nowpayments"),
       },
       reconciliation: {
         enabled: isModuleEnabled("payment-reconciliation"),
+      },
+    },
+    ai: {
+      velobaseGateway: {
+        enabled: isModuleEnabled("velobase-gateway"),
       },
     },
   },

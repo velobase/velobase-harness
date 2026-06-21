@@ -1,6 +1,6 @@
 // Avoid importing Prisma types directly to keep provider generic
 
-export type PaymentGateway = "STRIPE" | "NOWPAYMENTS";
+export type PaymentGateway = "STRIPE" | "NOWPAYMENTS" | "LEMONSQUEEZY";
 
 export type PaymentStatus =
   | "PENDING"
@@ -13,9 +13,11 @@ export type PaymentStatus =
 export interface CreatePaymentResult {
   paymentUrl: string;
   gatewayTransactionId?: string;
+  providerExtra?: Record<string, unknown>;
   /**
    * Optional provider-specific checkout/session identifier.
    * For Stripe this is the Checkout Session ID (cs_...).
+   * For LemonSqueezy this is the Checkout ID.
    */
   checkoutSessionId?: string;
 }
@@ -23,6 +25,7 @@ export interface CreatePaymentResult {
 export interface CreateSubscriptionResult {
   paymentUrl: string;
   gatewaySubscriptionId?: string;
+  providerExtra?: Record<string, unknown>;
   /**
    * Optional provider transaction identifier.
    * For Airwallex Billing Checkout, this is the Billing Checkout ID.
@@ -39,6 +42,8 @@ export type ProductInterval = "month" | "year";
 export interface ProductSnapshot {
   name?: string;
   interval?: ProductInterval;
+  metadata?: unknown;
+  [key: string]: unknown;
 }
 
 export interface ProviderOrder {
@@ -87,11 +92,19 @@ export interface SubscriptionWebhookResult {
 }
 
 export interface PaymentProvider {
-  createPayment(params: { payment: ProviderPayment; order: ProviderOrder }): Promise<CreatePaymentResult>;
-  createSubscription(params: { payment: ProviderPayment; order: ProviderOrder }): Promise<CreateSubscriptionResult>;
+  createPayment(params: {
+    payment: ProviderPayment;
+    order: ProviderOrder;
+  }): Promise<CreatePaymentResult>;
+  createSubscription(params: {
+    payment: ProviderPayment;
+    order: ProviderOrder;
+  }): Promise<CreateSubscriptionResult>;
 
   handlePaymentWebhook(req: Request): Promise<PaymentWebhookResult | null>;
-  handleSubscriptionWebhook(req: Request): Promise<SubscriptionWebhookResult | null>;
+  handleSubscriptionWebhook(
+    req: Request,
+  ): Promise<SubscriptionWebhookResult | null>;
 
   queryPaymentStatus?(gatewayTransactionId: string): Promise<PaymentStatus>;
 
@@ -115,7 +128,9 @@ export interface PaymentProvider {
   expireCheckoutSession?(checkoutSessionId: string): Promise<void>;
 }
 
-export class BaseWebhookResult implements PaymentWebhookResult, SubscriptionWebhookResult {
+export class BaseWebhookResult
+  implements PaymentWebhookResult, SubscriptionWebhookResult
+{
   private status: PaymentStatus;
   private gatewayTransactionId?: string;
   private gatewaySubscriptionId?: string;
@@ -148,14 +163,30 @@ export class BaseWebhookResult implements PaymentWebhookResult, SubscriptionWebh
     this.normalizedData = args.normalizedData ?? {};
   }
 
-  getStatus() { return this.status; }
-  getGatewayTransactionId() { return this.gatewayTransactionId; }
-  getGatewaySubscriptionId() { return this.gatewaySubscriptionId; }
-  getSubscriptionPeriod() { return this.subscriptionPeriod; }
-  getAmount() { return this.amount; }
-  getCurrency() { return this.currency; }
-  getRawData() { return this.rawData; }
-  getNormalizedData() { return this.normalizedData; }
+  getStatus() {
+    return this.status;
+  }
+  getGatewayTransactionId() {
+    return this.gatewayTransactionId;
+  }
+  getGatewaySubscriptionId() {
+    return this.gatewaySubscriptionId;
+  }
+  getSubscriptionPeriod() {
+    return this.subscriptionPeriod;
+  }
+  getAmount() {
+    return this.amount;
+  }
+  getCurrency() {
+    return this.currency;
+  }
+  getRawData() {
+    return this.rawData;
+  }
+  getNormalizedData() {
+    return this.normalizedData;
+  }
   getData() {
     if (this.isSubscription) {
       return {
@@ -166,8 +197,12 @@ export class BaseWebhookResult implements PaymentWebhookResult, SubscriptionWebh
     return {
       status: this.status,
       gateway_transaction_id: this.gatewayTransactionId,
-      ...(this.gatewaySubscriptionId ? { gateway_subscription_id: this.gatewaySubscriptionId } : {}),
-      ...(this.subscriptionPeriod ? { subscription_period: this.subscriptionPeriod } : {}),
+      ...(this.gatewaySubscriptionId
+        ? { gateway_subscription_id: this.gatewaySubscriptionId }
+        : {}),
+      ...(this.subscriptionPeriod
+        ? { subscription_period: this.subscriptionPeriod }
+        : {}),
     };
   }
 }
@@ -191,5 +226,3 @@ export interface NormalizedSubscriptionWebhookData {
    */
   endedAt?: Date | null;
 }
-
-

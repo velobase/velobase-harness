@@ -5,6 +5,7 @@ Payment covers products, orders, subscriptions, credits, payment webhooks, and e
 Supported providers:
 
 - Stripe for card payments and subscriptions.
+- LemonSqueezy for optional hosted checkout payments and subscriptions.
 - NowPayments for optional crypto payments.
 
 ## Rules
@@ -24,26 +25,30 @@ Common environment variables:
 - `STRIPE_SECRET_KEY`
 - `STRIPE_WEBHOOK_SECRET`
 - `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`
+- `LEMONSQUEEZY_API_KEY`
+- `LEMONSQUEEZY_STORE_ID`
+- `LEMONSQUEEZY_WEBHOOK_SECRET`
 - `NOWPAYMENTS_API_KEY`
-- `NOWPAYMENTS_WEBHOOK_SECRET`
+- `NOWPAYMENTS_IPN_SECRET`
 
 Update `src/env.js`, `.env.example`, and provider registration when adding payment configuration.
 
 Module modes:
 
 - `STRIPE_MODE=auto|off|on` controls Stripe provider registration, webhook handling, and Stripe-owned workers.
+- `LEMONSQUEEZY_MODE=auto|off|on` controls LemonSqueezy provider registration and webhook handling.
 - `NOWPAYMENTS_MODE=auto|off|on` controls NowPayments provider registration, webhook handling, and NowPayments-owned workers.
-- `PAYMENT_RECONCILIATION_MODE=auto|off|on` controls payment reconciliation reports. `auto` requires at least one payment provider and Lark.
+- `PAYMENT_RECONCILIATION_MODE=auto|off|on` controls payment reconciliation reports. `auto` currently requires Stripe or NowPayments plus Lark.
 
 ## Workers
 
 Payment-owned workers are registered from `src/workers/integrations/payment.ts`.
 
-| Worker                      | Owner                                                  | Enablement                                                                          |
-| --------------------------- | ------------------------------------------------------ | ----------------------------------------------------------------------------------- |
-| `order-compensation`        | Stripe / NowPayments payment compensation              | At least one payment provider is enabled                                            |
-| `subscription-compensation` | Stripe subscription compensation                       | Stripe is enabled                                                                   |
-| `payment-reconciliation`    | Payment reconciliation with Lark notification delivery | Payment provider enabled and Lark enabled, unless `PAYMENT_RECONCILIATION_MODE=off` |
+| Worker                      | Owner                                                  | Enablement                                                                           |
+| --------------------------- | ------------------------------------------------------ | ------------------------------------------------------------------------------------ |
+| `order-compensation`        | Stripe / NowPayments payment compensation              | Stripe or NowPayments is enabled                                                     |
+| `subscription-compensation` | Stripe subscription compensation                       | Stripe is enabled                                                                    |
+| `payment-reconciliation`    | Payment reconciliation with Lark notification delivery | Stripe or NowPayments and Lark are enabled, unless `PAYMENT_RECONCILIATION_MODE=off` |
 
 `payment-reconciliation` is not a standalone Lark integration. Lark is only the delivery channel for the payment reconciliation feature.
 
@@ -57,6 +62,11 @@ Payment workers are exposed as module `WorkerContribution` entries; `src/workers
 - Worker compensation should retry safely and never double-grant credits.
 
 ## Testing
+
+Admin payment diagnostics are exposed from the `/dashboard` module status panel:
+
+- A configured Stripe module turns green and opens a test dialog for checkout creation, payment confirmation polling, order/payment listing, balance checks, subscription status, and saved-card checks.
+- A configured LemonSqueezy module turns green and opens the same payment test dialog for LemonSqueezy checkout creation and shared payment record checks. Local tests can use `LEMONSQUEEZY_TEST_VARIANT_ID` and `LEMONSQUEEZY_TEST_SUBSCRIPTION_VARIANT_ID` when product metadata does not contain LemonSqueezy variant IDs.
 
 For payment changes, test:
 
