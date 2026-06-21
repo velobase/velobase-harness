@@ -82,7 +82,7 @@ Successful worker output is uploaded through `@/server/storage`, recorded in `Im
 
 ## Dashboard Smoke Test
 
-Admins can validate the WaveSpeedAI integration from `/dashboard`.
+Admins can validate the WaveSpeedAI integration from `/dashboard`: open **Module Status**, then click the green **WaveSpeedAI** module to open its test dialog.
 
 The panel performs three checks:
 
@@ -114,10 +114,11 @@ Recommended manual path:
 1. Set `IMAGE_GENERATION_MODE=auto`, `WAVESPEED_API_KEY`, `WAVESPEED_BASE_URL`, and Redis env vars.
 2. Start Web + Worker.
 3. Sign in as an admin and open `/dashboard`.
-4. Click **Check connection**.
-5. Run a small 1:1 test generation with a low-cost image model.
+4. In **Module Status**, click the green **WaveSpeedAI** module.
+5. Click **Check connection**.
+6. Run a small 1:1 test generation with a low-cost image model.
 
-For a credentials-only smoke test, set `WAVESPEED_API_KEY` and `WAVESPEED_BASE_URL`, start Web, then use **Check connection** on `/dashboard`.
+For a credentials-only smoke test, set `WAVESPEED_API_KEY` and `WAVESPEED_BASE_URL`, start Web, then use **Check connection** from the **WaveSpeedAI** module status dialog on `/dashboard`.
 
 ## AI Rules
 

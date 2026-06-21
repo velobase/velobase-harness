@@ -82,7 +82,7 @@ Worker 成功后会通过 `@/server/storage` 上传输出图片，写入 `ImageG
 
 ## Dashboard 冒烟测试
 
-管理员可以在 `/dashboard` 验证 WaveSpeedAI 接入。
+管理员可以在 `/dashboard` 验证 WaveSpeedAI 接入：打开 **模块状态**，点击变绿的 **WaveSpeedAI** 模块后会出现测试弹窗。
 
 面板包含三层检查：
 
@@ -114,10 +114,11 @@ pnpm worker:dev
 1. 设置 `IMAGE_GENERATION_MODE=auto`、`WAVESPEED_API_KEY`、`WAVESPEED_BASE_URL` 和 Redis 环境变量。
 2. 启动 Web + Worker。
 3. 用管理员账号登录并打开 `/dashboard`。
-4. 点击 **检查连接**。
-5. 使用低成本图片模型运行一次 1:1 试生成。
+4. 在 **模块状态** 中点击变绿的 **WaveSpeedAI** 模块。
+5. 点击 **检查连接**。
+6. 使用低成本图片模型运行一次 1:1 试生成。
 
-如果只做凭证冒烟测试，设置 `WAVESPEED_API_KEY` 和 `WAVESPEED_BASE_URL`，启动 Web，然后在 `/dashboard` 点击 **检查连接**。
+如果只做凭证冒烟测试，设置 `WAVESPEED_API_KEY` 和 `WAVESPEED_BASE_URL`，启动 Web，然后在 `/dashboard` 的 **WaveSpeedAI** 模块状态弹窗中点击 **检查连接**。
 
 ## AI 规则
 
