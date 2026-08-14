@@ -37,7 +37,6 @@ COPY --chown=apiuser:nodejs src/server ./src/server
 COPY --chown=apiuser:nodejs src/analytics ./src/analytics
 COPY --chown=apiuser:nodejs src/env.js ./src/env.js
 COPY --chown=apiuser:nodejs tsconfig.json ./
-COPY --chown=apiuser:nodejs .env ./
 
 USER apiuser
 
