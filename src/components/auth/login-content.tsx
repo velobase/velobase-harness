@@ -165,23 +165,6 @@ export function LoginContent({
             <Mail className="h-[18px] w-[18px]" />
             <span>{t("continueWithEmail")}</span>
           </button>
-
-          {login.isTestAccountLoginEnabled && (
-            <button
-              onClick={login.handleTestAccountLogin}
-              disabled={login.isLoading}
-              className="flex h-12 w-full items-center justify-center gap-3 rounded-xl border border-orange-100 bg-orange-50 px-4 text-[15px] font-medium text-orange-700 transition-all duration-200 hover:bg-orange-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-orange-900/40 dark:bg-orange-950/20 dark:text-orange-300 dark:hover:bg-orange-950/40"
-            >
-              {login.isLoading ? (
-                <Loader2 className="h-[18px] w-[18px] animate-spin" />
-              ) : (
-                <KeyRound className="h-[18px] w-[18px]" />
-              )}
-              <span>
-                {login.isLoading ? t("signingIn") : t("loginTestAccount")}
-              </span>
-            </button>
-          )}
         </div>
 
         <p className="text-muted-foreground mt-8 px-6 text-center text-[11px]">

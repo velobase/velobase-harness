@@ -17,6 +17,15 @@ Common environment variables:
 - OAuth provider client IDs and secrets, such as Google or GitHub keys.
 - Optional anti-abuse or email settings when the login flow sends email.
 
+Password login is disabled by default. For an explicit test or review account:
+
+- Set `NEXT_PUBLIC_PASSWORD_LOGIN_EMAILS` to a comma-separated allowlist. The
+  values are public because the client uses them to select the password form.
+- In development only, set `PASSWORD_LOGIN_SEED_PASSWORD` to an
+  operator-chosen password of at least 12 characters before running the seed.
+- Production seeding is blocked. Provision production password hashes through
+  an operator-controlled workflow and never commit or log the password.
+
 Update `src/env.js` and `.env.example` when adding auth-related configuration.
 
 ## Extension Rules

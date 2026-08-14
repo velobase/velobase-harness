@@ -7,6 +7,7 @@
 import "dotenv/config";
 import { PrismaClient } from "@prisma/client";
 import Redis from "ioredis";
+import { PASSWORD_LOGIN_ALLOWLIST } from "../../../../src/server/auth/password-login-allowlist";
 
 if (!process.env.DATABASE_URL) {
   console.error("❌ DATABASE_URL not configured in .env");
@@ -160,12 +161,17 @@ async function testSeedTouchScenes() {
 async function testSeedTestUser() {
   console.log("\n═══ 6. Seed: Test User ═══\n");
 
-  const testUser = await prisma.user.findUnique({
-    where: { email: "testadmin@example.com" },
-  });
-  assert("测试用户 testadmin@example.com 存在", !!testUser);
-  if (testUser) {
-    assert("测试用户有密码哈希", !!testUser.passwordHash);
+  if (PASSWORD_LOGIN_ALLOWLIST.length === 0) {
+    console.log("  ⏭️  未配置密码登录用户，跳过");
+    return;
+  }
+
+  for (const email of PASSWORD_LOGIN_ALLOWLIST) {
+    const testUser = await prisma.user.findUnique({ where: { email } });
+    assert(`测试用户 ${email} 存在`, !!testUser);
+    if (testUser) {
+      assert(`测试用户 ${email} 有密码哈希`, !!testUser.passwordHash);
+    }
   }
 }
 

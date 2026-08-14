@@ -13,12 +13,12 @@ import { env } from "@/env";
 export type LoginView = "main" | "email" | "email-code";
 
 // ============ Constants ============
-const PASSWORD_LOGIN_PREFIX = "testadmin";
-const TEST_LOGIN_EMAIL = "testadmin@example.com";
-const TEST_LOGIN_PASSWORD = "Testadmin2024!";
-
-export const TEST_ACCOUNT_LOGIN_ENABLED =
-  env.NEXT_PUBLIC_DISABLE_TEST_LOGIN === "false";
+const PASSWORD_LOGIN_EMAILS = new Set(
+  (env.NEXT_PUBLIC_PASSWORD_LOGIN_EMAILS ?? "")
+    .split(",")
+    .map((email) => email.toLowerCase().trim())
+    .filter(Boolean),
+);
 
 export const COMMON_EMAIL_DOMAINS = [
   "outlook.com",
@@ -65,12 +65,7 @@ export function normalizeEmailInput(raw: string): string {
 }
 
 export function shouldUsePasswordLogin(emailInput: string): boolean {
-  const input = emailInput.toLowerCase().trim();
-  const localPart = input.split("@")[0] ?? "";
-  return (
-    localPart === PASSWORD_LOGIN_PREFIX ||
-    input.startsWith(PASSWORD_LOGIN_PREFIX + "@")
-  );
+  return PASSWORD_LOGIN_EMAILS.has(emailInput.toLowerCase().trim());
 }
 
 export function getEmailProvider(email: string) {
@@ -458,37 +453,6 @@ export function useLogin() {
     }
   };
 
-  const handleTestAccountLogin = async () => {
-    setError(null);
-    setShowAutocomplete(false);
-    setEmail(TEST_LOGIN_EMAIL);
-    setPassword(TEST_LOGIN_PASSWORD);
-    setIsLoading(true);
-    track(AUTH_EVENTS.LOGIN_METHOD_SELECT, { method: "test_credentials" });
-
-    try {
-      ensureDeviceKey();
-
-      await signIn("credentials", {
-        email: TEST_LOGIN_EMAIL,
-        password: TEST_LOGIN_PASSWORD,
-        redirectTo: getCallbackUrl(),
-      });
-    } catch (err) {
-      if ((err as Error).message === "NEXT_REDIRECT") {
-        return;
-      }
-      console.error(err);
-      track(AUTH_EVENTS.LOGIN_FAILED, {
-        method: "test_credentials",
-        reason: "unknown",
-      });
-      setError("Unable to sign in with the test account.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -539,7 +503,6 @@ export function useLogin() {
     error,
     turnstileToken,
     isPasswordMode,
-    isTestAccountLoginEnabled: TEST_ACCOUNT_LOGIN_ENABLED,
 
     // Autocomplete
     showAutocomplete,
@@ -570,8 +533,6 @@ export function useLogin() {
     handleCodeFormSubmit,
     handleResendCode,
     handleUseDifferentEmail,
-    handleTestAccountLogin,
-
     // Helpers
     getEmailProvider,
   };

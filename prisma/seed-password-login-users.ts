@@ -1,30 +1,34 @@
-/**
- * 密码登录测试用户种子
- * 
- * 根据 password-login-allowlist.ts 中的白名单创建测试用户
- * 审核完成后清空白名单即可关闭密码登录
- */
 /* eslint-disable no-console */
 
-import { PrismaClient } from '@prisma/client';
-import bcrypt from 'bcryptjs';
-import { PASSWORD_LOGIN_ALLOWLIST } from '../src/server/auth/password-login-allowlist';
+import { PrismaClient } from "@prisma/client";
+import bcrypt from "bcryptjs";
+import { PASSWORD_LOGIN_ALLOWLIST } from "../src/server/auth/password-login-allowlist";
+import { env } from "../src/env.js";
 
 const prisma = new PrismaClient();
 
 export async function seedPasswordLoginTestUsers() {
-  if (PASSWORD_LOGIN_ALLOWLIST.length === 0) {
-    console.log('   ℹ️  No password login users configured, skipping');
+  if (env.NODE_ENV === "production") {
+    console.log("   ℹ️  Password-login users are never seeded in production");
     return;
   }
 
+  if (PASSWORD_LOGIN_ALLOWLIST.length === 0) {
+    console.log("   ℹ️  No password login users configured, skipping");
+    return;
+  }
+
+  const seedPassword = env.PASSWORD_LOGIN_SEED_PASSWORD;
+  if (!seedPassword) {
+    console.log("   ℹ️  PASSWORD_LOGIN_SEED_PASSWORD is not set, skipping");
+    return;
+  }
+
+  const passwordHash = await bcrypt.hash(seedPassword, 12);
+
   for (const testEmail of PASSWORD_LOGIN_ALLOWLIST) {
     try {
-      // 默认密码规则: 首字母大写的 local part + "2024!"
-      // 例如: test@example.com -> TestPassword2024!
-      const localPart = testEmail.split('@')[0] ?? 'Test';
-      const defaultPassword = localPart.charAt(0).toUpperCase() + localPart.slice(1) + '2024!';
-      const passwordHash = await bcrypt.hash(defaultPassword, 12);
+      const localPart = testEmail.split("@")[0] ?? "Test";
 
       await prisma.user.upsert({
         where: { email: testEmail },
@@ -39,8 +43,7 @@ export async function seedPasswordLoginTestUsers() {
         },
       });
 
-      // 测试积分通过 Velobase 发放，seed 不再写入本地 billing 表
-      console.log(`   ✅ ${testEmail} (password: ${defaultPassword})`);
+      console.log(`   ✅ Seeded password-login user ${testEmail}`);
     } catch (error) {
       console.warn(`   ⚠️ Failed to seed ${testEmail}:`, error);
     }
