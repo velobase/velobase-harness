@@ -13,6 +13,7 @@ export const env = createEnv({
         : z.string().optional(),
     NEXTAUTH_URL: z.string().url().optional(),
     APP_URL: z.string().url().optional(),
+    PASSWORD_LOGIN_SEED_PASSWORD: z.string().min(12).optional(),
     AUTH_DISCORD_ID: z.string().optional(),
     AUTH_DISCORD_SECRET: z.string().optional(),
     AUTH_GOOGLE_ID: z.string().optional(),
@@ -186,7 +187,19 @@ export const env = createEnv({
     NEXT_PUBLIC_APP_ENV: z.enum(["dev", "staging", "prod"]).default("dev"),
     NEXT_PUBLIC_APP_NAME: z.string().optional(),
     NEXT_PUBLIC_SUPPORT_EMAIL: z.string().email().optional(),
-    NEXT_PUBLIC_DISABLE_TEST_LOGIN: z.string().optional(),
+    NEXT_PUBLIC_PASSWORD_LOGIN_EMAILS: z
+      .string()
+      .optional()
+      .refine(
+        (value) =>
+          !value ||
+          value
+            .split(",")
+            .every(
+              (email) => z.string().email().safeParse(email.trim()).success,
+            ),
+        "Must be a comma-separated list of email addresses",
+      ),
     NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: z.string().optional(),
     NEXT_PUBLIC_TURNSTILE_SITE_KEY: z.string().optional(),
     NEXT_PUBLIC_TELEGRAM_BOT_USERNAME: z.string().optional(),
@@ -202,6 +215,7 @@ export const env = createEnv({
     NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET,
     NEXTAUTH_URL: process.env.NEXTAUTH_URL,
     APP_URL: process.env.APP_URL ?? process.env.NEXTAUTH_URL,
+    PASSWORD_LOGIN_SEED_PASSWORD: process.env.PASSWORD_LOGIN_SEED_PASSWORD,
     AUTH_DISCORD_ID: process.env.AUTH_DISCORD_ID,
     AUTH_DISCORD_SECRET: process.env.AUTH_DISCORD_SECRET,
     AUTH_GOOGLE_ID: process.env.AUTH_GOOGLE_ID,
@@ -309,7 +323,8 @@ export const env = createEnv({
     NEXT_PUBLIC_APP_ENV: process.env.NEXT_PUBLIC_APP_ENV,
     NEXT_PUBLIC_APP_NAME: process.env.NEXT_PUBLIC_APP_NAME,
     NEXT_PUBLIC_SUPPORT_EMAIL: process.env.NEXT_PUBLIC_SUPPORT_EMAIL,
-    NEXT_PUBLIC_DISABLE_TEST_LOGIN: process.env.NEXT_PUBLIC_DISABLE_TEST_LOGIN,
+    NEXT_PUBLIC_PASSWORD_LOGIN_EMAILS:
+      process.env.NEXT_PUBLIC_PASSWORD_LOGIN_EMAILS,
     NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY:
       process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY,
     NEXT_PUBLIC_TURNSTILE_SITE_KEY: process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY,
