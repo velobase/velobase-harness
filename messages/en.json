@@ -134,10 +134,10 @@
   },
   "landing": {
     "hero": {
-      "titleLine1": "Build Your AI App",
-      "titleLine2": "In Record Time",
-      "subtitle": "A production-ready AI SaaS framework with auth, billing, payments, and AI chat built in.",
-      "subtitleAccent": "Focus on your core feature. We handle the rest."
+      "titleLine1": "Open-Source AI SaaS",
+      "titleLine2": "Boilerplate",
+      "subtitle": "A free framework with auth, billing, credits, payments, AI chat, workers, attribution, and anti-abuse built in.",
+      "subtitleAccent": "Bring your AI workflow. Keep the SaaS infrastructure."
     }
   },
   "dashboard": {
