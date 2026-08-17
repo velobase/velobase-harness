@@ -5,6 +5,7 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible"
 import { ChevronDown } from "lucide-react"
+import { useTranslations } from "next-intl"
 
 type Price = {
   currency: string
@@ -27,6 +28,7 @@ export function formatPrice(price: number, currency: string) {
 }
 
 export function ProductPriceCell({ price, originalPrice, currency, prices }: ProductPriceCellProps) {
+  const t = useTranslations("admin.productManagement")
   return (
     <Collapsible>
       <CollapsibleTrigger className="flex items-center gap-1 text-sm font-medium hover:underline cursor-pointer group">
@@ -57,7 +59,7 @@ export function ProductPriceCell({ price, originalPrice, currency, prices }: Pro
           </div>
         ))}
         {(!prices || prices.length === 0) && (
-          <div className="text-xs text-muted-foreground italic">无本地化价格</div>
+          <div className="text-xs text-muted-foreground italic">{t("noLocalizedPrices")}</div>
         )}
       </CollapsibleContent>
     </Collapsible>

@@ -31,6 +31,7 @@ import {
   Filter,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { useTranslations } from "next-intl"
 import { OrderRow } from "./order-row"
 import { OrderFilters } from "./order-filters"
 import { defaultFilters, type Filters, type OrderItem } from "./types"
@@ -40,6 +41,7 @@ interface OrdersTableProps {
 }
 
 export function OrdersTable({ userId }: OrdersTableProps) {
+  const t = useTranslations("admin.orders")
   const [search, setSearch] = useState("")
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(20)
@@ -90,22 +92,22 @@ export function OrdersTable({ userId }: OrdersTableProps) {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">
-            {userId ? "User Orders" : "Orders"}
+            {userId ? t("userOrdersTitle") : t("title")}
           </h1>
           <p className="text-muted-foreground">
             {userId && (
               <Link href={`/admin/users/${userId}`} className="text-primary hover:underline mr-2">
-                ← Back to user
+                {t("backToUser")}
               </Link>
             )}
-            {total > 0 ? `${total.toLocaleString()} orders` : "Manage orders"}
+            {total > 0 ? t("subtitleTotal", { count: total }) : t("subtitleEmpty")}
           </p>
         </div>
         <div className="flex items-center gap-2">
           <div className="relative flex-1 sm:w-72">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
-              placeholder="Search by order ID, user..."
+              placeholder={t("searchPlaceholder")}
               value={search}
               onChange={(e) => {
                 setSearch(e.target.value)
@@ -141,14 +143,14 @@ export function OrdersTable({ userId }: OrdersTableProps) {
           <TableHeader>
             <TableRow>
               <TableHead className="w-[40px]"></TableHead>
-              <TableHead className="w-[200px]">订单ID</TableHead>
-              <TableHead className="w-[180px]">用户</TableHead>
-              <TableHead className="w-[150px]">商品</TableHead>
-              <TableHead className="w-[100px]">金额</TableHead>
-              <TableHead className="w-[80px]">类型</TableHead>
-              <TableHead className="w-[80px]">状态</TableHead>
-              <TableHead className="w-[80px]">支付</TableHead>
-              <TableHead className="w-[140px]">创建时间</TableHead>
+              <TableHead className="w-[200px]">{t("orderId")}</TableHead>
+              <TableHead className="w-[180px]">{t("user")}</TableHead>
+              <TableHead className="w-[150px]">{t("product")}</TableHead>
+              <TableHead className="w-[100px]">{t("amount")}</TableHead>
+              <TableHead className="w-[80px]">{t("type")}</TableHead>
+              <TableHead className="w-[80px]">{t("statusLabel")}</TableHead>
+              <TableHead className="w-[80px]">{t("payment")}</TableHead>
+              <TableHead className="w-[140px]">{t("createdAt")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -169,7 +171,7 @@ export function OrdersTable({ userId }: OrdersTableProps) {
             ) : data?.items.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={9} className="text-center py-10 text-muted-foreground">
-                  暂无订单
+                  {t("noOrders")}
                 </TableCell>
               </TableRow>
             ) : (
@@ -189,7 +191,7 @@ export function OrdersTable({ userId }: OrdersTableProps) {
       {/* Pagination */}
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-2">
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <span>每页:</span>
+          <span>{t("perPage")}</span>
           <Select value={pageSize.toString()} onValueChange={(v) => { setPageSize(Number(v)); setPage(1) }}>
             <SelectTrigger className="h-8 w-[70px]">
               <SelectValue />
@@ -205,7 +207,7 @@ export function OrdersTable({ userId }: OrdersTableProps) {
 
         <div className="flex items-center gap-6">
           <span className="text-sm text-muted-foreground">
-            {total > 0 ? `${startItem}-${endItem} / ${total.toLocaleString()}` : "0 条结果"}
+            {total > 0 ? `${startItem}-${endItem} / ${total.toLocaleString()}` : t("zeroResults")}
           </span>
           <div className="flex items-center gap-1">
             <Button
@@ -227,7 +229,7 @@ export function OrdersTable({ userId }: OrdersTableProps) {
               <ChevronLeft className="h-4 w-4" />
             </Button>
             <span className="text-sm w-20 text-center">
-              第 {page} / {totalPages} 页
+              {t("pageIndicator", { page, total: totalPages })}
             </span>
             <Button
               variant="outline"

@@ -49,6 +49,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
 import Link from "next/link"
+import { useTranslations, useLocale } from "next-intl"
 
 type FilterChannel = "all" | "EMAIL" | "SMS" | "PUSH"
 type FilterActive = "all" | "true" | "false"
@@ -63,22 +64,10 @@ const defaultFilters: Filters = {
   isActive: "all",
 }
 
-const channelLabels: Record<string, string> = {
-  EMAIL: "邮件",
-  SMS: "短信",
-  PUSH: "推送",
-}
-
 const channelIcons: Record<string, React.ReactNode> = {
   EMAIL: <Mail className="h-3 w-3" />,
   SMS: <MessageSquare className="h-3 w-3" />,
   PUSH: <Bell className="h-3 w-3" />,
-}
-
-const triggerLabels: Record<string, string> = {
-  SCHEDULED: "定时",
-  EVENT: "事件",
-  MANUAL: "手动",
 }
 
 const triggerIcons: Record<string, React.ReactNode> = {
@@ -87,8 +76,8 @@ const triggerIcons: Record<string, React.ReactNode> = {
   MANUAL: <Hand className="h-3 w-3" />,
 }
 
-function formatDate(date: Date | string) {
-  return new Date(date).toLocaleString("zh-CN", {
+function formatDate(date: Date | string, locale: string) {
+  return new Date(date).toLocaleString(locale, {
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
@@ -98,6 +87,21 @@ function formatDate(date: Date | string) {
 }
 
 export default function TouchScenesPage() {
+  const t = useTranslations("admin.scenes")
+  const locale = useLocale()
+
+  const channelLabels: Record<string, string> = {
+    EMAIL: t("channels.EMAIL"),
+    SMS: t("channels.SMS"),
+    PUSH: t("channels.PUSH"),
+  }
+
+  const triggerLabels: Record<string, string> = {
+    SCHEDULED: t("triggers.scheduled"),
+    EVENT: t("triggers.event"),
+    MANUAL: t("triggers.manual"),
+  }
+
   const [search, setSearch] = useState("")
   const [page, setPage] = useState(1)
   const [pageSize] = useState(20)
@@ -121,7 +125,7 @@ export default function TouchScenesPage() {
     onSuccess: () => {
       void utils.admin.listTouchScenes.invalidate()
       setCreateOpen(false)
-      toast.success("场景创建成功")
+      toast.success(t("createSuccess"))
     },
     onError: (err) => toast.error(err.message),
   })
@@ -130,7 +134,7 @@ export default function TouchScenesPage() {
     onSuccess: () => {
       void utils.admin.listTouchScenes.invalidate()
       setEditKey(null)
-      toast.success("场景更新成功")
+      toast.success(t("updateSuccess"))
     },
     onError: (err) => toast.error(err.message),
   })
@@ -148,16 +152,16 @@ export default function TouchScenesPage() {
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">触达场景</h1>
+          <h1 className="text-3xl font-bold tracking-tight">{t("title")}</h1>
           <p className="text-muted-foreground">
-            {total > 0 ? `${total.toLocaleString()} 个场景` : "管理触达场景和模板"}
+            {total > 0 ? t("subtitleTotal", { count: total }) : t("subtitleEmpty")}
           </p>
         </div>
         <div className="flex items-center gap-2">
           <div className="relative flex-1 sm:w-64">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
-              placeholder="搜索场景..."
+              placeholder={t("searchPlaceholder")}
               value={search}
               onChange={(e) => {
                 setSearch(e.target.value)
@@ -171,10 +175,10 @@ export default function TouchScenesPage() {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">全部</SelectItem>
-              <SelectItem value="EMAIL">邮件</SelectItem>
-              <SelectItem value="SMS">短信</SelectItem>
-              <SelectItem value="PUSH">推送</SelectItem>
+              <SelectItem value="all">{t("all")}</SelectItem>
+              <SelectItem value="EMAIL">{t("channels.EMAIL")}</SelectItem>
+              <SelectItem value="SMS">{t("channels.SMS")}</SelectItem>
+              <SelectItem value="PUSH">{t("channels.PUSH")}</SelectItem>
             </SelectContent>
           </Select>
           <Select value={filters.isActive} onValueChange={(v) => updateFilter("isActive", v as FilterActive)}>
@@ -182,14 +186,14 @@ export default function TouchScenesPage() {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">全部</SelectItem>
-              <SelectItem value="true">启用</SelectItem>
-              <SelectItem value="false">禁用</SelectItem>
+              <SelectItem value="all">{t("all")}</SelectItem>
+              <SelectItem value="true">{t("active")}</SelectItem>
+              <SelectItem value="false">{t("inactive")}</SelectItem>
             </SelectContent>
           </Select>
           <Button onClick={() => setCreateOpen(true)}>
             <Plus className="h-4 w-4 mr-1" />
-            新建
+            {t("create")}
           </Button>
         </div>
       </div>
@@ -199,15 +203,15 @@ export default function TouchScenesPage() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-[200px]">Key</TableHead>
-              <TableHead className="w-[200px]">名称</TableHead>
-              <TableHead className="w-[100px]">渠道</TableHead>
-              <TableHead className="w-[100px]">触发</TableHead>
-              <TableHead className="w-[80px]">模板</TableHead>
-              <TableHead className="w-[80px]">计划</TableHead>
-              <TableHead className="w-[80px]">状态</TableHead>
-              <TableHead className="w-[140px]">创建时间</TableHead>
-              <TableHead className="w-[100px]">操作</TableHead>
+              <TableHead className="w-[200px]">{t("key")}</TableHead>
+              <TableHead className="w-[200px]">{t("name")}</TableHead>
+              <TableHead className="w-[100px]">{t("channel")}</TableHead>
+              <TableHead className="w-[100px]">{t("trigger")}</TableHead>
+              <TableHead className="w-[80px]">{t("templates")}</TableHead>
+              <TableHead className="w-[80px]">{t("schedules")}</TableHead>
+              <TableHead className="w-[80px]">{t("status")}</TableHead>
+              <TableHead className="w-[140px]">{t("createdAt")}</TableHead>
+              <TableHead className="w-[100px]">{t("actions")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -222,7 +226,7 @@ export default function TouchScenesPage() {
             ) : data?.items.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={9} className="h-24 text-center text-muted-foreground">
-                  暂无数据
+                  {t("noData")}
                 </TableCell>
               </TableRow>
             ) : (
@@ -257,11 +261,11 @@ export default function TouchScenesPage() {
                   </TableCell>
                   <TableCell>
                     <Badge variant={scene.isActive ? "default" : "secondary"} className="text-xs">
-                      {scene.isActive ? "启用" : "禁用"}
+                      {scene.isActive ? t("active") : t("inactive")}
                     </Badge>
                   </TableCell>
                   <TableCell className="text-xs text-muted-foreground">
-                    {formatDate(scene.createdAt)}
+                    {formatDate(scene.createdAt, locale)}
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-1">
@@ -269,7 +273,7 @@ export default function TouchScenesPage() {
                         <Edit className="h-3 w-3" />
                       </Button>
                       <Button variant="ghost" size="sm" className="h-7 text-xs" asChild>
-                        <Link href={`/admin/touches/scenes/${scene.key}`}>详情</Link>
+                        <Link href={`/admin/touches/scenes/${scene.key}`}>{t("details")}</Link>
                       </Button>
                     </div>
                   </TableCell>
@@ -284,7 +288,7 @@ export default function TouchScenesPage() {
       {totalPages > 1 && (
         <div className="flex items-center justify-between">
           <p className="text-sm text-muted-foreground">
-            第 {page} / {totalPages} 页，共 {total} 条
+            {t("pageIndicator", { page, totalPages, total })}
           </p>
           <div className="flex items-center gap-1">
             <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setPage(1)} disabled={page === 1}>
@@ -342,6 +346,7 @@ function CreateSceneDialog({
   }) => void
   isLoading: boolean
 }) {
+  const t = useTranslations("admin.scenes")
   const [key, setKey] = useState("")
   const [name, setName] = useState("")
   const [description, setDescription] = useState("")
@@ -351,7 +356,7 @@ function CreateSceneDialog({
 
   const handleSubmit = () => {
     if (!key || !name) {
-      toast.error("请填写必填字段")
+      toast.error(t("requireFields"))
       return
     }
     onSubmit({ key, name, description: description || undefined, channel, triggerType, isActive })
@@ -361,63 +366,63 @@ function CreateSceneDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>新建触达场景</DialogTitle>
+          <DialogTitle>{t("createTitle")}</DialogTitle>
         </DialogHeader>
         <div className="space-y-4 py-4">
           <div className="space-y-2">
-            <Label>Key *</Label>
+            <Label>{t("keyLabel")}</Label>
             <Input
-              placeholder="如 welcome_email, sub_renewal_d1"
+              placeholder={t("keyPlaceholder")}
               value={key}
               onChange={(e) => setKey(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ""))}
             />
-            <p className="text-xs text-muted-foreground">只能包含小写字母、数字和下划线</p>
+            <p className="text-xs text-muted-foreground">{t("keyHint")}</p>
           </div>
           <div className="space-y-2">
-            <Label>名称 *</Label>
-            <Input placeholder="场景名称" value={name} onChange={(e) => setName(e.target.value)} />
+            <Label>{t("nameLabel")}</Label>
+            <Input placeholder={t("namePlaceholder")} value={name} onChange={(e) => setName(e.target.value)} />
           </div>
           <div className="space-y-2">
-            <Label>描述</Label>
-            <Textarea placeholder="场景描述（可选）" value={description} onChange={(e) => setDescription(e.target.value)} rows={2} />
+            <Label>{t("descriptionLabel")}</Label>
+            <Textarea placeholder={t("descriptionPlaceholder")} value={description} onChange={(e) => setDescription(e.target.value)} rows={2} />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>渠道</Label>
+              <Label>{t("channelLabel")}</Label>
               <Select value={channel} onValueChange={(v) => setChannel(v as typeof channel)}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="EMAIL">邮件</SelectItem>
-                  <SelectItem value="SMS">短信</SelectItem>
-                  <SelectItem value="PUSH">推送</SelectItem>
+                  <SelectItem value="EMAIL">{t("channels.EMAIL")}</SelectItem>
+                  <SelectItem value="SMS">{t("channels.SMS")}</SelectItem>
+                  <SelectItem value="PUSH">{t("channels.PUSH")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>触发类型</Label>
+              <Label>{t("triggerLabel")}</Label>
               <Select value={triggerType} onValueChange={(v) => setTriggerType(v as typeof triggerType)}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="SCHEDULED">定时</SelectItem>
-                  <SelectItem value="EVENT">事件</SelectItem>
-                  <SelectItem value="MANUAL">手动</SelectItem>
+                  <SelectItem value="SCHEDULED">{t("triggers.scheduled")}</SelectItem>
+                  <SelectItem value="EVENT">{t("triggers.event")}</SelectItem>
+                  <SelectItem value="MANUAL">{t("triggers.manual")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           </div>
           <div className="flex items-center justify-between">
-            <Label>启用</Label>
+            <Label>{t("enabled")}</Label>
             <Switch checked={isActive} onCheckedChange={setIsActive} />
           </div>
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>取消</Button>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>{t("cancel")}</Button>
           <Button onClick={handleSubmit} disabled={isLoading}>
-            {isLoading ? "创建中..." : "创建"}
+            {isLoading ? t("creating") : t("createSubmit")}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -442,6 +447,7 @@ function EditSceneDialog({
   }) => void
   isLoading: boolean
 }) {
+  const t = useTranslations("admin.scenes")
   const { data: scene } = api.admin.getTouchScene.useQuery({ key: sceneKey })
 
   const [name, setName] = useState("")
@@ -462,7 +468,7 @@ function EditSceneDialog({
 
   const handleSubmit = () => {
     if (!name) {
-      toast.error("名称不能为空")
+      toast.error(t("nameRequired"))
       return
     }
     onSubmit({ name, description: description || undefined, channel, triggerType, isActive })
@@ -472,58 +478,58 @@ function EditSceneDialog({
     <Dialog open={true} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>编辑场景: {sceneKey}</DialogTitle>
+          <DialogTitle>{t("editTitle", { key: sceneKey })}</DialogTitle>
         </DialogHeader>
         {!scene ? (
-          <div className="py-8 text-center text-muted-foreground">加载中...</div>
+          <div className="py-8 text-center text-muted-foreground">{t("loading")}</div>
         ) : (
           <>
             <div className="space-y-4 py-4">
               <div className="space-y-2">
-                <Label>名称 *</Label>
-                <Input placeholder="场景名称" value={name} onChange={(e) => setName(e.target.value)} />
+                <Label>{t("nameLabel")}</Label>
+                <Input placeholder={t("namePlaceholder")} value={name} onChange={(e) => setName(e.target.value)} />
               </div>
               <div className="space-y-2">
-                <Label>描述</Label>
-                <Textarea placeholder="场景描述（可选）" value={description} onChange={(e) => setDescription(e.target.value)} rows={2} />
+                <Label>{t("descriptionLabel")}</Label>
+                <Textarea placeholder={t("descriptionPlaceholder")} value={description} onChange={(e) => setDescription(e.target.value)} rows={2} />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>渠道</Label>
+                  <Label>{t("channelLabel")}</Label>
                   <Select value={channel} onValueChange={(v) => setChannel(v as typeof channel)}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="EMAIL">邮件</SelectItem>
-                      <SelectItem value="SMS">短信</SelectItem>
-                      <SelectItem value="PUSH">推送</SelectItem>
+                      <SelectItem value="EMAIL">{t("channels.EMAIL")}</SelectItem>
+                      <SelectItem value="SMS">{t("channels.SMS")}</SelectItem>
+                      <SelectItem value="PUSH">{t("channels.PUSH")}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label>触发类型</Label>
+                  <Label>{t("triggerLabel")}</Label>
                   <Select value={triggerType} onValueChange={(v) => setTriggerType(v as typeof triggerType)}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="SCHEDULED">定时</SelectItem>
-                      <SelectItem value="EVENT">事件</SelectItem>
-                      <SelectItem value="MANUAL">手动</SelectItem>
+                      <SelectItem value="SCHEDULED">{t("triggers.scheduled")}</SelectItem>
+                      <SelectItem value="EVENT">{t("triggers.event")}</SelectItem>
+                      <SelectItem value="MANUAL">{t("triggers.manual")}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
               </div>
               <div className="flex items-center justify-between">
-                <Label>启用</Label>
+                <Label>{t("enabled")}</Label>
                 <Switch checked={isActive} onCheckedChange={setIsActive} />
               </div>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => onOpenChange(false)}>取消</Button>
+              <Button variant="outline" onClick={() => onOpenChange(false)}>{t("cancel")}</Button>
               <Button onClick={handleSubmit} disabled={isLoading}>
-                {isLoading ? "保存中..." : "保存"}
+                {isLoading ? t("saving") : t("save")}
               </Button>
             </DialogFooter>
           </>

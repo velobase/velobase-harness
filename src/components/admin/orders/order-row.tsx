@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { TableCell, TableRow } from "@/components/ui/table"
 import { ChevronDown, ChevronUp } from "lucide-react"
-import { statusConfig, typeLabels, formatPrice, formatDateTime } from "./utils"
+import { useTranslations, useLocale } from "next-intl"
+import { statusConfig, typeKeys, formatPrice, formatDateTime } from "./utils"
 import { PaymentDetails } from "./payment-details"
 import type { OrderItem } from "./types"
 
@@ -17,6 +18,8 @@ interface OrderRowProps {
 }
 
 export function OrderRow({ order, isExpanded, onToggleExpand }: OrderRowProps) {
+  const t = useTranslations("admin.orders")
+  const locale = useLocale()
   return (
     <Fragment>
       <TableRow className="cursor-pointer hover:bg-muted/50" onClick={onToggleExpand}>
@@ -48,7 +51,7 @@ export function OrderRow({ order, isExpanded, onToggleExpand }: OrderRowProps) {
           <div className="min-w-0">
             <p className="truncate text-sm">{order.product.name}</p>
             <Badge variant="outline" className="text-[10px]">
-              {order.product.type === "SUBSCRIPTION" ? "订阅" : order.product.type === "CREDITS_PACKAGE" ? "积分包" : "权益"}
+              {order.product.type === "SUBSCRIPTION" ? t("productTypes.subscription") : order.product.type === "CREDITS_PACKAGE" ? t("productTypes.creditsPackage") : t("productTypes.entitlement")}
             </Badge>
           </div>
         </TableCell>
@@ -57,21 +60,21 @@ export function OrderRow({ order, isExpanded, onToggleExpand }: OrderRowProps) {
         </TableCell>
         <TableCell>
           <Badge variant="outline" className="text-xs">
-            {typeLabels[order.type] || order.type}
+            {typeKeys[order.type] ? t(typeKeys[order.type]!) : order.type}
           </Badge>
         </TableCell>
         <TableCell>
           <Badge variant={statusConfig[order.status]?.variant ?? "outline"} className="text-xs">
-            {statusConfig[order.status]?.label || order.status}
+            {statusConfig[order.status]?.labelKey ? t(statusConfig[order.status]!.labelKey) : order.status}
           </Badge>
         </TableCell>
         <TableCell>
           <span className="text-xs text-muted-foreground">
-            {order.payments.length} 次
+            {t("paymentCount", { count: order.payments.length })}
           </span>
         </TableCell>
         <TableCell className="text-xs text-muted-foreground">
-          {formatDateTime(order.createdAt)}
+          {formatDateTime(order.createdAt, locale)}
         </TableCell>
       </TableRow>
       {isExpanded && order.payments.length > 0 && (

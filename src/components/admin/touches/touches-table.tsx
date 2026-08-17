@@ -59,6 +59,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { toast } from "sonner"
+import { useTranslations, useLocale } from "next-intl"
 
 type FilterStatus = "all" | "PENDING" | "PROCESSING" | "SENT" | "CANCELLED" | "SUPERSEDED" | "FAILED"
 type FilterChannel = "all" | "EMAIL" | "SMS" | "PUSH"
@@ -118,25 +119,6 @@ const defaultFilters: Filters = {
   dateTo: "",
 }
 
-const statusLabels: Record<string, string> = {
-  PENDING: "待发送",
-  PROCESSING: "处理中",
-  SENT: "已发送",
-  CANCELLED: "已取消",
-  SUPERSEDED: "已替代",
-  FAILED: "失败",
-}
-
-const sceneLabels: Record<string, string> = {
-  sub_renewal_reminder_d1: "续订提醒 (D-1)",
-}
-
-const channelLabels: Record<string, string> = {
-  EMAIL: "邮件",
-  SMS: "短信",
-  PUSH: "推送",
-}
-
 function getStatusVariant(status: string): "default" | "secondary" | "destructive" | "outline" {
   switch (status) {
     case "PENDING":
@@ -173,8 +155,8 @@ function getStatusIcon(status: string) {
   }
 }
 
-function formatDate(date: Date | string) {
-  return new Date(date).toLocaleString("zh-CN", {
+function formatDate(date: Date | string, locale: string) {
+  return new Date(date).toLocaleString(locale, {
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
@@ -183,16 +165,38 @@ function formatDate(date: Date | string) {
   })
 }
 
-function getDaysUntil(date: Date | string) {
+function getDaysUntil(date: Date | string, t: (key: string, values?: Record<string, string | number | Date>) => string) {
   const diff = new Date(date).getTime() - Date.now()
   const days = Math.ceil(diff / (1000 * 60 * 60 * 24))
-  if (days < 0) return `${Math.abs(days)} 天前`
-  if (days === 0) return "今天"
-  if (days === 1) return "明天"
-  return `${days} 天后`
+  if (days < 0) return t("relative.daysAgo", { count: Math.abs(days) })
+  if (days === 0) return t("relative.today")
+  if (days === 1) return t("relative.tomorrow")
+  return t("relative.daysLater", { count: days })
 }
 
 export function TouchesTable() {
+  const t = useTranslations("admin.touches")
+  const locale = useLocale()
+
+  const statusLabels: Record<string, string> = {
+    PENDING: t("statuses.pending"),
+    PROCESSING: t("statuses.processing"),
+    SENT: t("statuses.sent"),
+    CANCELLED: t("statuses.cancelled"),
+    SUPERSEDED: t("statuses.superseded"),
+    FAILED: t("statuses.failed"),
+  }
+
+  const sceneLabels: Record<string, string> = {
+    sub_renewal_reminder_d1: t("scenes.sub_renewal_reminder_d1"),
+  }
+
+  const channelLabels: Record<string, string> = {
+    EMAIL: t("channels.EMAIL"),
+    SMS: t("channels.SMS"),
+    PUSH: t("channels.PUSH"),
+  }
+
   const [search, setSearch] = useState("")
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(20)
@@ -218,7 +222,7 @@ export function TouchesTable() {
   const cancelSchedule = api.admin.cancelTouchSchedule.useMutation({
     onSuccess: () => {
       void utils.admin.listTouchSchedules.invalidate()
-      toast.success("已取消触达计划")
+      toast.success(t("cancelToast"))
     },
     onError: (err) => toast.error(err.message),
   })
@@ -249,27 +253,27 @@ export function TouchesTable() {
     if (!value) return
     try {
       await navigator.clipboard.writeText(value)
-      toast.success(`已复制 ${label}`)
+      toast.success(t("copied", { label }))
     } catch {
-      toast.error("复制失败")
+      toast.error(t("copyFailed"))
     }
-  }, [])
+  }, [t])
 
   return (
     <div className="space-y-4 max-w-[1400px] mx-auto">
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">触达管理</h1>
+          <h1 className="text-3xl font-bold tracking-tight">{t("title")}</h1>
           <p className="text-muted-foreground">
-            {total > 0 ? `${total.toLocaleString()} 条触达计划` : "管理邮件和通知"}
+            {total > 0 ? t("subtitleTotal", { count: total }) : t("subtitleEmpty")}
           </p>
         </div>
         <div className="flex items-center gap-2">
           <div className="relative flex-1 sm:w-72">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
-              placeholder="按用户/邮箱/ID/referenceId/dedupeKey 搜索..."
+              placeholder={t("searchPlaceholder")}
               value={search}
               onChange={(e) => {
                 setSearch(e.target.value)
@@ -293,55 +297,55 @@ export function TouchesTable() {
       {showFilters && (
         <div className="border rounded-lg p-4 bg-muted/30 space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="font-medium text-sm">筛选</h3>
+            <h3 className="font-medium text-sm">{t("filters")}</h3>
             {hasActiveFilters && (
               <Button variant="ghost" size="sm" onClick={clearFilters} className="h-7 text-xs">
                 <X className="h-3 w-3 mr-1" />
-                清除全部
+                {t("clearAll")}
               </Button>
             )}
           </div>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
             <div className="space-y-1">
-              <label className="text-xs text-muted-foreground">状态</label>
+              <label className="text-xs text-muted-foreground">{t("status")}</label>
               <Select value={filters.status} onValueChange={(v) => updateFilter("status", v as FilterStatus)}>
                 <SelectTrigger className="h-9">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">全部</SelectItem>
-                  <SelectItem value="PENDING">待发送</SelectItem>
-                  <SelectItem value="PROCESSING">处理中</SelectItem>
-                  <SelectItem value="SENT">已发送</SelectItem>
-                  <SelectItem value="CANCELLED">已取消</SelectItem>
-                  <SelectItem value="SUPERSEDED">已替代</SelectItem>
-                  <SelectItem value="FAILED">失败</SelectItem>
+                  <SelectItem value="all">{t("all")}</SelectItem>
+                  <SelectItem value="PENDING">{t("statuses.pending")}</SelectItem>
+                  <SelectItem value="PROCESSING">{t("statuses.processing")}</SelectItem>
+                  <SelectItem value="SENT">{t("statuses.sent")}</SelectItem>
+                  <SelectItem value="CANCELLED">{t("statuses.cancelled")}</SelectItem>
+                  <SelectItem value="SUPERSEDED">{t("statuses.superseded")}</SelectItem>
+                  <SelectItem value="FAILED">{t("statuses.failed")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             <div className="space-y-1">
-              <label className="text-xs text-muted-foreground">场景</label>
+              <label className="text-xs text-muted-foreground">{t("scene")}</label>
               <Select value={filters.sceneKey || "all"} onValueChange={(v) => updateFilter("sceneKey", v === "all" ? "" : v)}>
                 <SelectTrigger className="h-9">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">全部</SelectItem>
-                  <SelectItem value="sub_renewal_reminder_d1">续订提醒 (D-1)</SelectItem>
+                  <SelectItem value="all">{t("all")}</SelectItem>
+                  <SelectItem value="sub_renewal_reminder_d1">{t("scenes.sub_renewal_reminder_d1")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             <div className="space-y-1">
-              <label className="text-xs text-muted-foreground">渠道</label>
+              <label className="text-xs text-muted-foreground">{t("channel")}</label>
               <Select value={filters.channel} onValueChange={(v) => updateFilter("channel", v as FilterChannel)}>
                 <SelectTrigger className="h-9">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">全部</SelectItem>
-                  <SelectItem value="EMAIL">邮件</SelectItem>
+                  <SelectItem value="all">{t("all")}</SelectItem>
+                  <SelectItem value="EMAIL">{t("channels.EMAIL")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -349,7 +353,7 @@ export function TouchesTable() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div className="space-y-1">
-              <label className="text-xs text-muted-foreground">计划发送从</label>
+              <label className="text-xs text-muted-foreground">{t("scheduledFrom")}</label>
               <Input
                 type="datetime-local"
                 value={filters.dateFrom}
@@ -358,7 +362,7 @@ export function TouchesTable() {
               />
             </div>
             <div className="space-y-1">
-              <label className="text-xs text-muted-foreground">计划发送到</label>
+              <label className="text-xs text-muted-foreground">{t("scheduledTo")}</label>
               <Input
                 type="datetime-local"
                 value={filters.dateTo}
@@ -375,15 +379,15 @@ export function TouchesTable() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-[200px]">用户</TableHead>
-              <TableHead className="w-[140px]">场景</TableHead>
-              <TableHead className="w-[80px]">渠道</TableHead>
-              <TableHead className="w-[100px]">状态</TableHead>
-              <TableHead className="w-[140px]">计划发送</TableHead>
-              <TableHead className="w-[140px]">下次尝试</TableHead>
-              <TableHead className="w-[90px]">尝试</TableHead>
-              <TableHead className="w-[220px]">错误/原因</TableHead>
-              <TableHead className="w-[120px]">操作</TableHead>
+              <TableHead className="w-[200px]">{t("user")}</TableHead>
+              <TableHead className="w-[140px]">{t("scene")}</TableHead>
+              <TableHead className="w-[80px]">{t("channel")}</TableHead>
+              <TableHead className="w-[100px]">{t("status")}</TableHead>
+              <TableHead className="w-[140px]">{t("scheduledAt")}</TableHead>
+              <TableHead className="w-[140px]">{t("nextAttempt")}</TableHead>
+              <TableHead className="w-[90px]">{t("attempts")}</TableHead>
+              <TableHead className="w-[220px]">{t("errorReason")}</TableHead>
+              <TableHead className="w-[120px]">{t("actions")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -404,7 +408,7 @@ export function TouchesTable() {
             ) : data?.items.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={9} className="text-center py-10 text-muted-foreground">
-                  暂无触达计划
+                  {t("noSchedules")}
                 </TableCell>
               </TableRow>
             ) : (
@@ -444,10 +448,10 @@ export function TouchesTable() {
                     </Badge>
                   </TableCell>
                   <TableCell className="text-xs text-muted-foreground">
-                    {formatDate(schedule.scheduledAt)}
+                    {formatDate(schedule.scheduledAt, locale)}
                   </TableCell>
                   <TableCell className="text-xs text-muted-foreground">
-                    {formatDate(schedule.nextAttemptAt)}
+                    {formatDate(schedule.nextAttemptAt, locale)}
                     {schedule.status === "PENDING" && (
                       <div className="mt-0.5">
                         <span
@@ -457,7 +461,7 @@ export function TouchesTable() {
                               : "text-muted-foreground"
                           )}
                         >
-                          {getDaysUntil(schedule.nextAttemptAt)}
+                          {getDaysUntil(schedule.nextAttemptAt, t)}
                         </span>
                       </div>
                     )}
@@ -480,7 +484,7 @@ export function TouchesTable() {
                         onClick={() => setDetailsId(schedule.id)}
                       >
                         <Eye className="h-3 w-3 mr-1" />
-                        详情
+                        {t("details")}
                       </Button>
 
                       {(schedule.status === "PENDING" || schedule.status === "PROCESSING") && (
@@ -491,24 +495,24 @@ export function TouchesTable() {
                               size="sm"
                               className="h-7 text-xs text-destructive hover:text-destructive"
                             >
-                              取消
+                              {t("cancel")}
                             </Button>
                           </AlertDialogTrigger>
                           <AlertDialogContent>
                             <AlertDialogHeader>
-                              <AlertDialogTitle>确认取消</AlertDialogTitle>
+                              <AlertDialogTitle>{t("cancelTitle")}</AlertDialogTitle>
                               <AlertDialogDescription>
-                                确定要取消这条触达计划吗？取消后将不会发送通知给用户。
-                                {schedule.status === "PROCESSING" ? "（当前可能正在发送中，结果以实际发送为准）" : ""}
+                                {t("cancelDesc")}
+                                {schedule.status === "PROCESSING" ? t("cancelProcessingSuffix") : ""}
                               </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
-                              <AlertDialogCancel>返回</AlertDialogCancel>
+                              <AlertDialogCancel>{t("cancelBack")}</AlertDialogCancel>
                               <AlertDialogAction
                                 onClick={() => cancelSchedule.mutate({ id: schedule.id, reason: "Admin cancelled" })}
                                 className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                               >
-                                确认取消
+                                {t("cancelConfirm")}
                               </AlertDialogAction>
                             </AlertDialogFooter>
                           </AlertDialogContent>
@@ -526,7 +530,7 @@ export function TouchesTable() {
       {/* Pagination */}
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-2">
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <span>每页:</span>
+          <span>{t("perPage")}</span>
           <Select value={pageSize.toString()} onValueChange={(v) => { setPageSize(Number(v)); setPage(1) }}>
             <SelectTrigger className="h-8 w-[70px]">
               <SelectValue />
@@ -542,7 +546,7 @@ export function TouchesTable() {
 
         <div className="flex items-center gap-6">
           <span className="text-sm text-muted-foreground">
-            {total > 0 ? `${startItem}-${endItem} / ${total.toLocaleString()}` : "0 条结果"}
+            {total > 0 ? `${startItem}-${endItem} / ${total.toLocaleString()}` : t("zeroResults")}
           </span>
           <div className="flex items-center gap-1">
             <Button
@@ -564,7 +568,7 @@ export function TouchesTable() {
               <ChevronLeft className="h-4 w-4" />
             </Button>
             <span className="text-sm w-20 text-center">
-              第 {page} / {totalPages} 页
+              {t("pageIndicator", { page, total: totalPages })}
             </span>
             <Button
               variant="outline"
@@ -591,7 +595,7 @@ export function TouchesTable() {
       <Dialog open={Boolean(detailsId)} onOpenChange={(open) => !open && setDetailsId(null)}>
         <DialogContent className="max-w-3xl">
           <DialogHeader>
-            <DialogTitle>触达详情</DialogTitle>
+            <DialogTitle>{t("detailsTitle")}</DialogTitle>
           </DialogHeader>
 
           <ScrollArea className="max-h-[70vh] pr-4">
@@ -605,7 +609,7 @@ export function TouchesTable() {
               <div className="space-y-4 text-sm">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <div className="space-y-1">
-                    <div className="text-xs text-muted-foreground">Schedule ID</div>
+                    <div className="text-xs text-muted-foreground">{t("scheduleId")}</div>
                     <div className="flex items-center justify-between gap-2">
                       <div className="font-mono text-xs break-all">{detailsQuery.data.id}</div>
                       <Button
@@ -615,13 +619,13 @@ export function TouchesTable() {
                         onClick={() => void copyText("scheduleId", detailsQuery.data.id)}
                       >
                         <Copy className="h-3 w-3 mr-1" />
-                        复制
+                        {t("copy")}
                       </Button>
                     </div>
                   </div>
 
                   <div className="space-y-1">
-                    <div className="text-xs text-muted-foreground">用户</div>
+                    <div className="text-xs text-muted-foreground">{t("user")}</div>
                     <div className="flex items-center justify-between gap-2">
                       <div className="truncate">
                         <span className="font-medium">{detailsQuery.data.user?.name || "-"}</span>
@@ -635,14 +639,14 @@ export function TouchesTable() {
                           onClick={() => void copyText("email", detailsQuery.data.user?.email)}
                         >
                           <Copy className="h-3 w-3 mr-1" />
-                          复制邮箱
+                          {t("copyEmail")}
                         </Button>
                       )}
                     </div>
                   </div>
 
                   <div className="space-y-1">
-                    <div className="text-xs text-muted-foreground">场景 / 渠道 / 状态</div>
+                    <div className="text-xs text-muted-foreground">{t("sceneChannelStatus")}</div>
                     <div className="flex flex-wrap items-center gap-2">
                       <Badge variant="outline" className="text-xs">{detailsQuery.data.sceneKey ? (sceneLabels[detailsQuery.data.sceneKey] || detailsQuery.data.sceneKey) : "-"}</Badge>
                       <Badge variant="outline" className="text-xs">{channelLabels[detailsQuery.data.channel] || detailsQuery.data.channel}</Badge>
@@ -654,15 +658,15 @@ export function TouchesTable() {
                   </div>
 
                   <div className="space-y-1">
-                    <div className="text-xs text-muted-foreground">计划发送 / 下次尝试</div>
+                    <div className="text-xs text-muted-foreground">{t("scheduledNext")}</div>
                     <div className="text-xs text-muted-foreground">
-                      scheduledAt: {formatDate(detailsQuery.data.scheduledAt)} <br />
-                      nextAttemptAt: {formatDate(detailsQuery.data.nextAttemptAt)}
+                      scheduledAt: {formatDate(detailsQuery.data.scheduledAt, locale)} <br />
+                      nextAttemptAt: {formatDate(detailsQuery.data.nextAttemptAt, locale)}
                     </div>
                   </div>
 
                   <div className="space-y-1">
-                    <div className="text-xs text-muted-foreground">尝试次数</div>
+                    <div className="text-xs text-muted-foreground">{t("attemptCount")}</div>
                     <div className="text-xs text-muted-foreground">
                       {detailsQuery.data.attemptCount}/{detailsQuery.data.maxAttempts}
                     </div>
@@ -681,7 +685,7 @@ export function TouchesTable() {
                         onClick={() => void copyText("referenceId", detailsQuery.data.referenceId)}
                       >
                         <Copy className="h-3 w-3 mr-1" />
-                        复制
+                        {t("copy")}
                       </Button>
                     </div>
                   </div>
@@ -697,7 +701,7 @@ export function TouchesTable() {
                         onClick={() => void copyText("dedupeKey", detailsQuery.data.dedupeKey)}
                       >
                         <Copy className="h-3 w-3 mr-1" />
-                        复制
+                        {t("copy")}
                       </Button>
                     </div>
                   </div>
@@ -718,22 +722,22 @@ export function TouchesTable() {
                 </div>
 
                 <div className="space-y-2">
-                  <div className="text-xs text-muted-foreground">records（最近 50 条）</div>
+                  <div className="text-xs text-muted-foreground">{t("records")}</div>
                   <div className="border rounded-md">
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead className="w-[70px]">attempt</TableHead>
+                          <TableHead className="w-[70px]">{t("attempt")}</TableHead>
                           <TableHead className="w-[120px]">status</TableHead>
-                          <TableHead className="w-[160px]">time</TableHead>
-                          <TableHead>subject/error</TableHead>
+                          <TableHead className="w-[160px]">{t("time")}</TableHead>
+                          <TableHead>{t("subjectError")}</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {detailsQuery.data.records.length === 0 ? (
                           <TableRow>
                             <TableCell colSpan={4} className="text-center py-6 text-muted-foreground">
-                              暂无记录
+                              {t("noRecords")}
                             </TableCell>
                           </TableRow>
                         ) : (
@@ -744,7 +748,7 @@ export function TouchesTable() {
                               <TableRow key={r.id}>
                                 <TableCell className="text-xs text-muted-foreground">{r.attemptNumber}</TableCell>
                                 <TableCell className="text-xs text-muted-foreground">{r.status}</TableCell>
-                                <TableCell className="text-xs text-muted-foreground">{formatDate(r.occurredAt)}</TableCell>
+                                <TableCell className="text-xs text-muted-foreground">{formatDate(r.occurredAt, locale)}</TableCell>
                                 <TableCell className="text-xs text-muted-foreground">
                                   <div className="space-y-1">
                                     <div className="truncate">
@@ -757,7 +761,7 @@ export function TouchesTable() {
                                     {rendered?.text ? (
                                       <details className="mt-1">
                                         <summary className="cursor-pointer select-none text-xs text-primary">
-                                          预览邮件文本
+                                          {t("previewText")}
                                         </summary>
                                         <pre className="mt-2 text-xs whitespace-pre-wrap break-words">{String(rendered.text)}</pre>
                                       </details>
@@ -765,7 +769,7 @@ export function TouchesTable() {
                                     {rendered?.html ? (
                                       <details className="mt-1">
                                         <summary className="cursor-pointer select-none text-xs text-primary">
-                                          查看 HTML（原文）
+                                          {t("viewHtml")}
                                         </summary>
                                         <pre className="mt-2 text-xs whitespace-pre-wrap break-words">{String(rendered.html)}</pre>
                                       </details>
@@ -782,7 +786,7 @@ export function TouchesTable() {
                 </div>
               </div>
             ) : (
-              <div className="text-sm text-muted-foreground">加载失败</div>
+              <div className="text-sm text-muted-foreground">{t("loadFailed")}</div>
             )}
           </ScrollArea>
         </DialogContent>

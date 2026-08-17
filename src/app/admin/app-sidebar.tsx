@@ -30,6 +30,7 @@ import {
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import type { LucideIcon } from "lucide-react"
+import { useTranslations } from "next-intl"
 
 type NavItem = {
   title: string
@@ -44,45 +45,46 @@ type NavGroup = {
 
 const navGroups: NavGroup[] = [
   {
-    label: "Dashboard",
+    label: "dashboard",
     items: [
-      { title: "Overview", url: "/admin", icon: LayoutDashboard },
+      { title: "overviewItem", url: "/admin", icon: LayoutDashboard },
     ],
   },
   {
-    label: "用户 & 内容",
+    label: "usersContent",
     items: [
-      { title: "Users", url: "/admin/users", icon: Users },
-      { title: "Dialogs", url: "/admin/dialogs", icon: SquareStack },
+      { title: "usersItem", url: "/admin/users", icon: Users },
+      { title: "dialogs", url: "/admin/dialogs", icon: SquareStack },
     ],
   },
   {
-    label: "商业",
+    label: "commerce",
     items: [
-      { title: "Products", url: "/admin/products", icon: Package },
-      { title: "Orders", url: "/admin/orders", icon: ShoppingCart },
-      { title: "Credits", url: "/admin/credits", icon: Coins },
-      { title: "Promo Codes", url: "/admin/promo-codes", icon: Ticket },
+      { title: "productsItem", url: "/admin/products", icon: Package },
+      { title: "ordersItem", url: "/admin/orders", icon: ShoppingCart },
+      { title: "creditsItem", url: "/admin/credits", icon: Coins },
+      { title: "promoCodesItem", url: "/admin/promo-codes", icon: Ticket },
     ],
   },
   {
-    label: "联盟",
+    label: "affiliate",
     items: [
-      { title: "Commissions", url: "/admin/affiliate/commissions", icon: Receipt },
-      { title: "Payouts", url: "/admin/affiliate/payouts", icon: HandCoins },
+      { title: "commissions", url: "/admin/affiliate/commissions", icon: Receipt },
+      { title: "payouts", url: "/admin/affiliate/payouts", icon: HandCoins },
     ],
   },
   {
-    label: "触达",
+    label: "outreach",
     items: [
-      { title: "Scenes", url: "/admin/touches/scenes", icon: Megaphone },
-      { title: "Schedules", url: "/admin/touches", icon: CalendarClock },
+      { title: "scenes", url: "/admin/touches/scenes", icon: Megaphone },
+      { title: "schedules", url: "/admin/touches", icon: CalendarClock },
     ],
   },
 ]
 
 export function AppSidebar() {
   const pathname = usePathname()
+  const t = useTranslations("admin.nav")
 
   const isActive = (url: string) => {
     if (url === "/admin") return pathname === "/admin"
@@ -100,8 +102,8 @@ export function AppSidebar() {
                   <Shield className="size-4" />
                 </div>
                 <div className="flex flex-col gap-0.5 leading-none">
-                  <span className="font-semibold">Admin</span>
-                  <span className="text-xs text-muted-foreground">Console</span>
+                  <span className="font-semibold">{t("admin")}</span>
+                  <span className="text-xs text-muted-foreground">{t("console")}</span>
                 </div>
               </Link>
             </SidebarMenuButton>
@@ -112,7 +114,7 @@ export function AppSidebar() {
       <SidebarContent>
         {navGroups.map((group) => (
           <SidebarGroup key={group.label}>
-            <SidebarGroupLabel>{group.label}</SidebarGroupLabel>
+            <SidebarGroupLabel>{t(group.label)}</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
                 {group.items.map((item) => (
@@ -120,11 +122,11 @@ export function AppSidebar() {
                     <SidebarMenuButton
                       asChild
                       isActive={isActive(item.url)}
-                      tooltip={item.title}
+                      tooltip={t(item.title)}
                     >
                       <Link href={item.url}>
                         <item.icon />
-                        <span>{item.title}</span>
+                        <span>{t(item.title)}</span>
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
@@ -137,9 +139,9 @@ export function AppSidebar() {
       <SidebarFooter>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton asChild tooltip="Back to App">
+            <SidebarMenuButton asChild tooltip={t("backToApp")}>
               <Link href="/">
-                <span className="text-xs text-muted-foreground">← Back to App</span>
+                <span className="text-xs text-muted-foreground">{t("backToApp")}</span>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
