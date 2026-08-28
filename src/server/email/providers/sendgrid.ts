@@ -1,16 +1,17 @@
 import sgMail from "@sendgrid/mail";
 import { logger } from "@/lib/logger";
 import { APP_NAME } from "@/config/brand";
+import { env } from "@/env";
 import type { EmailProvider, SendEmailParams, SendEmailResult } from "../types";
 
-const apiKey = process.env.SENDGRID_API_KEY;
+const apiKey = env.SENDGRID_API_KEY;
 if (apiKey) {
   sgMail.setApiKey(apiKey);
 }
 
 const defaultFrom =
-  process.env.EMAIL_FROM ??
-  (process.env.NODE_ENV === "production"
+  env.EMAIL_FROM ??
+  (env.NODE_ENV === "production"
     ? undefined
     : `${APP_NAME} <onboarding@resend.dev>`);
 

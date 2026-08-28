@@ -3,6 +3,7 @@ import { TRPCError } from "@trpc/server";
 import { createId } from "@paralleldrive/cuid2";
 import type { PrismaClient } from "@prisma/client";
 
+import { env } from "@/env";
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
 import {
   exchangeAffiliateCredits,
@@ -79,7 +80,7 @@ export const affiliateRouter = createTRPCRouter({
       ? await getAffiliateAccountBalances(userId)
       : { pendingCents: 0, availableCents: 0, lockedCents: 0, debtCents: 0 };
 
-    const base = process.env.APP_URL ?? process.env.NEXTAUTH_URL ?? "";
+    const base = env.APP_URL ?? "";
     const referralLink = referralCode ? `${base}/?ref=${encodeURIComponent(referralCode)}` : null;
 
     return {
@@ -223,5 +224,4 @@ export const affiliateRouter = createTRPCRouter({
       return { ok: true, creditsGranted: credits, amountCents, payoutRequestId };
     }),
 });
-
 

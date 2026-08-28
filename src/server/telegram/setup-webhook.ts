@@ -25,7 +25,8 @@ interface TelegramResponse {
 async function main() {
   const botToken = process.env.TELEGRAM_BOT_TOKEN;
   const webhookSecret = process.env.TELEGRAM_WEBHOOK_SECRET;
-  const appUrl = process.env.APP_URL ?? process.env.NEXTAUTH_URL;
+  const appUrl =
+    process.env.APP_URL || process.env.AUTH_URL || process.env.NEXTAUTH_URL;
 
   if (!botToken) {
     console.error("Error: TELEGRAM_BOT_TOKEN is not set");

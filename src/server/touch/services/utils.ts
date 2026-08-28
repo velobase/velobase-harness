@@ -1,10 +1,9 @@
 import type { TouchReferenceType } from "../types";
+import { env } from "@/env";
 
 export function getAppBaseUrl(): string {
   const fromEnv =
-    process.env.APP_URL ||
-    process.env.NEXTAUTH_URL ||
-    process.env.VERCEL_URL;
+    env.APP_URL || process.env.VERCEL_URL;
 
   if (fromEnv) {
     // VERCEL_URL may be host without scheme
@@ -40,5 +39,4 @@ export function buildTouchDedupeKey(params: {
 export function normalizeReferenceType(value: string): TouchReferenceType | null {
   return value === "SUBSCRIPTION_CYCLE" ? "SUBSCRIPTION_CYCLE" : null;
 }
-
 

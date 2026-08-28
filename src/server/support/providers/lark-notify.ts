@@ -11,11 +11,12 @@ import { getLarkBot, LARK_CHAT_IDS } from "@/lib/lark";
 import type { LarkCard, LarkElement } from "@/lib/lark";
 import type { LarkApprovalCardData, TicketCategory } from "../types";
 import { db } from "@/server/db";
+import { env } from "@/env";
 
 const logger = createLogger("support-lark-notify");
 
 // 回调 URL（飞书卡片点击后回调的地址）
-const CALLBACK_BASE_URL = process.env.APP_URL ?? process.env.NEXTAUTH_URL ?? "https://example.com";
+const CALLBACK_BASE_URL = env.APP_URL ?? "https://example.com";
 
 /**
  * 分类对应的 emoji 和颜色

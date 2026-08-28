@@ -42,8 +42,8 @@ echo "[entrypoint] SERVICE_MODE=${SERVICE_MODE:-web,worker}"
 [ -n "$DATABASE_URL" ]    && echo "[entrypoint] DATABASE_URL=set"    || echo "[entrypoint] DATABASE_URL=NOT SET"
 [ -n "$REDIS_URL" ]       && echo "[entrypoint] REDIS_URL=set"       || echo "[entrypoint] REDIS_HOST=${REDIS_HOST:-NOT SET}"
 [ -n "$STORAGE_BUCKET" ]  && echo "[entrypoint] STORAGE_BUCKET=${STORAGE_BUCKET}" || echo "[entrypoint] STORAGE_BUCKET=NOT SET"
-[ -n "$NEXTAUTH_SECRET" ] && echo "[entrypoint] NEXTAUTH_SECRET=set" || echo "[entrypoint] NEXTAUTH_SECRET=NOT SET"
-echo "[entrypoint] APP_URL=${APP_URL:-${NEXTAUTH_URL:-NOT SET}}"
+[ -n "${AUTH_SECRET:-${NEXTAUTH_SECRET:-}}" ] && echo "[entrypoint] AUTH_SECRET=set" || echo "[entrypoint] AUTH_SECRET=NOT SET"
+echo "[entrypoint] APP_URL=${APP_URL:-${AUTH_URL:-${NEXTAUTH_URL:-NOT SET}}}"
 
 # --- Start services ---
 if [ "$SERVICE_MODE" = 'web' ]; then

@@ -1,4 +1,5 @@
 import { logger } from "@/lib/logger";
+import { env } from "@/env";
 import { resolveProviderChain } from "./providers";
 import type { SendEmailParams, SendEmailResult } from "./types";
 
@@ -6,7 +7,7 @@ export type { SendEmailParams, SendEmailResult, EmailProvider } from "./types";
 export { MagicLinkEmailTemplate, renderMagicLinkHtml } from "./templates/magic-link";
 export { EmailCodeTemplate, renderEmailCodeHtml } from "./templates/email-code";
 
-const providerChain = resolveProviderChain(process.env.EMAIL_PROVIDER);
+const providerChain = resolveProviderChain(env.EMAIL_PROVIDER);
 
 if (providerChain.length === 0) {
   logger.warn("No email providers configured — email sending will fail at runtime");

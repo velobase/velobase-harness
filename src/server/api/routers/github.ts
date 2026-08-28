@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
 import { TRPCError } from "@trpc/server";
+import { env } from "@/env";
 
 /**
  * GitHub Integration Router
@@ -27,11 +28,11 @@ export const githubRouter = createTRPCRouter({
 
   // Get GitHub OAuth authorization URL
   getAuthUrl: protectedProcedure.query(async ({ ctx }) => {
-    const baseUrl = process.env.APP_URL || process.env.NEXTAUTH_URL || 'http://localhost:3000';
+    const baseUrl = env.APP_URL || 'http://localhost:3000';
     const redirectUri = `${baseUrl}/api/auth/github/callback`;
     
     const params = new URLSearchParams({
-      client_id: process.env.GITHUB_CLIENT_ID!,
+      client_id: env.GITHUB_CLIENT_ID!,
       redirect_uri: redirectUri,
       scope: 'repo',
       state: ctx.session.user.id, // Simple state - in production, use random token
@@ -174,4 +175,3 @@ export const githubRouter = createTRPCRouter({
       }
     }),
 });
-

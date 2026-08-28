@@ -11,20 +11,16 @@
 import { db } from "@/server/db";
 import { createLogger } from "@/lib/logger";
 import { sendEmailAbuseNotification } from "@/lib/lark/notifications";
+import { env } from "@/env";
 
 const logger = createLogger("auth:email-abuse");
 
-function parseEnvInt(name: string, fallback: number): number {
-  const raw = process.env[name];
-  if (!raw) return fallback;
-  const n = Number.parseInt(raw, 10);
-  return Number.isFinite(n) ? n : fallback;
-}
-
-const SAME_IP_WINDOW_HOURS = parseEnvInt("EMAIL_ABUSE_SAME_IP_WINDOW_HOURS", 24);
-const SAME_IP_MIN_PRIOR_DIFFERENT_DEVICE = parseEnvInt("EMAIL_ABUSE_SAME_IP_MIN_PRIOR_DIFFERENT_DEVICE", 1);
-const SAME_IP_MIN_PRIOR_UNKNOWN_DEVICE = parseEnvInt("EMAIL_ABUSE_SAME_IP_MIN_PRIOR_UNKNOWN_DEVICE", 1);
-const SAME_IP_MAX_TOTAL_HISTORY = parseEnvInt("EMAIL_ABUSE_SAME_IP_MAX_TOTAL_HISTORY", 20);
+const SAME_IP_WINDOW_HOURS = env.EMAIL_ABUSE_SAME_IP_WINDOW_HOURS;
+const SAME_IP_MIN_PRIOR_DIFFERENT_DEVICE =
+  env.EMAIL_ABUSE_SAME_IP_MIN_PRIOR_DIFFERENT_DEVICE;
+const SAME_IP_MIN_PRIOR_UNKNOWN_DEVICE =
+  env.EMAIL_ABUSE_SAME_IP_MIN_PRIOR_UNKNOWN_DEVICE;
+const SAME_IP_MAX_TOTAL_HISTORY = env.EMAIL_ABUSE_SAME_IP_MAX_TOTAL_HISTORY;
 
 // ============================================================================
 // Types

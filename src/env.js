@@ -1,5 +1,27 @@
 import { createEnv } from "@t3-oss/env-nextjs";
 import { z } from "zod";
+import {
+  createAuthSecretSchema,
+  normalizeAuthEnvironment,
+  serviceModeSchema,
+} from "./env-normalization.js";
+
+// Auth.js v5 prefers AUTH_* and keeps NEXTAUTH_* as backwards-compatible
+// aliases. AUTH_* wins only when non-empty so an empty canonical variable does
+// not mask a configured legacy fallback.
+const { authSecret, authUrl, appUrl } = normalizeAuthEnvironment(process.env);
+
+const port = z
+  .string()
+  .regex(/^\d+$/)
+  .transform((value) => Number.parseInt(value, 10))
+  .refine((value) => value >= 1 && value <= 65535, "Must be a valid port");
+
+const positiveInteger = z
+  .string()
+  .regex(/^\d+$/)
+  .transform((value) => Number.parseInt(value, 10))
+  .refine((value) => value > 0, "Must be a positive integer");
 
 export const env = createEnv({
   /**
@@ -7,19 +29,40 @@ export const env = createEnv({
    * isn't built with invalid env vars.
    */
   server: {
-    NEXTAUTH_SECRET:
-      process.env.NODE_ENV === "production"
-        ? z.string()
-        : z.string().optional(),
+    AUTH_SECRET: createAuthSecretSchema(process.env.NODE_ENV),
+    AUTH_URL: z.string().url().optional(),
+    NEXTAUTH_SECRET: z.string().optional(),
     NEXTAUTH_URL: z.string().url().optional(),
     APP_URL: z.string().url().optional(),
+    SERVICE_MODE: serviceModeSchema,
+    PORT: port.optional().default("3000"),
+    WEB_HOST: z.string().optional().default("0.0.0.0"),
+    API_PORT: port.optional().default("3002"),
+    WORKER_PORT: port.optional().default("3001"),
+    WEBHOOK_URL: z.string().url().optional(),
     PASSWORD_LOGIN_SEED_PASSWORD: z.string().min(12).optional(),
+    COOKIE_SECURE: z
+      .enum(["true", "false"])
+      .optional()
+      .transform((value) => (value == null ? undefined : value === "true")),
     AUTH_DISCORD_ID: z.string().optional(),
     AUTH_DISCORD_SECRET: z.string().optional(),
     AUTH_GOOGLE_ID: z.string().optional(),
     AUTH_GOOGLE_SECRET: z.string().optional(),
     AUTH_GITHUB_ID: z.string().optional(),
     AUTH_GITHUB_SECRET: z.string().optional(),
+    GITHUB_CLIENT_ID: z.string().optional(),
+    GITHUB_CLIENT_SECRET: z.string().optional(),
+    EMAIL_ABUSE_SAME_IP_WINDOW_HOURS: positiveInteger.optional().default("24"),
+    EMAIL_ABUSE_SAME_IP_MIN_PRIOR_DIFFERENT_DEVICE: positiveInteger
+      .optional()
+      .default("1"),
+    EMAIL_ABUSE_SAME_IP_MIN_PRIOR_UNKNOWN_DEVICE: positiveInteger
+      .optional()
+      .default("1"),
+    EMAIL_ABUSE_SAME_IP_MAX_TOTAL_HISTORY: positiveInteger
+      .optional()
+      .default("20"),
     DATABASE_URL: z.string().url(),
     // Redis: either REDIS_URL (Velobase Cloud / managed) or individual REDIS_HOST+PORT fields
     REDIS_URL: z.string().url().optional(),
@@ -65,6 +108,10 @@ export const env = createEnv({
     STORAGE_PATH_PREFIX: z.string().optional(),
     STRIPE_SECRET_KEY: z.string().optional(),
     STRIPE_WEBHOOK_SECRET: z.string().optional(),
+    PAYMENT_RECONCILIATION_FORCE: z
+      .enum(["0", "1"])
+      .optional()
+      .transform((value) => value === "1"),
     // Force payment gateway for testing (bypasses default Stripe routing)
     FORCE_PAYMENT_GATEWAY: z
       .enum(["STRIPE", "NOWPAYMENTS", "LEMONSQUEEZY"])
@@ -103,6 +150,7 @@ export const env = createEnv({
     RESEND_WEBHOOK_SECRET: z.string().optional(),
     SENDGRID_API_KEY: z.string().optional(),
     EMAIL_PROVIDER: z.string().optional().default("resend,sendgrid"),
+    EMAIL_FROM: z.string().optional(),
     // Support automation mailbox (IMAP/SMTP)
     SUPPORT_EMAIL_ADDRESS: z.string().email().optional(),
     SUPPORT_EMAIL_PASSWORD: z.string().optional(),
@@ -127,6 +175,7 @@ export const env = createEnv({
       .optional()
       .transform((val) => val === "true"),
     LARK_DEFAULT_CHAT_ID: z.string().optional(),
+    LARK_BILLING_RECONCILIATION_AT_OPEN_ID: z.string().optional(),
     LARK_ENCRYPT_KEY: z.string().optional(),
     LARK_VERIFICATION_TOKEN: z.string().optional(),
     // Feishu Bot (国内飞书)
@@ -205,6 +254,14 @@ export const env = createEnv({
     NEXT_PUBLIC_TELEGRAM_BOT_USERNAME: z.string().optional(),
     NEXT_PUBLIC_POSTHOG_KEY: z.string().optional(),
     NEXT_PUBLIC_POSTHOG_HOST: z.string().url().optional(),
+    NEXT_PUBLIC_GOOGLE_ADS_MEASUREMENT_ID: z.string().optional(),
+    NEXT_PUBLIC_GOOGLE_ADS_CONVERSION_LABEL: z.string().optional(),
+    NEXT_PUBLIC_TWITTER_PIXEL_ID: z.string().optional(),
+    NEXT_PUBLIC_TWITTER_PURCHASE_EVENT_ID: z.string().optional(),
+    NEXT_PUBLIC_PROPELLER_AID: z.string().optional(),
+    NEXT_PUBLIC_PROPELLER_TID: z.string().optional(),
+    NEXT_PUBLIC_TJ_ACCOUNT_ID: z.string().optional(),
+    NEXT_PUBLIC_TJ_MEMBER_ID: z.string().optional(),
   },
 
   /**
@@ -212,16 +269,35 @@ export const env = createEnv({
    * middlewares) or client-side so we need to destruct manually.
    */
   runtimeEnv: {
+    AUTH_SECRET: authSecret,
+    AUTH_URL: authUrl,
     NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET,
     NEXTAUTH_URL: process.env.NEXTAUTH_URL,
-    APP_URL: process.env.APP_URL ?? process.env.NEXTAUTH_URL,
+    APP_URL: appUrl,
+    SERVICE_MODE: process.env.SERVICE_MODE,
+    PORT: process.env.PORT,
+    WEB_HOST: process.env.WEB_HOST,
+    API_PORT: process.env.API_PORT,
+    WORKER_PORT: process.env.WORKER_PORT,
+    WEBHOOK_URL: process.env.WEBHOOK_URL,
     PASSWORD_LOGIN_SEED_PASSWORD: process.env.PASSWORD_LOGIN_SEED_PASSWORD,
+    COOKIE_SECURE: process.env.COOKIE_SECURE,
     AUTH_DISCORD_ID: process.env.AUTH_DISCORD_ID,
     AUTH_DISCORD_SECRET: process.env.AUTH_DISCORD_SECRET,
     AUTH_GOOGLE_ID: process.env.AUTH_GOOGLE_ID,
     AUTH_GOOGLE_SECRET: process.env.AUTH_GOOGLE_SECRET,
     AUTH_GITHUB_ID: process.env.AUTH_GITHUB_ID,
     AUTH_GITHUB_SECRET: process.env.AUTH_GITHUB_SECRET,
+    GITHUB_CLIENT_ID: process.env.GITHUB_CLIENT_ID,
+    GITHUB_CLIENT_SECRET: process.env.GITHUB_CLIENT_SECRET,
+    EMAIL_ABUSE_SAME_IP_WINDOW_HOURS:
+      process.env.EMAIL_ABUSE_SAME_IP_WINDOW_HOURS,
+    EMAIL_ABUSE_SAME_IP_MIN_PRIOR_DIFFERENT_DEVICE:
+      process.env.EMAIL_ABUSE_SAME_IP_MIN_PRIOR_DIFFERENT_DEVICE,
+    EMAIL_ABUSE_SAME_IP_MIN_PRIOR_UNKNOWN_DEVICE:
+      process.env.EMAIL_ABUSE_SAME_IP_MIN_PRIOR_UNKNOWN_DEVICE,
+    EMAIL_ABUSE_SAME_IP_MAX_TOTAL_HISTORY:
+      process.env.EMAIL_ABUSE_SAME_IP_MAX_TOTAL_HISTORY,
     DATABASE_URL: process.env.DATABASE_URL,
     REDIS_URL: process.env.REDIS_URL,
     REDIS_HOST: process.env.REDIS_HOST,
@@ -249,6 +325,7 @@ export const env = createEnv({
     STORAGE_PATH_PREFIX: process.env.STORAGE_PATH_PREFIX,
     STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY,
     STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET,
+    PAYMENT_RECONCILIATION_FORCE: process.env.PAYMENT_RECONCILIATION_FORCE,
     FORCE_PAYMENT_GATEWAY: process.env.FORCE_PAYMENT_GATEWAY,
     LEMONSQUEEZY_API_KEY: process.env.LEMONSQUEEZY_API_KEY,
     LEMONSQUEEZY_STORE_ID: process.env.LEMONSQUEEZY_STORE_ID,
@@ -277,6 +354,7 @@ export const env = createEnv({
     RESEND_WEBHOOK_SECRET: process.env.RESEND_WEBHOOK_SECRET,
     SENDGRID_API_KEY: process.env.SENDGRID_API_KEY,
     EMAIL_PROVIDER: process.env.EMAIL_PROVIDER,
+    EMAIL_FROM: process.env.EMAIL_FROM,
     SUPPORT_EMAIL_ADDRESS: process.env.SUPPORT_EMAIL_ADDRESS,
     SUPPORT_EMAIL_PASSWORD: process.env.SUPPORT_EMAIL_PASSWORD,
     SUPPORT_IMAP_HOST: process.env.SUPPORT_IMAP_HOST,
@@ -288,6 +366,8 @@ export const env = createEnv({
     LARK_APP_SECRET: process.env.LARK_APP_SECRET,
     LARK_USE_FEISHU: process.env.LARK_USE_FEISHU,
     LARK_DEFAULT_CHAT_ID: process.env.LARK_DEFAULT_CHAT_ID,
+    LARK_BILLING_RECONCILIATION_AT_OPEN_ID:
+      process.env.LARK_BILLING_RECONCILIATION_AT_OPEN_ID,
     LARK_ENCRYPT_KEY: process.env.LARK_ENCRYPT_KEY,
     LARK_VERIFICATION_TOKEN: process.env.LARK_VERIFICATION_TOKEN,
     FEISHU_APP_ID: process.env.FEISHU_APP_ID,
@@ -332,6 +412,17 @@ export const env = createEnv({
       process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME,
     NEXT_PUBLIC_POSTHOG_KEY: process.env.NEXT_PUBLIC_POSTHOG_KEY,
     NEXT_PUBLIC_POSTHOG_HOST: process.env.NEXT_PUBLIC_POSTHOG_HOST,
+    NEXT_PUBLIC_GOOGLE_ADS_MEASUREMENT_ID:
+      process.env.NEXT_PUBLIC_GOOGLE_ADS_MEASUREMENT_ID,
+    NEXT_PUBLIC_GOOGLE_ADS_CONVERSION_LABEL:
+      process.env.NEXT_PUBLIC_GOOGLE_ADS_CONVERSION_LABEL,
+    NEXT_PUBLIC_TWITTER_PIXEL_ID: process.env.NEXT_PUBLIC_TWITTER_PIXEL_ID,
+    NEXT_PUBLIC_TWITTER_PURCHASE_EVENT_ID:
+      process.env.NEXT_PUBLIC_TWITTER_PURCHASE_EVENT_ID,
+    NEXT_PUBLIC_PROPELLER_AID: process.env.NEXT_PUBLIC_PROPELLER_AID,
+    NEXT_PUBLIC_PROPELLER_TID: process.env.NEXT_PUBLIC_PROPELLER_TID,
+    NEXT_PUBLIC_TJ_ACCOUNT_ID: process.env.NEXT_PUBLIC_TJ_ACCOUNT_ID,
+    NEXT_PUBLIC_TJ_MEMBER_ID: process.env.NEXT_PUBLIC_TJ_MEMBER_ID,
   },
   /**
    * Run `build` or `dev` with `SKIP_ENV_VALIDATION` to skip env validation. This is especially

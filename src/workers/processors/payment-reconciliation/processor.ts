@@ -18,6 +18,7 @@ import { getCurrentLAHour, getDailyWindowLA, getHourlyWindowLA } from "../billin
 import { BILLING_RECONCILIATION_AT } from "../billing-reconciliation/constants";
 import { PAYMENT_RECONCILIATION_THRESHOLDS } from "./constants";
 import { buildPaymentReconciliationCard, buildPaymentReconciliationDailyCard } from "./build-card";
+import { env } from "@/env";
 
 const logger = createLogger("payment-reconciliation");
 
@@ -60,7 +61,7 @@ export async function processPaymentReconciliation(job: Job<PaymentReconciliatio
   // Local dry-run support:
   // - default only run in production
   // - set PAYMENT_RECONCILIATION_FORCE=1 to run locally
-  if (process.env.NODE_ENV !== "production" && process.env.PAYMENT_RECONCILIATION_FORCE !== "1") {
+  if (env.NODE_ENV !== "production" && !env.PAYMENT_RECONCILIATION_FORCE) {
     logger.info("Skipping payment reconciliation in non-production environment");
     return;
   }
@@ -330,5 +331,4 @@ export async function processPaymentReconciliation(job: Job<PaymentReconciliatio
     logger.info({ label, chatId }, "Daily payment reconciliation sent");
   }
 }
-
 

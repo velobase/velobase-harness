@@ -1,6 +1,9 @@
 import { SignJWT, jwtVerify } from "jose";
+import { env } from "@/env";
 
-const SECRET = new TextEncoder().encode(process.env.RESEND_WEBHOOK_SECRET || process.env.NEXTAUTH_SECRET || "fallback_secret");
+const SECRET = new TextEncoder().encode(
+  env.RESEND_WEBHOOK_SECRET || env.AUTH_SECRET || "fallback_secret",
+);
 
 export interface UnsubscribePayload {
   uid: string; // User ID
@@ -24,4 +27,3 @@ export async function verifyUnsubscribeToken(token: string): Promise<string | nu
     return null;
   }
 }
-
