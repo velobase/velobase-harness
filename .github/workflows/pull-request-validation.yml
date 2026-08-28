@@ -1,0 +1,31 @@
+name: Pull Request Validation
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.12.1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Check environment declarations
+        run: pnpm check:env
+      - name: Test environment behavior
+        run: pnpm test:env
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - name: Build production application
+        run: pnpm build
+        env:
+          SKIP_ENV_VALIDATION: "true"

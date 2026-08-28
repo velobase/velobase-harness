@@ -1,11 +1,15 @@
 import { createEnv } from "@t3-oss/env-nextjs";
 import { z } from "zod";
+import {
+  createAuthSecretSchema,
+  normalizeAuthEnvironment,
+  serviceModeSchema,
+} from "./env-normalization.js";
 
 // Auth.js v5 prefers AUTH_* and keeps NEXTAUTH_* as backwards-compatible
-// aliases. Normalize the preferred value for application consumers while
-// keeping both names in the public schema.
-const authSecret = process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET;
-const authUrl = process.env.AUTH_URL || process.env.NEXTAUTH_URL;
+// aliases. AUTH_* wins only when non-empty so an empty canonical variable does
+// not mask a configured legacy fallback.
+const { authSecret, authUrl, appUrl } = normalizeAuthEnvironment(process.env);
 
 const port = z
   .string()
@@ -25,15 +29,12 @@ export const env = createEnv({
    * isn't built with invalid env vars.
    */
   server: {
-    AUTH_SECRET:
-      process.env.NODE_ENV === "production"
-        ? z.string().min(1)
-        : z.string().optional(),
+    AUTH_SECRET: createAuthSecretSchema(process.env.NODE_ENV),
     AUTH_URL: z.string().url().optional(),
     NEXTAUTH_SECRET: z.string().optional(),
     NEXTAUTH_URL: z.string().url().optional(),
     APP_URL: z.string().url().optional(),
-    SERVICE_MODE: z.string().optional().default("web,worker"),
+    SERVICE_MODE: serviceModeSchema,
     PORT: port.optional().default("3000"),
     WEB_HOST: z.string().optional().default("0.0.0.0"),
     API_PORT: port.optional().default("3002"),
@@ -43,9 +44,7 @@ export const env = createEnv({
     COOKIE_SECURE: z
       .enum(["true", "false"])
       .optional()
-      .transform((value) =>
-        value == null ? undefined : value === "true",
-      ),
+      .transform((value) => (value == null ? undefined : value === "true")),
     AUTH_DISCORD_ID: z.string().optional(),
     AUTH_DISCORD_SECRET: z.string().optional(),
     AUTH_GOOGLE_ID: z.string().optional(),
@@ -54,9 +53,7 @@ export const env = createEnv({
     AUTH_GITHUB_SECRET: z.string().optional(),
     GITHUB_CLIENT_ID: z.string().optional(),
     GITHUB_CLIENT_SECRET: z.string().optional(),
-    EMAIL_ABUSE_SAME_IP_WINDOW_HOURS: positiveInteger
-      .optional()
-      .default("24"),
+    EMAIL_ABUSE_SAME_IP_WINDOW_HOURS: positiveInteger.optional().default("24"),
     EMAIL_ABUSE_SAME_IP_MIN_PRIOR_DIFFERENT_DEVICE: positiveInteger
       .optional()
       .default("1"),
@@ -276,7 +273,7 @@ export const env = createEnv({
     AUTH_URL: authUrl,
     NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET,
     NEXTAUTH_URL: process.env.NEXTAUTH_URL,
-    APP_URL: process.env.APP_URL || authUrl,
+    APP_URL: appUrl,
     SERVICE_MODE: process.env.SERVICE_MODE,
     PORT: process.env.PORT,
     WEB_HOST: process.env.WEB_HOST,
