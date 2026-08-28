@@ -40,21 +40,26 @@ import {
   Trash2,
 } from "lucide-react"
 import { toast } from "sonner"
-
-const statusLabels: Record<string, string> = {
-  ACTIVE: "启用",
-  DISABLED: "停用",
-  EXPIRED: "过期",
-  UNDEFINED: "未定义",
-}
-
-const grantTypeLabels: Record<string, string> = {
-  CREDIT: "积分",
-  PRODUCT: "产品",
-  UNDEFINED: "未定义",
-}
+import { useFormatter, useTranslations, useLocale } from "next-intl"
 
 export function PromoCodesTable() {
+  const t = useTranslations("admin.promoCodes")
+  const format = useFormatter()
+  const locale = useLocale()
+
+  const statusLabels: Record<string, string> = {
+    ACTIVE: t("statuses.active"),
+    DISABLED: t("statuses.inactive"),
+    EXPIRED: t("statuses.expired"),
+    UNDEFINED: t("statuses.undefined"),
+  }
+
+  const grantTypeLabels: Record<string, string> = {
+    CREDIT: t("grantTypes.credits"),
+    PRODUCT: t("grantTypes.product"),
+    UNDEFINED: t("grantTypes.undefined"),
+  }
+
   const [search, setSearch] = useState("")
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(20)
@@ -75,7 +80,7 @@ export function PromoCodesTable() {
 
   const createMutation = api.admin.createPromoCode.useMutation({
     onSuccess: () => {
-      toast.success("促销码创建成功")
+      toast.success(t("createSuccess"))
       setShowCreateDialog(false)
       void utils.admin.listPromoCodes.invalidate()
     },
@@ -86,14 +91,14 @@ export function PromoCodesTable() {
 
   const deleteMutation = api.admin.deletePromoCode.useMutation({
     onSuccess: () => {
-      toast.success("促销码已删除")
+      toast.success(t("deleteSuccess"))
       void utils.admin.listPromoCodes.invalidate()
     },
   })
 
   const updateMutation = api.admin.updatePromoCode.useMutation({
     onSuccess: () => {
-      toast.success("状态已更新")
+      toast.success(t("statusUpdated"))
       void utils.admin.listPromoCodes.invalidate()
     },
   })
@@ -108,16 +113,16 @@ export function PromoCodesTable() {
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">促销码管理</h1>
+          <h1 className="text-3xl font-bold tracking-tight">{t("title")}</h1>
           <p className="text-muted-foreground">
-            {total > 0 ? `${total.toLocaleString()} 个促销码` : "管理促销码"}
+            {total > 0 ? t("subtitleTotal", { count: total }) : t("subtitleEmpty")}
           </p>
         </div>
         <div className="flex items-center gap-2">
           <div className="relative flex-1 sm:w-72">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
-              placeholder="搜索促销码..."
+              placeholder={t("searchPlaceholder")}
               value={search}
               onChange={(e) => {
                 setSearch(e.target.value)
@@ -131,10 +136,10 @@ export function PromoCodesTable() {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">全部</SelectItem>
-              <SelectItem value="ACTIVE">启用</SelectItem>
-              <SelectItem value="DISABLED">停用</SelectItem>
-              <SelectItem value="EXPIRED">过期</SelectItem>
+              <SelectItem value="all">{t("all")}</SelectItem>
+              <SelectItem value="ACTIVE">{t("statuses.active")}</SelectItem>
+              <SelectItem value="DISABLED">{t("statuses.inactive")}</SelectItem>
+              <SelectItem value="EXPIRED">{t("statuses.expired")}</SelectItem>
             </SelectContent>
           </Select>
           <Select value={grantTypeFilter} onValueChange={(v) => { setGrantTypeFilter(v as typeof grantTypeFilter); setPage(1) }}>
@@ -142,14 +147,14 @@ export function PromoCodesTable() {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">全部</SelectItem>
-              <SelectItem value="CREDIT">积分</SelectItem>
-              <SelectItem value="PRODUCT">产品</SelectItem>
+              <SelectItem value="all">{t("all")}</SelectItem>
+              <SelectItem value="CREDIT">{t("grantTypes.credits")}</SelectItem>
+              <SelectItem value="PRODUCT">{t("grantTypes.product")}</SelectItem>
             </SelectContent>
           </Select>
           <Button onClick={() => setShowCreateDialog(true)}>
             <Plus className="h-4 w-4 mr-1" />
-            新建
+            {t("create")}
           </Button>
         </div>
       </div>
@@ -159,14 +164,14 @@ export function PromoCodesTable() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-[150px]">促销码</TableHead>
-              <TableHead className="w-[80px]">类型</TableHead>
-              <TableHead className="w-[100px]">赠送</TableHead>
-              <TableHead className="w-[80px]">状态</TableHead>
-              <TableHead className="w-[100px]">使用/限制</TableHead>
-              <TableHead className="w-[120px]">过期时间</TableHead>
-              <TableHead className="w-[200px]">备注</TableHead>
-              <TableHead className="w-[100px]">操作</TableHead>
+              <TableHead className="w-[150px]">{t("code")}</TableHead>
+              <TableHead className="w-[80px]">{t("type")}</TableHead>
+              <TableHead className="w-[100px]">{t("grant")}</TableHead>
+              <TableHead className="w-[80px]">{t("status")}</TableHead>
+              <TableHead className="w-[100px]">{t("usage")}</TableHead>
+              <TableHead className="w-[120px]">{t("expiresAt")}</TableHead>
+              <TableHead className="w-[200px]">{t("notes")}</TableHead>
+              <TableHead className="w-[100px]">{t("actions")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -186,7 +191,7 @@ export function PromoCodesTable() {
             ) : data?.items.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={8} className="text-center py-10 text-muted-foreground">
-                  暂无促销码
+                  {t("noPromoCodes")}
                 </TableCell>
               </TableRow>
             ) : (
@@ -199,7 +204,7 @@ export function PromoCodesTable() {
                     </Badge>
                   </TableCell>
                   <TableCell className="text-sm">
-                    {promo.grantType === "CREDIT" ? `${promo.creditsAmount} 积分` : promo.productId ? "产品" : "-"}
+                    {promo.grantType === "CREDIT" ? t("creditsGrant", { count: promo.creditsAmount }) : promo.productId ? t("productGrant") : "-"}
                   </TableCell>
                   <TableCell>
                     <Select
@@ -212,20 +217,20 @@ export function PromoCodesTable() {
                         </Badge>
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="ACTIVE">启用</SelectItem>
-                        <SelectItem value="DISABLED">停用</SelectItem>
-                        <SelectItem value="EXPIRED">过期</SelectItem>
+                        <SelectItem value="ACTIVE">{t("statuses.active")}</SelectItem>
+                        <SelectItem value="DISABLED">{t("statuses.inactive")}</SelectItem>
+                        <SelectItem value="EXPIRED">{t("statuses.expired")}</SelectItem>
                       </SelectContent>
                     </Select>
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground">
                     {promo.usedCount} / {promo.usageLimit === 0 ? "∞" : promo.usageLimit}
-                    <span className="text-xs ml-1">({promo._count.redemptions}人)</span>
+                    <span className="text-xs ml-1">{t("redemptions", { count: promo._count.redemptions })}</span>
                   </TableCell>
                   <TableCell className="text-xs text-muted-foreground">
                     {promo.expiresAt
-                      ? new Date(promo.expiresAt).toLocaleString("zh-CN", { year: "numeric", month: "2-digit", day: "2-digit" })
-                      : "永久"}
+                      ? new Date(promo.expiresAt).toLocaleString(locale, { year: "numeric", month: "2-digit", day: "2-digit" })
+                      : t("permanent")}
                   </TableCell>
                   <TableCell className="text-xs text-muted-foreground truncate max-w-[200px]">
                     {promo.notes || "-"}
@@ -236,7 +241,7 @@ export function PromoCodesTable() {
                       size="icon"
                       className="h-8 w-8 text-destructive"
                       onClick={() => {
-                        if (confirm("确定删除此促销码？")) {
+                        if (confirm(t("deleteConfirm"))) {
                           deleteMutation.mutate({ id: promo.id })
                         }
                       }}
@@ -254,7 +259,7 @@ export function PromoCodesTable() {
       {/* Pagination */}
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-2">
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <span>每页:</span>
+          <span>{t("perPage")}</span>
           <Select value={pageSize.toString()} onValueChange={(v) => { setPageSize(Number(v)); setPage(1) }}>
             <SelectTrigger className="h-8 w-[70px]">
               <SelectValue />
@@ -269,7 +274,9 @@ export function PromoCodesTable() {
 
         <div className="flex items-center gap-6">
           <span className="text-sm text-muted-foreground">
-            {total > 0 ? `${startItem}-${endItem} / ${total.toLocaleString()}` : "0 条结果"}
+            {total > 0
+              ? `${format.number(startItem)}-${format.number(endItem)} / ${format.number(total)}`
+              : t("zeroResults")}
           </span>
           <div className="flex items-center gap-1">
             <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setPage(1)} disabled={page === 1 || isLoading}>
@@ -278,7 +285,7 @@ export function PromoCodesTable() {
             <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setPage(page - 1)} disabled={page === 1 || isLoading}>
               <ChevronLeft className="h-4 w-4" />
             </Button>
-            <span className="text-sm w-20 text-center">第 {page} / {totalPages} 页</span>
+            <span className="text-sm w-20 text-center">{t("pageIndicator", { page, total: totalPages })}</span>
             <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setPage(page + 1)} disabled={page >= totalPages || isLoading}>
               <ChevronRight className="h-4 w-4" />
             </Button>
@@ -319,6 +326,7 @@ function CreatePromoCodeDialog({
   }) => void
   isPending: boolean
 }) {
+  const t = useTranslations("admin.promoCodes")
   const [code, setCode] = useState("")
   const [grantType, setGrantType] = useState<"CREDIT" | "PRODUCT">("CREDIT")
   const [creditsAmount, setCreditsAmount] = useState(100)
@@ -345,11 +353,11 @@ function CreatePromoCodeDialog({
       <DialogContent className="sm:max-w-[425px]">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
-            <DialogTitle>新建促销码</DialogTitle>
+            <DialogTitle>{t("createTitle")}</DialogTitle>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
-              <Label htmlFor="code">促销码</Label>
+              <Label htmlFor="code">{t("code")}</Label>
               <Input
                 id="code"
                 placeholder="PROMO2024"
@@ -359,20 +367,20 @@ function CreatePromoCodeDialog({
               />
             </div>
             <div className="grid gap-2">
-              <Label>赠送类型</Label>
+              <Label>{t("grantTypeLabel")}</Label>
               <Select value={grantType} onValueChange={(v) => setGrantType(v as "CREDIT" | "PRODUCT")}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="CREDIT">积分</SelectItem>
-                  <SelectItem value="PRODUCT">产品</SelectItem>
+                  <SelectItem value="CREDIT">{t("grantTypes.credits")}</SelectItem>
+                  <SelectItem value="PRODUCT">{t("grantTypes.product")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             {grantType === "CREDIT" && (
               <div className="grid gap-2">
-                <Label htmlFor="credits">积分数量</Label>
+                <Label htmlFor="credits">{t("creditsAmountLabel")}</Label>
                 <Input
                   id="credits"
                   type="number"
@@ -384,7 +392,7 @@ function CreatePromoCodeDialog({
             )}
             <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-2">
-                <Label htmlFor="usageLimit">总使用次数 (0=无限)</Label>
+                <Label htmlFor="usageLimit">{t("usageLimitLabel")}</Label>
                 <Input
                   id="usageLimit"
                   type="number"
@@ -394,7 +402,7 @@ function CreatePromoCodeDialog({
                 />
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="perUserLimit">每用户次数</Label>
+                <Label htmlFor="perUserLimit">{t("perUserLimitLabel")}</Label>
                 <Input
                   id="perUserLimit"
                   type="number"
@@ -405,7 +413,7 @@ function CreatePromoCodeDialog({
               </div>
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="expiresAt">过期时间 (可选)</Label>
+              <Label htmlFor="expiresAt">{t("expiresAtLabel")}</Label>
               <Input
                 id="expiresAt"
                 type="date"
@@ -414,10 +422,10 @@ function CreatePromoCodeDialog({
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="notes">备注</Label>
+              <Label htmlFor="notes">{t("notes")}</Label>
               <Input
                 id="notes"
-                placeholder="可选备注"
+                placeholder={t("notesPlaceholder")}
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
               />
@@ -425,7 +433,7 @@ function CreatePromoCodeDialog({
           </div>
           <DialogFooter>
             <Button type="submit" disabled={isPending || !code.trim()}>
-              {isPending ? "创建中..." : "创建"}
+              {isPending ? t("creating") : t("createSubmit")}
             </Button>
           </DialogFooter>
         </form>
@@ -433,4 +441,3 @@ function CreatePromoCodeDialog({
     </Dialog>
   )
 }
-

@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge"
 import { Switch } from "@/components/ui/switch"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
+import { useTranslations, useLocale } from "next-intl"
 import { ProductPriceCell } from "./product-price-cell"
 import type { RouterOutputs } from "@/trpc/react"
 
@@ -24,19 +25,6 @@ interface ProductListTableProps {
   onViewDetail: (product: Product) => void
 }
 
-const typeLabels: Record<string, string> = {
-  SUBSCRIPTION: "订阅",
-  CREDITS_PACKAGE: "积分包",
-  ONE_TIME_ENTITLEMENT: "一次性权益",
-  UNDEFINED: "未定义",
-}
-
-const statusLabels: Record<string, string> = {
-  ACTIVE: "启用",
-  INACTIVE: "停用",
-  UNDEFINED: "未定义",
-}
-
 export function ProductListTable({
   isLoading,
   products,
@@ -45,19 +33,35 @@ export function ProductListTable({
   isToggling,
   onViewDetail,
 }: ProductListTableProps) {
+  const t = useTranslations("admin.productManagement")
+  const locale = useLocale()
+
+  const typeLabels: Record<string, string> = {
+    SUBSCRIPTION: t("subscription"),
+    CREDITS_PACKAGE: t("creditsPackage"),
+    ONE_TIME_ENTITLEMENT: t("oneTimeEntitlement"),
+    UNDEFINED: t("undefined"),
+  }
+
+  const statusLabels: Record<string, string> = {
+    ACTIVE: t("active"),
+    INACTIVE: t("inactive"),
+    UNDEFINED: t("undefined"),
+  }
+
   return (
     <div className="border rounded-md bg-card">
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead className="w-[250px]">商品名称</TableHead>
-            <TableHead className="w-[120px]">类型</TableHead>
-            <TableHead className="w-[180px]">价格 (多币种)</TableHead>
-            <TableHead className="w-[80px]">状态</TableHead>
-            <TableHead className="w-[80px]">上架</TableHead>
-            <TableHead className="w-[80px]">排序</TableHead>
-            <TableHead className="w-[120px]">创建时间</TableHead>
-            <TableHead className="w-[80px]">操作</TableHead>
+            <TableHead className="w-[250px]">{t("productName")}</TableHead>
+            <TableHead className="w-[120px]">{t("type")}</TableHead>
+            <TableHead className="w-[180px]">{t("priceMulti")}</TableHead>
+            <TableHead className="w-[80px]">{t("status")}</TableHead>
+            <TableHead className="w-[80px]">{t("published")}</TableHead>
+            <TableHead className="w-[80px]">{t("sort")}</TableHead>
+            <TableHead className="w-[120px]">{t("created")}</TableHead>
+            <TableHead className="w-[80px]">{t("actions")}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -78,7 +82,7 @@ export function ProductListTable({
           ) : products.length === 0 ? (
             <TableRow>
               <TableCell colSpan={9} className="text-center py-10 text-muted-foreground">
-                暂无商品
+                {t("noProducts")}
               </TableCell>
             </TableRow>
           ) : (
@@ -126,11 +130,11 @@ export function ProductListTable({
                   {product.sortOrder}
                 </TableCell>
                 <TableCell className="text-xs text-muted-foreground">
-                  {new Date(product.createdAt).toLocaleString("zh-CN", { year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit" })}
+                  {new Date(product.createdAt).toLocaleString(locale, { year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit" })}
                 </TableCell>
                 <TableCell>
                   <Button variant="ghost" size="sm" onClick={() => onViewDetail(product)}>
-                    详情
+                    {t("details")}
                   </Button>
                 </TableCell>
               </TableRow>

@@ -14,6 +14,7 @@ import { CreateProjectDialog } from "@/components/projects/create-project-dialog
 import { DeleteAccountDialog } from "@/components/account/settings/delete-account-dialog";
 import { SubscriptionModal } from "@/components/account/subscription-modal";
 import { api } from "@/trpc/react";
+import { useTranslations } from "next-intl";
 
 import type { UserTier } from "@/components/billing/insufficient-credits/hooks/use-upgrade-strategy";
 
@@ -41,6 +42,7 @@ type CreditsDialogMode =
   | { type: "ip-limit"; isTrial: false; userTier: UserTier };
 
 export default function DialogsPage() {
+  const t = useTranslations("admin.dialogPreview");
   const { setLoginModalOpen } = useAuthStore();
   const { status } = useSession();
   const [creditsDialogOpen, setCreditsDialogOpen] = useState(false);
@@ -54,7 +56,7 @@ export default function DialogsPage() {
     setCreditsDialogOpen(true);
   };
 
-  // 获取真实数据
+  // Fetch real data
   const { data: profile } = api.account.getProfile.useQuery(undefined, {
     enabled: status === "authenticated",
   });
@@ -66,7 +68,7 @@ export default function DialogsPage() {
     limit: 10,
   });
 
-  // 转换为 SubscriptionModal 需要的格式
+  // Transform into the format SubscriptionModal expects
   const subscriptionProducts = subscriptionData?.products.map((p) => ({
     id: p.id,
     name: p.name,
@@ -79,9 +81,9 @@ export default function DialogsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Dialog Components</h1>
+        <h1 className="text-2xl font-bold">{t("title")}</h1>
         <p className="text-muted-foreground mt-1">
-          测试和预览所有弹窗组件
+          {t("subtitle")}
         </p>
       </div>
 
@@ -89,37 +91,37 @@ export default function DialogsPage() {
         {/* Login Modal */}
         <DialogCard
           title="LoginModal"
-          description="登录弹窗 - 支持 Google 和 Email 登录"
+          description={t("loginDesc")}
         >
           <Button onClick={() => setLoginModalOpen(true, undefined, "header")} variant="outline" size="sm">
-            打开登录弹窗
+            {t("openLogin")}
           </Button>
         </DialogCard>
 
         {/* Welcome Back Dialog */}
         <DialogCard
           title="WelcomeBackDialog"
-          description="老用户欢迎弹窗 - 非首账号用户，送 100 积分"
+          description={t("welcomeDesc")}
         >
           <Button onClick={() => setWelcomeBackOpen(true)} variant="outline" size="sm">
-            打开欢迎回来弹窗
+            {t("openWelcome")}
           </Button>
         </DialogCard>
 
         {/* Insufficient Credits Dialog */}
         <DialogCard
           title="InsufficientCreditsDialog"
-          description={`余额不足弹窗 - 当前余额: ${billing?.creditsBalance ?? 0}`}
+          description={t("creditsDesc", { balance: billing?.creditsBalance ?? 0 })}
         >
           <div className="flex flex-col gap-3">
-            <div className="text-xs text-muted-foreground font-medium">场景模式</div>
+            <div className="text-xs text-muted-foreground font-medium">{t("sceneMode")}</div>
           <div className="flex flex-wrap gap-2">
             <Button
                 onClick={() => openCreditsDialog({ type: "normal", isTrial: false, userTier: "starter" })}
               variant="outline"
               size="sm"
             >
-              普通用户
+              {t("normalUser")}
             </Button>
             <Button
               onClick={() => openCreditsDialog({ 
@@ -131,18 +133,18 @@ export default function DialogsPage() {
               variant="outline"
               size="sm"
             >
-              试用用户
+              {t("trialUser")}
             </Button>
             <Button
                 onClick={() => openCreditsDialog({ type: "ip-limit", isTrial: false, userTier: "free" })}
               variant="outline"
               size="sm"
             >
-              IP 限制
+              {t("ipLimit")}
             </Button>
             </div>
             
-            <div className="text-xs text-muted-foreground font-medium mt-2">用户等级 (策略引擎)</div>
+            <div className="text-xs text-muted-foreground font-medium mt-2">{t("userTier")}</div>
             <div className="flex flex-wrap gap-2">
               <Button
                 onClick={() => openCreditsDialog({ type: "normal", isTrial: false, userTier: "starter" })}
@@ -163,7 +165,7 @@ export default function DialogsPage() {
                 variant="secondary"
                 size="sm"
               >
-                Premium → 积分包
+                {t("premiumToCredits")}
               </Button>
             </div>
           </div>
@@ -172,7 +174,7 @@ export default function DialogsPage() {
         {/* Redeem Code Dialog */}
         <DialogCard
           title="RedeemCodeDialog"
-          description="兑换码弹窗 - 自带触发按钮"
+          description={t("redeemDesc")}
         >
           <RedeemCodeDialog />
         </DialogCard>
@@ -180,46 +182,46 @@ export default function DialogsPage() {
         {/* Create Project Dialog */}
         <DialogCard
           title="CreateProjectDialog"
-          description="创建项目弹窗"
+          description={t("createDesc")}
         >
           <Button
             onClick={() => setCreateProjectOpen(true)}
             variant="outline"
             size="sm"
           >
-            打开创建项目弹窗
+            {t("openCreate")}
           </Button>
         </DialogCard>
 
         {/* Delete Account Dialog */}
         <DialogCard
           title="DeleteAccountDialog"
-          description={`删除账户确认弹窗 - ${profile?.email ?? "未登录"}`}
+          description={t("deleteDesc", { email: profile?.email ?? t("notLoggedIn") })}
         >
           <Button
             onClick={() => setDeleteAccountOpen(true)}
             variant="destructive"
             size="sm"
           >
-            打开删除账户弹窗
+            {t("openDelete")}
           </Button>
         </DialogCard>
 
         {/* Subscription Modal */}
         <DialogCard
           title="SubscriptionModal"
-          description={`订阅升级弹窗 - ${subscriptionProducts.length} 个产品`}
+          description={t("subsDesc", { count: subscriptionProducts.length })}
         >
           {loadingSubs ? (
             <Skeleton className="h-9 w-24" />
           ) : subscriptionProducts.length > 0 ? (
             <SubscriptionModal products={subscriptionProducts}>
               <Button variant="outline" size="sm">
-                打开订阅弹窗
+                {t("openSubs")}
               </Button>
             </SubscriptionModal>
           ) : (
-            <p className="text-xs text-muted-foreground">无订阅产品</p>
+            <p className="text-xs text-muted-foreground">{t("noSubsProducts")}</p>
           )}
         </DialogCard>
       </div>

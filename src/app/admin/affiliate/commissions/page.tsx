@@ -19,8 +19,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Loader2, Search, AlertCircle, CheckCircle2, Clock, XCircle, MoreHorizontal } from "lucide-react";
-import { format } from "date-fns";
+import {
+  Loader2,
+  Search,
+  AlertCircle,
+  CheckCircle2,
+  Clock,
+  XCircle,
+  MoreHorizontal,
+} from "lucide-react";
 import Link from "next/link";
 import {
   DropdownMenu,
@@ -30,55 +37,62 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
+import { useFormatter, useTranslations } from "next-intl";
 
 export default function AffiliateCommissionsPage() {
+  const t = useTranslations("admin.affiliateCommissions");
+  const format = useFormatter();
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [status, setStatus] = useState("all");
-
   useEffect(() => {
     const t = setTimeout(() => setDebouncedSearch(search), 350);
     return () => clearTimeout(t);
   }, [search]);
 
-  const { data, isLoading, refetch } = api.admin.listAffiliateCommissions.useQuery({
-    page,
-    pageSize: 20,
-    search: debouncedSearch,
-    status: status as "all" | "PENDING" | "AVAILABLE" | "VOIDED",
-  });
+  const { data, isLoading, refetch } =
+    api.admin.listAffiliateCommissions.useQuery({
+      page,
+      pageSize: 20,
+      search: debouncedSearch,
+      status: status as "all" | "PENDING" | "AVAILABLE" | "VOIDED",
+    });
 
-  const updateStatusMutation = api.admin.updateAffiliateCommissionStatus.useMutation({
-    onSuccess: () => {
-      toast.success("Status updated");
-      void refetch();
-    },
-    onError: (err) => {
-      toast.error(err.message);
-    },
-  });
+  const updateStatusMutation =
+    api.admin.updateAffiliateCommissionStatus.useMutation({
+      onSuccess: () => {
+        toast.success(t("statusUpdated"));
+        void refetch();
+      },
+      onError: (err) => {
+        toast.error(err.message);
+      },
+    });
 
-  const handleUpdateStatus = (id: string, newStatus: "VOIDED" | "AVAILABLE" | "PENDING") => {
-    if (confirm(`Are you sure you want to change status to ${newStatus}?`)) {
+  const handleUpdateStatus = (
+    id: string,
+    newStatus: "VOIDED" | "AVAILABLE" | "PENDING",
+  ) => {
+    if (confirm(t("confirmStatus", { status: newStatus }))) {
       updateStatusMutation.mutate({ id, status: newStatus });
     }
   };
 
   return (
-    <div className="container py-8 max-w-7xl">
-      <div className="flex justify-between items-center mb-6">
+    <div className="container max-w-7xl py-8">
+      <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Affiliate Commissions</h1>
-          <p className="text-muted-foreground">Monitor and manage all affiliate earnings.</p>
+          <h1 className="text-2xl font-bold tracking-tight">{t("title")}</h1>
+          <p className="text-muted-foreground">{t("subtitle")}</p>
         </div>
       </div>
 
-      <div className="flex gap-4 mb-6">
-        <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+      <div className="mb-6 flex gap-4">
+        <div className="relative max-w-sm flex-1">
+          <Search className="text-muted-foreground absolute top-2.5 left-2.5 h-4 w-4" />
           <Input
-            placeholder="Search email, ID..."
+            placeholder={t("searchPlaceholder")}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="pl-9"
@@ -86,27 +100,27 @@ export default function AffiliateCommissionsPage() {
         </div>
         <Select value={status} onValueChange={setStatus}>
           <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Status" />
+            <SelectValue placeholder={t("status")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Status</SelectItem>
-            <SelectItem value="PENDING">Pending</SelectItem>
-            <SelectItem value="AVAILABLE">Available</SelectItem>
-            <SelectItem value="VOIDED">Voided</SelectItem>
+            <SelectItem value="all">{t("allStatuses")}</SelectItem>
+            <SelectItem value="PENDING">{t("statuses.pending")}</SelectItem>
+            <SelectItem value="AVAILABLE">{t("statuses.available")}</SelectItem>
+            <SelectItem value="VOIDED">{t("statuses.voided")}</SelectItem>
           </SelectContent>
         </Select>
       </div>
 
-      <div className="border rounded-md">
+      <div className="rounded-md border">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Date</TableHead>
-              <TableHead>Referrer</TableHead>
-              <TableHead>Referred User</TableHead>
-              <TableHead>Source</TableHead>
-              <TableHead>Amount</TableHead>
-              <TableHead>Status</TableHead>
+              <TableHead>{t("date")}</TableHead>
+              <TableHead>{t("referrer")}</TableHead>
+              <TableHead>{t("referredUser")}</TableHead>
+              <TableHead>{t("source")}</TableHead>
+              <TableHead>{t("amount")}</TableHead>
+              <TableHead>{t("status")}</TableHead>
               <TableHead className="w-[50px]"></TableHead>
             </TableRow>
           </TableHeader>
@@ -114,13 +128,16 @@ export default function AffiliateCommissionsPage() {
             {isLoading ? (
               <TableRow>
                 <TableCell colSpan={7} className="h-24 text-center">
-                  <Loader2 className="h-6 w-6 animate-spin mx-auto text-muted-foreground" />
+                  <Loader2 className="text-muted-foreground mx-auto h-6 w-6 animate-spin" />
                 </TableCell>
               </TableRow>
             ) : data?.items.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
-                  No commissions found.
+                <TableCell
+                  colSpan={7}
+                  className="text-muted-foreground h-24 text-center"
+                >
+                  {t("noResults")}
                 </TableCell>
               </TableRow>
             ) : (
@@ -128,22 +145,31 @@ export default function AffiliateCommissionsPage() {
                 <TableRow key={item.id}>
                   <TableCell className="whitespace-nowrap">
                     <div className="flex flex-col">
-                      <span>{format(new Date(item.createdAt), "MMM d, yyyy")}</span>
-                      <span className="text-xs text-muted-foreground">
-                        {format(new Date(item.createdAt), "HH:mm")}
+                      <span>
+                        {format.dateTime(new Date(item.createdAt), {
+                          year: "numeric",
+                          month: "short",
+                          day: "numeric",
+                        })}
+                      </span>
+                      <span className="text-muted-foreground text-xs">
+                        {format.dateTime(new Date(item.createdAt), {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
                       </span>
                     </div>
                   </TableCell>
                   <TableCell>
-                    <Link 
+                    <Link
                       href={`/admin/users/${item.affiliateUserId}`}
-                      className="hover:underline font-medium"
+                      className="font-medium hover:underline"
                     >
                       {item.affiliateUser.email}
                     </Link>
                   </TableCell>
                   <TableCell>
-                    <Link 
+                    <Link
                       href={`/admin/users/${item.referredUserId}`}
                       className="text-muted-foreground hover:underline"
                     >
@@ -152,8 +178,13 @@ export default function AffiliateCommissionsPage() {
                   </TableCell>
                   <TableCell>
                     <div className="flex flex-col text-xs">
-                      <span className="uppercase font-mono">{item.sourceType.replace('_', ' ')}</span>
-                      <span className="text-muted-foreground font-mono truncate max-w-[120px]" title={item.sourceExternalId}>
+                      <span className="font-mono uppercase">
+                        {item.sourceType.replace("_", " ")}
+                      </span>
+                      <span
+                        className="text-muted-foreground max-w-[120px] truncate font-mono"
+                        title={item.sourceExternalId}
+                      >
                         {item.sourceExternalId}
                       </span>
                     </div>
@@ -161,15 +192,27 @@ export default function AffiliateCommissionsPage() {
                   <TableCell>
                     <div className="font-mono">
                       <span className="font-bold text-green-600">
-                        +${(item.commissionCents / 100).toFixed(2)}
+                        +
+                        {format.number(item.commissionCents / 100, {
+                          style: "currency",
+                          currency: "USD",
+                        })}
                       </span>
-                      <div className="text-xs text-muted-foreground">
-                        on ${(item.grossAmountCents / 100).toFixed(2)}
+                      <div className="text-muted-foreground text-xs">
+                        {t("onGrossAmount", {
+                          amount: format.number(item.grossAmountCents / 100, {
+                            style: "currency",
+                            currency: "USD",
+                          }),
+                        })}
                       </div>
                     </div>
                   </TableCell>
                   <TableCell>
-                    <StatusBadge status={item.state} availableAt={item.availableAt} />
+                    <StatusBadge
+                      status={item.state}
+                      availableAt={item.availableAt}
+                    />
                   </TableCell>
                   <TableCell>
                     <DropdownMenu>
@@ -180,28 +223,34 @@ export default function AffiliateCommissionsPage() {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         {item.state !== "VOIDED" && (
-                          <DropdownMenuItem 
+                          <DropdownMenuItem
                             className="text-red-600"
-                            onClick={() => handleUpdateStatus(item.id, "VOIDED")}
+                            onClick={() =>
+                              handleUpdateStatus(item.id, "VOIDED")
+                            }
                           >
                             <XCircle className="mr-2 h-4 w-4" />
-                            Void Earning
+                            {t("voidEarning")}
                           </DropdownMenuItem>
                         )}
                         {item.state === "VOIDED" && (
-                          <DropdownMenuItem 
-                            onClick={() => handleUpdateStatus(item.id, "AVAILABLE")}
+                          <DropdownMenuItem
+                            onClick={() =>
+                              handleUpdateStatus(item.id, "AVAILABLE")
+                            }
                           >
                             <CheckCircle2 className="mr-2 h-4 w-4" />
-                            Restore to Available
+                            {t("restoreAvailable")}
                           </DropdownMenuItem>
                         )}
                         {item.state === "PENDING" && (
-                          <DropdownMenuItem 
-                            onClick={() => handleUpdateStatus(item.id, "AVAILABLE")}
+                          <DropdownMenuItem
+                            onClick={() =>
+                              handleUpdateStatus(item.id, "AVAILABLE")
+                            }
                           >
                             <CheckCircle2 className="mr-2 h-4 w-4" />
-                            Force Mature
+                            {t("forceMature")}
                           </DropdownMenuItem>
                         )}
                       </DropdownMenuContent>
@@ -223,10 +272,10 @@ export default function AffiliateCommissionsPage() {
             onClick={() => setPage((p) => Math.max(1, p - 1))}
             disabled={page === 1}
           >
-            Previous
+            {t("previous")}
           </Button>
-          <div className="text-sm text-muted-foreground">
-            Page {page} of {data.totalPages}
+          <div className="text-muted-foreground text-sm">
+            {t("pageIndicator", { page, totalPages: data.totalPages })}
           </div>
           <Button
             variant="outline"
@@ -234,7 +283,7 @@ export default function AffiliateCommissionsPage() {
             onClick={() => setPage((p) => Math.min(data.totalPages, p + 1))}
             disabled={page === data.totalPages}
           >
-            Next
+            {t("next")}
           </Button>
         </div>
       )}
@@ -242,11 +291,28 @@ export default function AffiliateCommissionsPage() {
   );
 }
 
-function StatusBadge({ status, availableAt }: { status: string; availableAt: Date }) {
+function StatusBadge({
+  status,
+  availableAt,
+}: {
+  status: string;
+  availableAt: Date;
+}) {
+  const t = useTranslations("admin.affiliateCommissions");
+  const format = useFormatter();
   const config = {
-    PENDING: { color: "bg-amber-100 text-amber-800 border-amber-200", icon: Clock },
-    AVAILABLE: { color: "bg-green-100 text-green-800 border-green-200", icon: CheckCircle2 },
-    VOIDED: { color: "bg-red-100 text-red-800 border-red-200", icon: AlertCircle },
+    PENDING: {
+      color: "bg-amber-100 text-amber-800 border-amber-200",
+      icon: Clock,
+    },
+    AVAILABLE: {
+      color: "bg-green-100 text-green-800 border-green-200",
+      icon: CheckCircle2,
+    },
+    VOIDED: {
+      color: "bg-red-100 text-red-800 border-red-200",
+      icon: AlertCircle,
+    },
   }[status] || { color: "bg-gray-100 text-gray-800", icon: AlertCircle };
 
   const Icon = config.icon;
@@ -254,12 +320,17 @@ function StatusBadge({ status, availableAt }: { status: string; availableAt: Dat
   return (
     <div className="flex flex-col items-start gap-1">
       <Badge variant="outline" className={`${config.color} gap-1 pr-2`}>
-        <Icon className="w-3 h-3" />
+        <Icon className="h-3 w-3" />
         {status}
       </Badge>
       {status === "PENDING" && (
-        <span className="text-[10px] text-muted-foreground">
-          Unlocks {format(new Date(availableAt), "MMM d")}
+        <span className="text-muted-foreground text-[10px]">
+          {t("unlocks", {
+            date: format.dateTime(new Date(availableAt), {
+              month: "short",
+              day: "numeric",
+            }),
+          })}
         </span>
       )}
     </div>

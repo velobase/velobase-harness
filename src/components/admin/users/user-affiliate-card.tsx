@@ -1,56 +1,85 @@
-"use client"
+"use client";
 
-import { Badge } from "@/components/ui/badge"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Separator } from "@/components/ui/separator"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Badge } from "@/components/ui/badge";
 import {
-  Users,
-  Wallet,
-  Clock,
-  CheckCircle,
-  ArrowRight,
-} from "lucide-react"
-import Link from "next/link"
-import type { UserDetailData } from "./types"
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Users, Wallet, Clock, CheckCircle, ArrowRight } from "lucide-react";
+import Link from "next/link";
+import type { UserDetailData } from "./types";
+import { useFormatter, useTranslations } from "next-intl";
 
 interface UserAffiliateCardProps {
-  user: UserDetailData
+  user: UserDetailData;
 }
 
 export function UserAffiliateCard({ user }: UserAffiliateCardProps) {
+  const t = useTranslations("admin.userManagement.affiliate");
+  const format = useFormatter();
+  const formatUsd = (amountCents: number) =>
+    format.number(amountCents / 100, { style: "currency", currency: "USD" });
+
   return (
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Users className="h-4 w-4" />
-          Affiliate / Referral
+          {t("title")}
         </CardTitle>
         <CardDescription>
           {user.affiliate.affiliateEnabledAt
-            ? `Enabled at ${new Date(user.affiliate.affiliateEnabledAt).toLocaleString("zh-CN")}`
-            : "Not activated"}
+            ? t("enabledAt", {
+                date: format.dateTime(
+                  new Date(user.affiliate.affiliateEnabledAt),
+                  {
+                    year: "numeric",
+                    month: "2-digit",
+                    day: "2-digit",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                    second: "2-digit",
+                  },
+                ),
+              })
+            : t("notActivated")}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Referral Info */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+        <div className="grid grid-cols-2 gap-4 text-sm md:grid-cols-4">
           <div>
-            <p className="text-muted-foreground">Referral Code</p>
+            <p className="text-muted-foreground">{t("referralCode")}</p>
             <p className="font-mono">{user.affiliate.referralCode || "-"}</p>
           </div>
           <div>
-            <p className="text-muted-foreground">Referrals</p>
-            <p className="font-medium">{user.affiliate.referralsCount}</p>
+            <p className="text-muted-foreground">{t("referrals")}</p>
+            <p className="font-medium">
+              {format.number(user.affiliate.referralsCount)}
+            </p>
           </div>
           <div>
-            <p className="text-muted-foreground">Referred By</p>
+            <p className="text-muted-foreground">{t("referredBy")}</p>
             {user.affiliate.referredBy ? (
               <Link
                 href={`/admin/users/${user.affiliate.referredBy.id}`}
-                className="text-blue-600 hover:underline inline-flex items-center gap-1"
+                className="inline-flex items-center gap-1 text-blue-600 hover:underline"
               >
-                {user.affiliate.referredBy.email || user.affiliate.referredBy.name || "Unknown"}
+                {user.affiliate.referredBy.email ||
+                  user.affiliate.referredBy.name ||
+                  t("unknown")}
                 <ArrowRight className="h-3 w-3" />
               </Link>
             ) : (
@@ -58,8 +87,10 @@ export function UserAffiliateCard({ user }: UserAffiliateCardProps) {
             )}
           </div>
           <div>
-            <p className="text-muted-foreground">Payout Wallet</p>
-            <p className="font-mono text-xs truncate">{user.affiliate.payoutWallet || "-"}</p>
+            <p className="text-muted-foreground">{t("payoutWallet")}</p>
+            <p className="truncate font-mono text-xs">
+              {user.affiliate.payoutWallet || "-"}
+            </p>
           </div>
         </div>
 
@@ -67,40 +98,40 @@ export function UserAffiliateCard({ user }: UserAffiliateCardProps) {
 
         {/* Affiliate Wallet Balances */}
         <div>
-          <p className="text-sm font-medium mb-2">Affiliate Wallet</p>
+          <p className="mb-2 text-sm font-medium">{t("affiliateWallet")}</p>
           <div className="grid grid-cols-4 gap-2">
-            <div className="text-center p-2 bg-amber-50 dark:bg-amber-950/30 rounded-lg">
+            <div className="rounded-lg bg-amber-50 p-2 text-center dark:bg-amber-950/30">
               <p className="text-lg font-bold text-amber-600">
-                ${(user.affiliate.balances.pendingCents / 100).toFixed(2)}
+                {formatUsd(user.affiliate.balances.pendingCents)}
               </p>
-              <p className="text-xs text-muted-foreground flex items-center justify-center gap-1">
+              <p className="text-muted-foreground flex items-center justify-center gap-1 text-xs">
                 <Clock className="h-3 w-3" />
-                Pending
+                {t("pending")}
               </p>
             </div>
-            <div className="text-center p-2 bg-green-50 dark:bg-green-950/30 rounded-lg">
+            <div className="rounded-lg bg-green-50 p-2 text-center dark:bg-green-950/30">
               <p className="text-lg font-bold text-green-600">
-                ${(user.affiliate.balances.availableCents / 100).toFixed(2)}
+                {formatUsd(user.affiliate.balances.availableCents)}
               </p>
-              <p className="text-xs text-muted-foreground flex items-center justify-center gap-1">
+              <p className="text-muted-foreground flex items-center justify-center gap-1 text-xs">
                 <Wallet className="h-3 w-3" />
-                Available
+                {t("available")}
               </p>
             </div>
-            <div className="text-center p-2 bg-blue-50 dark:bg-blue-950/30 rounded-lg">
+            <div className="rounded-lg bg-blue-50 p-2 text-center dark:bg-blue-950/30">
               <p className="text-lg font-bold text-blue-600">
-                ${(user.affiliate.balances.lockedCents / 100).toFixed(2)}
+                {formatUsd(user.affiliate.balances.lockedCents)}
               </p>
-              <p className="text-xs text-muted-foreground flex items-center justify-center gap-1">
+              <p className="text-muted-foreground flex items-center justify-center gap-1 text-xs">
                 <CheckCircle className="h-3 w-3" />
-                Locked
+                {t("locked")}
               </p>
             </div>
-            <div className="text-center p-2 bg-muted/50 rounded-lg">
-              <p className="text-lg font-bold text-muted-foreground">
-                ${(user.affiliate.balances.debtCents / 100).toFixed(2)}
+            <div className="bg-muted/50 rounded-lg p-2 text-center">
+              <p className="text-muted-foreground text-lg font-bold">
+                {formatUsd(user.affiliate.balances.debtCents)}
               </p>
-              <p className="text-xs text-muted-foreground">Debt</p>
+              <p className="text-muted-foreground text-xs">{t("debt")}</p>
             </div>
           </div>
         </div>
@@ -110,15 +141,15 @@ export function UserAffiliateCard({ user }: UserAffiliateCardProps) {
           <>
             <Separator />
             <div>
-              <p className="text-sm font-medium mb-2">Recent Payout Requests</p>
+              <p className="mb-2 text-sm font-medium">{t("recentPayouts")}</p>
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Type</TableHead>
-                    <TableHead>Amount</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Wallet</TableHead>
-                    <TableHead>Time</TableHead>
+                    <TableHead>{t("type")}</TableHead>
+                    <TableHead>{t("amount")}</TableHead>
+                    <TableHead>{t("status")}</TableHead>
+                    <TableHead>{t("wallet")}</TableHead>
+                    <TableHead>{t("time")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -126,18 +157,19 @@ export function UserAffiliateCard({ user }: UserAffiliateCardProps) {
                     <TableRow key={req.id}>
                       <TableCell>
                         <Badge variant="outline">
-                          {req.type === "CASHOUT_USDT" ? "USDT" : "Credits"}
+                          {req.type === "CASHOUT_USDT" ? "USDT" : t("credits")}
                         </Badge>
                       </TableCell>
                       <TableCell className="font-medium">
-                        ${(req.amountCents / 100).toFixed(2)}
+                        {formatUsd(req.amountCents)}
                       </TableCell>
                       <TableCell>
                         <Badge
                           variant={
                             req.status === "COMPLETED"
                               ? "default"
-                              : req.status === "REJECTED" || req.status === "FAILED"
+                              : req.status === "REJECTED" ||
+                                  req.status === "FAILED"
                                 ? "destructive"
                                 : "secondary"
                           }
@@ -145,11 +177,11 @@ export function UserAffiliateCard({ user }: UserAffiliateCardProps) {
                           {req.status}
                         </Badge>
                       </TableCell>
-                      <TableCell className="font-mono text-xs max-w-32 truncate">
+                      <TableCell className="max-w-32 truncate font-mono text-xs">
                         {req.walletAddress || "-"}
                       </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
-                        {new Date(req.createdAt).toLocaleString("zh-CN", {
+                      <TableCell className="text-muted-foreground text-sm">
+                        {format.dateTime(new Date(req.createdAt), {
                           month: "2-digit",
                           day: "2-digit",
                           hour: "2-digit",
@@ -165,6 +197,5 @@ export function UserAffiliateCard({ user }: UserAffiliateCardProps) {
         )}
       </CardContent>
     </Card>
-  )
+  );
 }
-

@@ -1,3 +1,5 @@
+"use client"
+
 import {
   Sheet,
   SheetContent,
@@ -8,10 +10,11 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
+import { useLocale, useTranslations } from "next-intl"
 import { formatPrice } from "./product-price-cell"
 import type { RouterOutputs } from "@/trpc/react"
 
-// 使用 API 返回的 Product 类型
+// Product type returned by the API
 type Product = RouterOutputs["admin"]["listProducts"]["items"][number]
 
 interface ProductDetailSheetProps {
@@ -27,6 +30,8 @@ export function ProductDetailSheet({
   onOpenChange,
   onUpdate: _onUpdate,
 }: ProductDetailSheetProps) {
+  const t = useTranslations("admin.productManagement")
+  const locale = useLocale()
   if (!product) return null
 
   return (
@@ -46,9 +51,9 @@ export function ProductDetailSheet({
                   {product.status}
                 </Badge>
                 {product.isAvailable ? (
-                  <Badge variant="outline" className="text-green-600 border-green-200 bg-green-50">已上架</Badge>
+                  <Badge variant="outline" className="text-green-600 border-green-200 bg-green-50">{t("published")}</Badge>
                 ) : (
-                  <Badge variant="outline" className="text-muted-foreground">未上架</Badge>
+                  <Badge variant="outline" className="text-muted-foreground">{t("unpublished")}</Badge>
                 )}
               </div>
             </div>
@@ -58,86 +63,86 @@ export function ProductDetailSheet({
         <Tabs defaultValue="basic" className="flex-1 flex flex-col overflow-hidden">
           <div className="px-6 pt-2">
             <TabsList className="w-full justify-start">
-              <TabsTrigger value="basic">基本信息</TabsTrigger>
-              <TabsTrigger value="pricing">价格配置</TabsTrigger>
+              <TabsTrigger value="basic">{t("basicInfo")}</TabsTrigger>
+              <TabsTrigger value="pricing">{t("pricing")}</TabsTrigger>
               <TabsTrigger value="subscription" disabled={product.type !== "SUBSCRIPTION"}>
-                订阅配置
+                {t("subscriptionTab")}
               </TabsTrigger>
-              <TabsTrigger value="metadata">元数据 & Airwallex</TabsTrigger>
+              <TabsTrigger value="metadata">{t("metadataAirwallex")}</TabsTrigger>
             </TabsList>
           </div>
 
           <ScrollArea className="flex-1">
             <div className="p-6 space-y-6">
               <TabsContent value="basic" className="space-y-6 m-0">
-                <Section title="基础信息">
+                <Section title={t("basicInfo")}>
                   <div className="grid grid-cols-2 gap-4">
-                    <DetailItem label="商品名称" value={product.name} />
-                    <DetailItem label="商品类型" value={product.type} />
-                    <DetailItem label="排序权重" value={product.sortOrder} />
-                    <DetailItem label="创建时间" value={new Date(product.createdAt).toLocaleString()} />
+                    <DetailItem label={t("productName")} value={product.name} />
+                    <DetailItem label={t("productType")} value={product.type} />
+                    <DetailItem label={t("sortOrder")} value={product.sortOrder} />
+                    <DetailItem label={t("createdAt")} value={new Date(product.createdAt).toLocaleString(locale)} />
                   </div>
                 </Section>
 
-                <Section title="试用配置">
+                <Section title={t("trial")}>
                   <div className="grid grid-cols-2 gap-4">
-                    <DetailItem 
-                      label="开启试用" 
-                      value={product.hasTrial ? "是" : "否"} 
+                    <DetailItem
+                      label={t("trialEnabled")}
+                      value={product.hasTrial ? t("yes") : t("no")}
                     />
                     {product.hasTrial && (
                       <>
-                        <DetailItem label="试用天数" value={product.trialDays || "-"} />
-                        <DetailItem label="试用赠送积分" value={product.trialCreditsAmount || "-"} />
+                        <DetailItem label={t("trialDays")} value={product.trialDays || "-"} />
+                        <DetailItem label={t("trialBonusCredits")} value={product.trialCreditsAmount || "-"} />
                       </>
                     )}
                   </div>
                 </Section>
 
-                 <Section title="积分包配置" hidden={!product.creditsPackage}>
+                 <Section title={t("creditsPackage")} hidden={!product.creditsPackage}>
                   <div className="grid grid-cols-2 gap-4">
-                     <DetailItem 
-                      label="包含积分" 
-                      value={product.creditsPackage?.creditsAmount} 
+                     <DetailItem
+                      label={t("creditsIncluded")}
+                      value={product.creditsPackage?.creditsAmount}
                     />
                   </div>
                 </Section>
               </TabsContent>
 
               <TabsContent value="pricing" className="space-y-6 m-0">
-                <Section title="默认价格 (USD)">
+                <Section title={t("defaultPrice")}>
                   <div className="grid grid-cols-2 gap-4">
-                    <DetailItem 
-                      label="现价" 
-                      value={formatPrice(product.price, product.currency)} 
+                    <DetailItem
+                      label={t("currentPrice")}
+                      value={formatPrice(product.price, product.currency, locale)}
                       className="text-lg font-medium text-primary"
                     />
-                    <DetailItem 
-                      label="原价 (划线价)" 
-                      value={product.originalPrice > 0 ? formatPrice(product.originalPrice, product.currency) : "-"} 
+                    <DetailItem
+                      label={t("originalPriceStrike")}
+                      value={product.originalPrice > 0 ? formatPrice(product.originalPrice, product.currency, locale) : "-"}
                       className="text-muted-foreground line-through"
                     />
                   </div>
                 </Section>
 
-                <Section title="多币种定价 (ProductPrice)">
+                <Section title={t("multiCurrencyPricing")}>
                   {product.prices && product.prices.length > 0 ? (
                     <div className="border rounded-md overflow-hidden">
                       <table className="w-full text-sm">
                         <thead className="bg-muted/50">
                           <tr>
-                            <th className="px-4 py-2 text-left font-medium text-muted-foreground">币种</th>
-                            <th className="px-4 py-2 text-left font-medium text-muted-foreground">现价</th>
-                            <th className="px-4 py-2 text-left font-medium text-muted-foreground">原价</th>
+                            <th className="px-4 py-2 text-left font-medium text-muted-foreground">{t("currency")}</th>
+                            <th className="px-4 py-2 text-left font-medium text-muted-foreground">{t("currentPrice")}</th>
+                            <th className="px-4 py-2 text-left font-medium text-muted-foreground">{t("originalPrice")}</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y">
                           {product.prices.map((price) => (
                             <tr key={price.currency}>
                               <td className="px-4 py-2 font-medium">{price.currency}</td>
-                              <td className="px-4 py-2">{formatPrice(price.amount, price.currency)}</td>
+                              <td className="px-4 py-2">{formatPrice(price.amount, price.currency, locale)}</td>
                               <td className="px-4 py-2 text-muted-foreground">
-                                {price.originalAmount > 0 ? formatPrice(price.originalAmount, price.currency) : "-"}
+                                {price.originalAmount > 0 ? formatPrice(price.originalAmount, price.currency, locale) : "-"}
                               </td>
                             </tr>
                           ))}
@@ -146,19 +151,19 @@ export function ProductDetailSheet({
                     </div>
                   ) : (
                     <div className="text-sm text-muted-foreground py-4 text-center border rounded-md border-dashed">
-                      未配置本地化价格，将使用默认 USD 价格自动转换
+                      {t("noLocalizedPricingMsg")}
                     </div>
                   )}
                 </Section>
               </TabsContent>
 
               <TabsContent value="subscription" className="space-y-6 m-0">
-                 <Section title="订阅计划">
+                 <Section title={t("subscriptionPlan")}>
                   <div className="grid grid-cols-2 gap-4">
                     <DetailItem label="Plan ID" value={product.productSubscription?.planId} />
-                    <DetailItem label="周期" value={product.productSubscription?.plan.interval} />
-                    <DetailItem label="周期数" value={product.productSubscription?.plan.intervalCount} />
-                    <DetailItem label="周期赠送积分" value={product.productSubscription?.plan.creditsPerPeriod} />
+                    <DetailItem label={t("interval")} value={product.productSubscription?.plan.interval} />
+                    <DetailItem label={t("intervalCount")} value={product.productSubscription?.plan.intervalCount} />
+                    <DetailItem label={t("perPeriodCredits")} value={product.productSubscription?.plan.creditsPerPeriod} />
                   </div>
                 </Section>
               </TabsContent>
@@ -170,7 +175,7 @@ export function ProductDetailSheet({
                   </pre>
                 </Section>
 
-                <Section title="完整 Metadata">
+                <Section title={t("fullMetadata")}>
                   <pre className="bg-muted p-4 rounded-md text-xs font-mono overflow-auto max-h-[300px]">
                     {JSON.stringify(product.metadata, null, 2)}
                   </pre>
@@ -204,4 +209,3 @@ function DetailItem({ label, value, className }: { label: string; value: React.R
     </div>
   )
 }
-

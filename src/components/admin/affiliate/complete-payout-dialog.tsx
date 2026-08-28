@@ -15,6 +15,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { useTranslations } from "next-intl";
 
 export function CompletePayoutDialog(props: {
   requestId: string;
@@ -22,13 +23,14 @@ export function CompletePayoutDialog(props: {
   defaultTxHash?: string | null;
   onSuccess?: () => void;
 }) {
+  const t = useTranslations("admin.affiliatePayouts");
   const [open, setOpen] = useState(false);
   const [txHash, setTxHash] = useState(props.defaultTxHash ?? "");
   const [adminNote, setAdminNote] = useState("");
 
   const mutation = api.admin.updateAffiliatePayoutRequest.useMutation({
     onSuccess: () => {
-      toast.success("Updated");
+      toast.success(t("operationsUpdated"));
       setOpen(false);
       props.onSuccess?.();
     },
@@ -47,17 +49,22 @@ export function CompletePayoutDialog(props: {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button size="sm">Complete</Button>
+        <Button size="sm">{t("complete")}</Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Complete payout</DialogTitle>
-          <DialogDescription>Mark request as COMPLETED and record tx hash.</DialogDescription>
+          <DialogTitle>{t("completePayout")}</DialogTitle>
+          <DialogDescription>
+            {t("completePayoutDescription")}
+          </DialogDescription>
         </DialogHeader>
 
         <div className="grid gap-4 py-2">
           <div className="grid gap-2">
-            <Label htmlFor="txHash">txHash {props.type === "CASHOUT_USDT" ? "(required)" : "(optional)"}</Label>
+            <Label htmlFor="txHash">
+              txHash (
+              {props.type === "CASHOUT_USDT" ? t("required") : t("optional")})
+            </Label>
             <Input
               id="txHash"
               placeholder="0x..."
@@ -66,10 +73,10 @@ export function CompletePayoutDialog(props: {
             />
           </div>
           <div className="grid gap-2">
-            <Label htmlFor="adminNote">Admin note (optional)</Label>
+            <Label htmlFor="adminNote">{t("adminNoteOptional")}</Label>
             <Input
               id="adminNote"
-              placeholder="Note"
+              placeholder={t("notePlaceholder")}
               value={adminNote}
               onChange={(e) => setAdminNote(e.target.value)}
             />
@@ -78,16 +85,13 @@ export function CompletePayoutDialog(props: {
 
         <DialogFooter>
           <Button variant="outline" onClick={() => setOpen(false)}>
-            Cancel
+            {t("cancel")}
           </Button>
           <Button onClick={submit} disabled={mutation.isPending}>
-            {mutation.isPending ? "Saving..." : "Complete"}
+            {mutation.isPending ? t("saving") : t("complete")}
           </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
   );
 }
-
-
-

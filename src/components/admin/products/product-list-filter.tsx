@@ -7,6 +7,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { X } from "lucide-react"
+import { useTranslations } from "next-intl"
 
 export type FilterType = "all" | "SUBSCRIPTION" | "CREDITS_PACKAGE" | "ONE_TIME_ENTITLEMENT"
 export type FilterStatus = "all" | "ACTIVE" | "INACTIVE"
@@ -37,20 +38,21 @@ export function ProductListFilter({
   onClear,
   hasActiveFilters,
 }: ProductListFilterProps) {
+  const t = useTranslations("admin.productManagement")
   return (
     <div className="border rounded-lg p-4 bg-muted/30 space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="font-medium text-sm">筛选</h3>
+        <h3 className="font-medium text-sm">{t("filters")}</h3>
         {hasActiveFilters && (
           <Button variant="ghost" size="sm" onClick={onClear} className="h-7 text-xs">
             <X className="h-3 w-3 mr-1" />
-            清除全部
+            {t("clearAll")}
           </Button>
         )}
       </div>
       <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
         <div className="space-y-1">
-          <label className="text-xs text-muted-foreground">类型</label>
+          <label className="text-xs text-muted-foreground">{t("type")}</label>
           <Select
             value={filters.type}
             onValueChange={(v) => onChange("type", v as FilterType)}
@@ -59,16 +61,16 @@ export function ProductListFilter({
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">全部</SelectItem>
-              <SelectItem value="SUBSCRIPTION">订阅</SelectItem>
-              <SelectItem value="CREDITS_PACKAGE">积分包</SelectItem>
-              <SelectItem value="ONE_TIME_ENTITLEMENT">一次性权益</SelectItem>
+              <SelectItem value="all">{t("all")}</SelectItem>
+              <SelectItem value="SUBSCRIPTION">{t("subscription")}</SelectItem>
+              <SelectItem value="CREDITS_PACKAGE">{t("creditsPackage")}</SelectItem>
+              <SelectItem value="ONE_TIME_ENTITLEMENT">{t("oneTimeEntitlement")}</SelectItem>
             </SelectContent>
           </Select>
         </div>
 
         <div className="space-y-1">
-          <label className="text-xs text-muted-foreground">状态</label>
+          <label className="text-xs text-muted-foreground">{t("status")}</label>
           <Select
             value={filters.status}
             onValueChange={(v) => onChange("status", v as FilterStatus)}
@@ -77,15 +79,15 @@ export function ProductListFilter({
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">全部</SelectItem>
-              <SelectItem value="ACTIVE">启用</SelectItem>
-              <SelectItem value="INACTIVE">停用</SelectItem>
+              <SelectItem value="all">{t("all")}</SelectItem>
+              <SelectItem value="ACTIVE">{t("active")}</SelectItem>
+              <SelectItem value="INACTIVE">{t("inactive")}</SelectItem>
             </SelectContent>
           </Select>
         </div>
 
         <div className="space-y-1">
-          <label className="text-xs text-muted-foreground">上架</label>
+          <label className="text-xs text-muted-foreground">{t("published")}</label>
           <Select
             value={filters.isAvailable}
             onValueChange={(v) => onChange("isAvailable", v as FilterYesNo)}
@@ -94,9 +96,9 @@ export function ProductListFilter({
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">全部</SelectItem>
-              <SelectItem value="yes">是</SelectItem>
-              <SelectItem value="no">否</SelectItem>
+              <SelectItem value="all">{t("all")}</SelectItem>
+              <SelectItem value="yes">{t("yes")}</SelectItem>
+              <SelectItem value="no">{t("no")}</SelectItem>
             </SelectContent>
           </Select>
         </div>
