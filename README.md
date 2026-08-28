@@ -348,7 +348,7 @@ installation, architecture, integrations, and licensing.
 
 ## Star History
 
-[![Star History Chart](https://api.star-history.com/svg?repos=velobase/velobase-harness&type=Date)](https://star-history.com/#velobase/velobase-harness&Date)
+[![Star History Chart](https://star-history.dera.page/svg?repos=velobase/velobase-harness&type=Date)](https://star-history.dera.page/#velobase/velobase-harness&Date)
 
 ## Project Structure
 

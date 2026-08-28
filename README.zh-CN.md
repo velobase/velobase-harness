@@ -233,7 +233,7 @@ Harness 是可以自托管的开源代码库。Velobase Cloud 是托管路径，
 
 ## Star History
 
-[![Star History Chart](https://api.star-history.com/svg?repos=velobase/velobase-harness&type=Date)](https://star-history.com/#velobase/velobase-harness&Date)
+[![Star History Chart](https://star-history.dera.page/svg?repos=velobase/velobase-harness&type=Date)](https://star-history.dera.page/#velobase/velobase-harness&Date)
 
 ## 项目结构
 
