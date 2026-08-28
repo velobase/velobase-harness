@@ -31,7 +31,7 @@ import {
   Filter,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { useTranslations } from "next-intl"
+import { useFormatter, useTranslations } from "next-intl"
 import { OrderRow } from "./order-row"
 import { OrderFilters } from "./order-filters"
 import { defaultFilters, type Filters, type OrderItem } from "./types"
@@ -42,6 +42,7 @@ interface OrdersTableProps {
 
 export function OrdersTable({ userId }: OrdersTableProps) {
   const t = useTranslations("admin.orders")
+  const format = useFormatter()
   const [search, setSearch] = useState("")
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(20)
@@ -207,7 +208,9 @@ export function OrdersTable({ userId }: OrdersTableProps) {
 
         <div className="flex items-center gap-6">
           <span className="text-sm text-muted-foreground">
-            {total > 0 ? `${startItem}-${endItem} / ${total.toLocaleString()}` : t("zeroResults")}
+            {total > 0
+              ? `${format.number(startItem)}-${format.number(endItem)} / ${format.number(total)}`
+              : t("zeroResults")}
           </span>
           <div className="flex items-center gap-1">
             <Button

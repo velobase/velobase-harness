@@ -7,8 +7,10 @@ import { ArrowLeft } from "lucide-react"
 import Link from "next/link"
 import { useParams } from "next/navigation"
 import { Skeleton } from "@/components/ui/skeleton"
+import { useTranslations } from "next-intl"
 
 export default function UserDetailPage() {
+  const t = useTranslations("admin.userManagement")
   const params = useParams()
   const userId = params.userId as string
 
@@ -41,7 +43,7 @@ export default function UserDetailPage() {
               <ArrowLeft className="h-4 w-4" />
             </Link>
           </Button>
-          <h1 className="text-2xl font-bold text-red-500">User not found</h1>
+          <h1 className="text-2xl font-bold text-red-500">{t("userNotFound")}</h1>
         </div>
       </div>
     )
@@ -57,7 +59,7 @@ export default function UserDetailPage() {
         </Button>
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
-            {user.name || "Unknown User"}
+            {user.name || t("unknownUser")}
           </h1>
           <p className="text-muted-foreground">{user.email}</p>
         </div>
@@ -67,4 +69,3 @@ export default function UserDetailPage() {
     </div>
   )
 }
-

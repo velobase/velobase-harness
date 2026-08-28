@@ -1,5 +1,5 @@
 /* eslint-disable @next/next/no-img-element */
-"use client"
+"use client";
 
 import {
   Table,
@@ -8,23 +8,29 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
-import { Button } from "@/components/ui/button"
-import { Skeleton } from "@/components/ui/skeleton"
-import { Coins, User } from "lucide-react"
+} from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Coins, User } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 interface CreditsTableProps {
   users: Array<{
-    id: string
-    name: string | null
-    email: string | null
-    image: string | null
-  }>
-  isLoading: boolean
-  onManageClick: (user: { id: string; name: string | null }) => void
+    id: string;
+    name: string | null;
+    email: string | null;
+    image: string | null;
+  }>;
+  isLoading: boolean;
+  onManageClick: (user: { id: string; name: string | null }) => void;
 }
 
-export function CreditsTable({ users, isLoading, onManageClick }: CreditsTableProps) {
+export function CreditsTable({
+  users,
+  isLoading,
+  onManageClick,
+}: CreditsTableProps) {
+  const t = useTranslations("admin.creditsManagement");
   if (isLoading) {
     return (
       <div className="space-y-2">
@@ -32,25 +38,25 @@ export function CreditsTable({ users, isLoading, onManageClick }: CreditsTablePr
           <Skeleton key={i} className="h-12 w-full" />
         ))}
       </div>
-    )
+    );
   }
 
   if (users.length === 0) {
     return (
-      <div className="border rounded-lg p-12 text-center text-muted-foreground">
-        <p>No users found</p>
+      <div className="text-muted-foreground rounded-lg border p-12 text-center">
+        <p>{t("noUsers")}</p>
       </div>
-    )
+    );
   }
 
   return (
-    <div className="border rounded-md bg-card">
+    <div className="bg-card rounded-md border">
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>User</TableHead>
-            <TableHead>Email</TableHead>
-            <TableHead className="text-right">Actions</TableHead>
+            <TableHead>{t("user")}</TableHead>
+            <TableHead>{t("email")}</TableHead>
+            <TableHead className="text-right">{t("actions")}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -59,28 +65,30 @@ export function CreditsTable({ users, isLoading, onManageClick }: CreditsTablePr
               <TableCell className="font-medium">
                 <div className="flex items-center gap-3">
                   {user.image ? (
-                    <img 
-                      src={user.image} 
-                      alt={user.name || ""} 
-                      className="w-8 h-8 rounded-full bg-muted object-cover" 
+                    <img
+                      src={user.image}
+                      alt={user.name || ""}
+                      className="bg-muted h-8 w-8 rounded-full object-cover"
                     />
                   ) : (
-                    <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
-                      <User className="h-4 w-4 text-muted-foreground" />
+                    <div className="bg-muted flex h-8 w-8 items-center justify-center rounded-full">
+                      <User className="text-muted-foreground h-4 w-4" />
                     </div>
                   )}
-                  <span>{user.name || "N/A"}</span>
+                  <span>{user.name || t("notAvailable")}</span>
                 </div>
               </TableCell>
               <TableCell>{user.email}</TableCell>
               <TableCell className="text-right">
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={() => onManageClick({ id: user.id, name: user.name })}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() =>
+                    onManageClick({ id: user.id, name: user.name })
+                  }
                 >
-                  <Coins className="h-4 w-4 mr-2" />
-                  Manage Credits
+                  <Coins className="mr-2 h-4 w-4" />
+                  {t("manageCredits")}
                 </Button>
               </TableCell>
             </TableRow>
@@ -88,6 +96,5 @@ export function CreditsTable({ users, isLoading, onManageClick }: CreditsTablePr
         </TableBody>
       </Table>
     </div>
-  )
+  );
 }
-

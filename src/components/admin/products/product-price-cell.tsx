@@ -5,7 +5,7 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible"
 import { ChevronDown } from "lucide-react"
-import { useTranslations } from "next-intl"
+import { useLocale, useTranslations } from "next-intl"
 
 type Price = {
   currency: string
@@ -20,8 +20,8 @@ interface ProductPriceCellProps {
   prices?: Price[]
 }
 
-export function formatPrice(price: number, currency: string) {
-  return new Intl.NumberFormat("en-US", {
+export function formatPrice(price: number, currency: string, locale: string) {
+  return new Intl.NumberFormat(locale, {
     style: "currency",
     currency: currency.toUpperCase(),
   }).format(price / 100)
@@ -29,13 +29,14 @@ export function formatPrice(price: number, currency: string) {
 
 export function ProductPriceCell({ price, originalPrice, currency, prices }: ProductPriceCellProps) {
   const t = useTranslations("admin.productManagement")
+  const locale = useLocale()
   return (
     <Collapsible>
       <CollapsibleTrigger className="flex items-center gap-1 text-sm font-medium hover:underline cursor-pointer group">
-        <span>{formatPrice(price, currency)}</span>
+        <span>{formatPrice(price, currency, locale)}</span>
         {originalPrice > 0 && (
           <span className="text-xs text-muted-foreground line-through ml-1">
-            {formatPrice(originalPrice, currency)}
+            {formatPrice(originalPrice, currency, locale)}
           </span>
         )}
         {prices && prices.length > 0 && (
@@ -49,11 +50,11 @@ export function ProductPriceCell({ price, originalPrice, currency, prices }: Pro
               {p.currency}
             </Badge>
             <span className="font-medium text-foreground">
-              {formatPrice(p.amount, p.currency)}
+              {formatPrice(p.amount, p.currency, locale)}
             </span>
             {p.originalAmount > 0 && (
               <span className="line-through">
-                {formatPrice(p.originalAmount, p.currency)}
+                {formatPrice(p.originalAmount, p.currency, locale)}
               </span>
             )}
           </div>
@@ -65,4 +66,3 @@ export function ProductPriceCell({ price, originalPrice, currency, prices }: Pro
     </Collapsible>
   )
 }
-

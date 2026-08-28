@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/select"
 import { useState, useCallback } from "react"
 import { useDebounce } from "@/hooks/use-debounce"
-import { useTranslations } from "next-intl"
+import { useFormatter, useTranslations } from "next-intl"
 import {
   ChevronLeft,
   ChevronRight,
@@ -31,6 +31,7 @@ type Product = RouterOutputs["admin"]["listProducts"]["items"][number]
 
 export function ProductsTable() {
   const t = useTranslations("admin.productManagement")
+  const format = useFormatter()
   const [search, setSearch] = useState("")
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(20)
@@ -161,7 +162,9 @@ export function ProductsTable() {
 
         <div className="flex items-center gap-6">
           <span className="text-sm text-muted-foreground">
-            {total > 0 ? `${startItem}-${endItem} / ${total.toLocaleString()}` : t("zeroResults")}
+            {total > 0
+              ? `${format.number(startItem)}-${format.number(endItem)} / ${format.number(total)}`
+              : t("zeroResults")}
           </span>
           <div className="flex items-center gap-1">
             <Button

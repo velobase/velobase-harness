@@ -1,8 +1,8 @@
-"use client"
+"use client";
 
-import { api } from "@/trpc/react"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
+import { api } from "@/trpc/react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -13,14 +13,14 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
+} from "@/components/ui/alert-dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+} from "@/components/ui/dropdown-menu";
 import {
   Shield,
   ShieldOff,
@@ -36,54 +36,56 @@ import {
   Eye,
   EyeOff,
   MoreHorizontal,
-} from "lucide-react"
-import Link from "next/link"
-import { useRouter } from "next/navigation"
-import type { UserDetailData } from "./types"
+} from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import type { UserDetailData } from "./types";
+import { useTranslations } from "next-intl";
 
 interface UserActionsToolbarProps {
-  user: UserDetailData
+  user: UserDetailData;
 }
 
 export function UserActionsToolbar({ user }: UserActionsToolbarProps) {
-  const router = useRouter()
-  const utils = api.useUtils()
+  const t = useTranslations("admin.userManagement");
+  const router = useRouter();
+  const utils = api.useUtils();
 
   const blockMutation = api.admin.blockUser.useMutation({
     onSuccess: () => {
-      void utils.admin.getUser.invalidate({ userId: user.id })
-      router.refresh()
+      void utils.admin.getUser.invalidate({ userId: user.id });
+      router.refresh();
     },
-  })
+  });
 
   const unblockMutation = api.admin.unblockUser.useMutation({
     onSuccess: () => {
-      void utils.admin.getUser.invalidate({ userId: user.id })
-      router.refresh()
+      void utils.admin.getUser.invalidate({ userId: user.id });
+      router.refresh();
     },
-  })
+  });
 
   const deleteMutation = api.admin.deleteUser.useMutation({
     onSuccess: () => {
-      router.push("/admin/users")
+      router.push("/admin/users");
     },
-  })
+  });
 
   const resetOfferMutation = api.admin.resetNewUserOffer.useMutation({
     onSuccess: () => {
-      void utils.admin.getUser.invalidate({ userId: user.id })
-      router.refresh()
+      void utils.admin.getUser.invalidate({ userId: user.id });
+      router.refresh();
     },
-  })
+  });
 
   const setBlurBypassMutation = api.admin.setBlurBypass.useMutation({
     onSuccess: () => {
-      void utils.admin.getUser.invalidate({ userId: user.id })
-      router.refresh()
+      void utils.admin.getUser.invalidate({ userId: user.id });
+      router.refresh();
     },
-  })
+  });
 
-  const canBypassBlur = user.stats?.canBypassBlur ?? false
+  const canBypassBlur = user.stats?.canBypassBlur ?? false;
 
   return (
     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -92,36 +94,42 @@ export function UserActionsToolbar({ user }: UserActionsToolbarProps) {
         {user.isBlocked ? (
           <Badge variant="destructive" className="gap-1">
             <Ban className="h-3 w-3" />
-            Blocked
+            {t("blocked")}
           </Badge>
         ) : (
           <Badge variant="outline" className="gap-1">
             <CheckCircle className="h-3 w-3" />
-            Active
+            {t("active")}
           </Badge>
         )}
         {user.isAdmin && (
           <Badge variant="default" className="gap-1">
             <Shield className="h-3 w-3" />
-            Admin
+            {t("admin")}
           </Badge>
         )}
         {user.hasPurchased && (
           <Badge variant="secondary" className="gap-1">
             <CreditCard className="h-3 w-3" />
-            Paid User
+            {t("actionsToolbar.paidUser")}
           </Badge>
         )}
         {!user.isPrimaryDeviceAccount && (
-          <Badge variant="outline" className="gap-1 border-amber-500 text-amber-600">
+          <Badge
+            variant="outline"
+            className="gap-1 border-amber-500 text-amber-600"
+          >
             <Smartphone className="h-3 w-3" />
-            Secondary Account
+            {t("actionsToolbar.secondaryAccount")}
           </Badge>
         )}
         {canBypassBlur && (
-          <Badge variant="outline" className="gap-1 border-green-500 text-green-600">
+          <Badge
+            variant="outline"
+            className="gap-1 border-green-500 text-green-600"
+          >
             <Eye className="h-3 w-3" />
-            Blur Bypass
+            {t("actionsToolbar.blurBypass")}
           </Badge>
         )}
       </div>
@@ -131,20 +139,20 @@ export function UserActionsToolbar({ user }: UserActionsToolbarProps) {
         {/* Primary Actions - Always visible */}
         <Button variant="outline" size="sm" asChild>
           <Link href={`/admin/works?userId=${user.id}`}>
-            <Film className="h-4 w-4 mr-2" />
-            Works
+            <Film className="mr-2 h-4 w-4" />
+            {t("actionsToolbar.works")}
           </Link>
         </Button>
         <Button variant="outline" size="sm" asChild>
           <Link href={`/admin/orders/${user.id}`}>
-            <ShoppingCart className="h-4 w-4 mr-2" />
-            Orders
+            <ShoppingCart className="mr-2 h-4 w-4" />
+            {t("actionsToolbar.orders")}
           </Link>
         </Button>
         <Button variant="outline" size="sm" asChild>
           <Link href={`/admin/credits/${user.id}`}>
-            <Coins className="h-4 w-4 mr-2" />
-            Credits
+            <Coins className="mr-2 h-4 w-4" />
+            {t("actionsToolbar.credits")}
           </Link>
         </Button>
 
@@ -158,18 +166,23 @@ export function UserActionsToolbar({ user }: UserActionsToolbarProps) {
           <DropdownMenuContent align="end" className="w-48">
             {/* Blur Bypass Toggle */}
             <DropdownMenuItem
-              onClick={() => setBlurBypassMutation.mutate({ userId: user.id, enabled: !canBypassBlur })}
+              onClick={() =>
+                setBlurBypassMutation.mutate({
+                  userId: user.id,
+                  enabled: !canBypassBlur,
+                })
+              }
               disabled={setBlurBypassMutation.isPending}
             >
               {canBypassBlur ? (
                 <>
-                  <EyeOff className="h-4 w-4 mr-2" />
-                  Remove Blur Bypass
+                  <EyeOff className="mr-2 h-4 w-4" />
+                  {t("actionsToolbar.removeBlurBypass")}
                 </>
               ) : (
                 <>
-                  <Eye className="h-4 w-4 mr-2" />
-                  Enable Blur Bypass
+                  <Eye className="mr-2 h-4 w-4" />
+                  {t("actionsToolbar.enableBlurBypass")}
                 </>
               )}
             </DropdownMenuItem>
@@ -179,8 +192,8 @@ export function UserActionsToolbar({ user }: UserActionsToolbarProps) {
               onClick={() => resetOfferMutation.mutate({ userId: user.id })}
               disabled={resetOfferMutation.isPending}
             >
-              <Timer className="h-4 w-4 mr-2" />
-              Reset Offer
+              <Timer className="mr-2 h-4 w-4" />
+              {t("actionsToolbar.resetOffer")}
             </DropdownMenuItem>
 
             <DropdownMenuSeparator />
@@ -191,8 +204,8 @@ export function UserActionsToolbar({ user }: UserActionsToolbarProps) {
                 onClick={() => unblockMutation.mutate({ userId: user.id })}
                 disabled={unblockMutation.isPending}
               >
-                <ShieldOff className="h-4 w-4 mr-2" />
-                Unblock User
+                <ShieldOff className="mr-2 h-4 w-4" />
+                {t("actionsToolbar.unblockUser")}
               </DropdownMenuItem>
             ) : (
               <DropdownMenuItem
@@ -200,8 +213,8 @@ export function UserActionsToolbar({ user }: UserActionsToolbarProps) {
                 disabled={blockMutation.isPending}
                 className="text-destructive focus:text-destructive"
               >
-                <Ban className="h-4 w-4 mr-2" />
-                Block User
+                <Ban className="mr-2 h-4 w-4" />
+                {t("actionsToolbar.blockUser")}
               </DropdownMenuItem>
             )}
           </DropdownMenuContent>
@@ -221,24 +234,29 @@ export function UserActionsToolbar({ user }: UserActionsToolbarProps) {
           </AlertDialogTrigger>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>Delete User</AlertDialogTitle>
+              <AlertDialogTitle>
+                {t("actionsToolbar.deleteUser")}
+              </AlertDialogTitle>
               <AlertDialogDescription>
-                This will permanently delete {user.email} and all their data (videos, orders, subscriptions, etc). This cannot be undone.
+                {t("actionsToolbar.deleteDescription", {
+                  email: user.email ?? "",
+                })}
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogCancel>
+                {t("actionsToolbar.cancel")}
+              </AlertDialogCancel>
               <AlertDialogAction
                 onClick={() => deleteMutation.mutate({ userId: user.id })}
                 className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               >
-                Delete
+                {t("actionsToolbar.delete")}
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
       </div>
     </div>
-  )
+  );
 }
-

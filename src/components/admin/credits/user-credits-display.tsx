@@ -1,115 +1,165 @@
-"use client"
+"use client";
 
-import { api } from "@/trpc/react"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Skeleton } from "@/components/ui/skeleton"
-import { Button } from "@/components/ui/button"
-import { User, ArrowDownCircle, ArrowUpCircle } from "lucide-react"
-import { GrantCreditsDialog } from "./grant-credits-dialog"
-import { DeductCreditsDialog } from "./deduct-credits-dialog"
-import { OperationIcon, OperationBadge } from "./operation-status"
-import { cn } from "@/lib/utils"
+import { api } from "@/trpc/react";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
+import { User, ArrowDownCircle, ArrowUpCircle } from "lucide-react";
+import { GrantCreditsDialog } from "./grant-credits-dialog";
+import { DeductCreditsDialog } from "./deduct-credits-dialog";
+import { OperationIcon, OperationBadge } from "./operation-status";
+import { cn } from "@/lib/utils";
+import { useFormatter, useTranslations } from "next-intl";
 
 interface UserCreditsDisplayProps {
-  userId: string
-  userName: string | null
-  className?: string
+  userId: string;
+  userName: string | null;
+  className?: string;
 }
 
-export function UserCreditsDisplay({ userId, userName, className }: UserCreditsDisplayProps) {
-  const { data, isLoading, refetch } = api.admin.getUserCredits.useQuery({ userId })
-  
+export function UserCreditsDisplay({
+  userId,
+  userName,
+  className,
+}: UserCreditsDisplayProps) {
+  const t = useTranslations("admin.creditsManagement");
+  const format = useFormatter();
+  const { data, isLoading, refetch } = api.admin.getUserCredits.useQuery({
+    userId,
+  });
+
   // Grants query with pagination
   const grantsQuery = api.admin.listBillingRecords.useInfiniteQuery(
     { userId, operationType: "GRANT", limit: 10 },
-    { getNextPageParam: (lastPage) => lastPage.nextCursor }
-  )
+    { getNextPageParam: (lastPage) => lastPage.nextCursor },
+  );
 
   // Consumption query with pagination (CONSUME type includes freeze/consume/unfreeze in Velobase)
   const consumptionQuery = api.admin.listBillingRecords.useInfiniteQuery(
     { userId, operationType: "CONSUME", limit: 10 },
-    { getNextPageParam: (lastPage) => lastPage.nextCursor }
-  )
+    { getNextPageParam: (lastPage) => lastPage.nextCursor },
+  );
 
-  const grantRecords = grantsQuery.data?.pages.flatMap((p) => p.items) ?? []
-  const consumeRecords = consumptionQuery.data?.pages.flatMap((p) => p.items) ?? []
+  const grantRecords = grantsQuery.data?.pages.flatMap((p) => p.items) ?? [];
+  const consumeRecords =
+    consumptionQuery.data?.pages.flatMap((p) => p.items) ?? [];
 
   return (
-    <div className={cn("border rounded-lg p-6 space-y-6", className)}>
+    <div className={cn("space-y-6 rounded-lg border p-6", className)}>
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center">
-            <User className="h-5 w-5 text-muted-foreground" />
+          <div className="bg-muted flex h-10 w-10 items-center justify-center rounded-full">
+            <User className="text-muted-foreground h-5 w-5" />
           </div>
           <div>
-            <p className="font-medium">{userName || "Unknown"}</p>
-            <p className="text-sm text-muted-foreground">{userId}</p>
+            <p className="font-medium">{userName || t("unknown")}</p>
+            <p className="text-muted-foreground text-sm">{userId}</p>
           </div>
         </div>
         <div className="flex gap-2">
-        <GrantCreditsDialog userId={userId} userName={userName} onSuccess={() => refetch()} />
-          <DeductCreditsDialog userId={userId} userName={userName} onSuccess={() => refetch()} />
+          <GrantCreditsDialog
+            userId={userId}
+            userName={userName}
+            onSuccess={() => refetch()}
+          />
+          <DeductCreditsDialog
+            userId={userId}
+            userName={userName}
+            onSuccess={() => refetch()}
+          />
         </div>
       </div>
 
       <div className="grid grid-cols-4 gap-4">
-        <div className="p-4 rounded-md bg-muted/50">
-          <p className="text-sm text-muted-foreground">Available</p>
+        <div className="bg-muted/50 rounded-md p-4">
+          <p className="text-muted-foreground text-sm">{t("available")}</p>
           {isLoading ? (
-            <Skeleton className="h-7 w-16 mt-1" />
+            <Skeleton className="mt-1 h-7 w-16" />
           ) : (
-            <p className="text-2xl font-bold text-green-600">{data?.totalSummary?.available ?? 0}</p>
+            <p className="text-2xl font-bold text-green-600">
+              {format.number(data?.totalSummary?.available ?? 0)}
+            </p>
           )}
         </div>
-        <div className="p-4 rounded-md bg-muted/50">
-          <p className="text-sm text-muted-foreground">Total</p>
+        <div className="bg-muted/50 rounded-md p-4">
+          <p className="text-muted-foreground text-sm">{t("total")}</p>
           {isLoading ? (
-            <Skeleton className="h-7 w-16 mt-1" />
+            <Skeleton className="mt-1 h-7 w-16" />
           ) : (
-            <p className="text-2xl font-bold">{data?.totalSummary?.total ?? 0}</p>
+            <p className="text-2xl font-bold">
+              {format.number(data?.totalSummary?.total ?? 0)}
+            </p>
           )}
         </div>
-        <div className="p-4 rounded-md bg-muted/50">
-          <p className="text-sm text-muted-foreground">Used</p>
+        <div className="bg-muted/50 rounded-md p-4">
+          <p className="text-muted-foreground text-sm">{t("used")}</p>
           {isLoading ? (
-            <Skeleton className="h-7 w-16 mt-1" />
+            <Skeleton className="mt-1 h-7 w-16" />
           ) : (
-            <p className="text-2xl font-bold text-amber-600">{data?.totalSummary?.used ?? 0}</p>
+            <p className="text-2xl font-bold text-amber-600">
+              {format.number(data?.totalSummary?.used ?? 0)}
+            </p>
           )}
         </div>
-        <div className="p-4 rounded-md bg-muted/50">
-          <p className="text-sm text-muted-foreground">Frozen</p>
+        <div className="bg-muted/50 rounded-md p-4">
+          <p className="text-muted-foreground text-sm">{t("frozen")}</p>
           {isLoading ? (
-            <Skeleton className="h-7 w-16 mt-1" />
+            <Skeleton className="mt-1 h-7 w-16" />
           ) : (
-            <p className="text-2xl font-bold text-blue-600">{data?.totalSummary?.frozen ?? 0}</p>
+            <p className="text-2xl font-bold text-blue-600">
+              {format.number(data?.totalSummary?.frozen ?? 0)}
+            </p>
           )}
         </div>
       </div>
 
       {data?.accounts && data.accounts.length > 0 && (
         <div>
-          <p className="text-sm font-medium mb-2">Account Breakdown</p>
+          <p className="mb-2 text-sm font-medium">{t("accountBreakdown")}</p>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Type</TableHead>
-                <TableHead className="text-right">Available</TableHead>
-                <TableHead className="text-right">Total</TableHead>
-                <TableHead className="text-right">Used</TableHead>
-                <TableHead>Expires</TableHead>
+                <TableHead>{t("type")}</TableHead>
+                <TableHead className="text-right">{t("available")}</TableHead>
+                <TableHead className="text-right">{t("total")}</TableHead>
+                <TableHead className="text-right">{t("used")}</TableHead>
+                <TableHead>{t("expires")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {data.accounts.map((account, idx) => (
                 <TableRow key={idx}>
-                  <TableCell className="font-medium">{account.source}</TableCell>
-                  <TableCell className="text-right">{account.available}</TableCell>
-                  <TableCell className="text-right">{account.total}</TableCell>
-                  <TableCell className="text-right">{account.used}</TableCell>
+                  <TableCell className="font-medium">
+                    {account.source}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    {format.number(account.available)}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    {format.number(account.total)}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    {format.number(account.used)}
+                  </TableCell>
                   <TableCell className="text-muted-foreground text-sm">
-                    {account.expiresAt ? new Date(account.expiresAt).toLocaleString("zh-CN", { year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit" }) : "-"}
+                    {account.expiresAt
+                      ? format.dateTime(new Date(account.expiresAt), {
+                          year: "numeric",
+                          month: "2-digit",
+                          day: "2-digit",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                          second: "2-digit",
+                        })
+                      : "-"}
                   </TableCell>
                 </TableRow>
               ))}
@@ -122,11 +172,17 @@ export function UserCreditsDisplay({ userId, userName, className }: UserCreditsD
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="grants" className="gap-2">
             <ArrowDownCircle className="h-4 w-4" />
-            Grants ({grantRecords.length}{grantsQuery.hasNextPage ? "+" : ""})
+            {t("grantsTab", {
+              count: grantRecords.length,
+              more: grantsQuery.hasNextPage ? "+" : "",
+            })}
           </TabsTrigger>
           <TabsTrigger value="consumption" className="gap-2">
             <ArrowUpCircle className="h-4 w-4" />
-            Consumption ({consumeRecords.length}{consumptionQuery.hasNextPage ? "+" : ""})
+            {t("consumptionTab", {
+              count: consumeRecords.length,
+              more: consumptionQuery.hasNextPage ? "+" : "",
+            })}
           </TabsTrigger>
         </TabsList>
 
@@ -138,44 +194,57 @@ export function UserCreditsDisplay({ userId, userName, className }: UserCreditsD
               ))}
             </div>
           ) : grantRecords.length === 0 ? (
-            <p className="text-sm text-muted-foreground py-8 text-center">No grant records</p>
+            <p className="text-muted-foreground py-8 text-center text-sm">
+              {t("noGrantRecords")}
+            </p>
           ) : (
             <>
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Source</TableHead>
-                    <TableHead className="text-right">Amount</TableHead>
-                    <TableHead>Description</TableHead>
-                    <TableHead>Time</TableHead>
+                    <TableHead>{t("source")}</TableHead>
+                    <TableHead className="text-right">{t("amount")}</TableHead>
+                    <TableHead>{t("description")}</TableHead>
+                    <TableHead>{t("time")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {grantRecords.map((record) => (
                     <TableRow key={record.id}>
-                      <TableCell className="font-medium">{record.source}</TableCell>
-                      <TableCell className="text-right font-medium text-green-600">
-                        +{record.amount}
+                      <TableCell className="font-medium">
+                        {record.source}
                       </TableCell>
-                      <TableCell className="text-muted-foreground text-sm max-w-[200px] truncate">
+                      <TableCell className="text-right font-medium text-green-600">
+                        +{format.number(record.amount)}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground max-w-[200px] truncate text-sm">
                         {record.description || "-"}
                       </TableCell>
                       <TableCell className="text-muted-foreground text-sm">
-                        {new Date(record.createdAt).toLocaleString("zh-CN", { year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit" })}
+                        {format.dateTime(new Date(record.createdAt), {
+                          year: "numeric",
+                          month: "2-digit",
+                          day: "2-digit",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                          second: "2-digit",
+                        })}
                       </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
               </Table>
               {grantsQuery.hasNextPage && (
-                <div className="flex justify-center mt-4">
-                  <Button 
-                    variant="outline" 
+                <div className="mt-4 flex justify-center">
+                  <Button
+                    variant="outline"
                     size="sm"
                     onClick={() => grantsQuery.fetchNextPage()}
                     disabled={grantsQuery.isFetchingNextPage}
                   >
-                    {grantsQuery.isFetchingNextPage ? "Loading..." : "Load More"}
+                    {grantsQuery.isFetchingNextPage
+                      ? t("loading")
+                      : t("loadMore")}
                   </Button>
                 </div>
               )}
@@ -191,17 +260,19 @@ export function UserCreditsDisplay({ userId, userName, className }: UserCreditsD
               ))}
             </div>
           ) : consumeRecords.length === 0 ? (
-            <p className="text-sm text-muted-foreground py-8 text-center">No consumption records</p>
+            <p className="text-muted-foreground py-8 text-center text-sm">
+              {t("noConsumptionRecords")}
+            </p>
           ) : (
             <>
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Operation</TableHead>
-                    <TableHead className="text-right">Amount</TableHead>
-                    <TableHead>Source</TableHead>
-                    <TableHead>Description</TableHead>
-                    <TableHead>Time</TableHead>
+                    <TableHead>{t("operation")}</TableHead>
+                    <TableHead className="text-right">{t("amount")}</TableHead>
+                    <TableHead>{t("source")}</TableHead>
+                    <TableHead>{t("description")}</TableHead>
+                    <TableHead>{t("time")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -214,28 +285,39 @@ export function UserCreditsDisplay({ userId, userName, className }: UserCreditsD
                         </div>
                       </TableCell>
                       <TableCell className="text-right font-medium text-amber-600">
-                        -{record.amount}
+                        -{format.number(record.amount)}
                       </TableCell>
-                      <TableCell className="text-muted-foreground text-sm">{record.source}</TableCell>
-                      <TableCell className="text-muted-foreground text-sm max-w-[200px] truncate">
+                      <TableCell className="text-muted-foreground text-sm">
+                        {record.source}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground max-w-[200px] truncate text-sm">
                         {record.description || "-"}
                       </TableCell>
                       <TableCell className="text-muted-foreground text-sm">
-                        {new Date(record.createdAt).toLocaleString("zh-CN", { year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit" })}
+                        {format.dateTime(new Date(record.createdAt), {
+                          year: "numeric",
+                          month: "2-digit",
+                          day: "2-digit",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                          second: "2-digit",
+                        })}
                       </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
               </Table>
               {consumptionQuery.hasNextPage && (
-                <div className="flex justify-center mt-4">
-                  <Button 
-                    variant="outline" 
+                <div className="mt-4 flex justify-center">
+                  <Button
+                    variant="outline"
                     size="sm"
                     onClick={() => consumptionQuery.fetchNextPage()}
                     disabled={consumptionQuery.isFetchingNextPage}
                   >
-                    {consumptionQuery.isFetchingNextPage ? "Loading..." : "Load More"}
+                    {consumptionQuery.isFetchingNextPage
+                      ? t("loading")
+                      : t("loadMore")}
                   </Button>
                 </div>
               )}
@@ -244,5 +326,5 @@ export function UserCreditsDisplay({ userId, userName, className }: UserCreditsD
         </TabsContent>
       </Tabs>
     </div>
-  )
+  );
 }

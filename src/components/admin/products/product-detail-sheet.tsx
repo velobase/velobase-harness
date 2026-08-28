@@ -10,7 +10,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { useTranslations } from "next-intl"
+import { useLocale, useTranslations } from "next-intl"
 import { formatPrice } from "./product-price-cell"
 import type { RouterOutputs } from "@/trpc/react"
 
@@ -31,6 +31,7 @@ export function ProductDetailSheet({
   onUpdate: _onUpdate,
 }: ProductDetailSheetProps) {
   const t = useTranslations("admin.productManagement")
+  const locale = useLocale()
   if (!product) return null
 
   return (
@@ -79,7 +80,7 @@ export function ProductDetailSheet({
                     <DetailItem label={t("productName")} value={product.name} />
                     <DetailItem label={t("productType")} value={product.type} />
                     <DetailItem label={t("sortOrder")} value={product.sortOrder} />
-                    <DetailItem label={t("createdAt")} value={new Date(product.createdAt).toLocaleString()} />
+                    <DetailItem label={t("createdAt")} value={new Date(product.createdAt).toLocaleString(locale)} />
                   </div>
                 </Section>
 
@@ -113,12 +114,12 @@ export function ProductDetailSheet({
                   <div className="grid grid-cols-2 gap-4">
                     <DetailItem
                       label={t("currentPrice")}
-                      value={formatPrice(product.price, product.currency)}
+                      value={formatPrice(product.price, product.currency, locale)}
                       className="text-lg font-medium text-primary"
                     />
                     <DetailItem
                       label={t("originalPriceStrike")}
-                      value={product.originalPrice > 0 ? formatPrice(product.originalPrice, product.currency) : "-"}
+                      value={product.originalPrice > 0 ? formatPrice(product.originalPrice, product.currency, locale) : "-"}
                       className="text-muted-foreground line-through"
                     />
                   </div>
@@ -139,9 +140,9 @@ export function ProductDetailSheet({
                           {product.prices.map((price) => (
                             <tr key={price.currency}>
                               <td className="px-4 py-2 font-medium">{price.currency}</td>
-                              <td className="px-4 py-2">{formatPrice(price.amount, price.currency)}</td>
+                              <td className="px-4 py-2">{formatPrice(price.amount, price.currency, locale)}</td>
                               <td className="px-4 py-2 text-muted-foreground">
-                                {price.originalAmount > 0 ? formatPrice(price.originalAmount, price.currency) : "-"}
+                                {price.originalAmount > 0 ? formatPrice(price.originalAmount, price.currency, locale) : "-"}
                               </td>
                             </tr>
                           ))}

@@ -56,7 +56,7 @@ export function OrderRow({ order, isExpanded, onToggleExpand }: OrderRowProps) {
           </div>
         </TableCell>
         <TableCell className="font-medium">
-          {formatPrice(order.amount, order.currency)}
+          {formatPrice(order.amount, order.currency, locale)}
         </TableCell>
         <TableCell>
           <Badge variant="outline" className="text-xs">
@@ -83,4 +83,3 @@ export function OrderRow({ order, isExpanded, onToggleExpand }: OrderRowProps) {
     </Fragment>
   )
 }
-

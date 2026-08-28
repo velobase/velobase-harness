@@ -40,10 +40,11 @@ import {
   Trash2,
 } from "lucide-react"
 import { toast } from "sonner"
-import { useTranslations, useLocale } from "next-intl"
+import { useFormatter, useTranslations, useLocale } from "next-intl"
 
 export function PromoCodesTable() {
   const t = useTranslations("admin.promoCodes")
+  const format = useFormatter()
   const locale = useLocale()
 
   const statusLabels: Record<string, string> = {
@@ -273,7 +274,9 @@ export function PromoCodesTable() {
 
         <div className="flex items-center gap-6">
           <span className="text-sm text-muted-foreground">
-            {total > 0 ? `${startItem}-${endItem} / ${total.toLocaleString()}` : t("zeroResults")}
+            {total > 0
+              ? `${format.number(startItem)}-${format.number(endItem)} / ${format.number(total)}`
+              : t("zeroResults")}
           </span>
           <div className="flex items-center gap-1">
             <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setPage(1)} disabled={page === 1 || isLoading}>
@@ -438,4 +441,3 @@ function CreatePromoCodeDialog({
     </Dialog>
   )
 }
-

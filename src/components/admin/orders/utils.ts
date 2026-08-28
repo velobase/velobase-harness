@@ -18,8 +18,8 @@ export const paymentStatusConfig: Record<string, { labelKey: string; variant: "d
   CANCELLED: { labelKey: "paymentStatuses.cancelled", variant: "secondary" },
 }
 
-export function formatPrice(price: number, currency: string) {
-  return new Intl.NumberFormat("en-US", {
+export function formatPrice(price: number, currency: string, locale: string) {
+  return new Intl.NumberFormat(locale, {
     style: "currency",
     currency: currency.toUpperCase(),
   }).format(price / 100)
@@ -35,4 +35,3 @@ export function formatDateTime(date: Date | string, locale: string) {
     second: "2-digit",
   })
 }
-

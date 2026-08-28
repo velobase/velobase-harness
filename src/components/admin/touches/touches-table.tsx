@@ -59,7 +59,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { toast } from "sonner"
-import { useTranslations, useLocale } from "next-intl"
+import { useFormatter, useTranslations, useLocale } from "next-intl"
 
 type FilterStatus = "all" | "PENDING" | "PROCESSING" | "SENT" | "CANCELLED" | "SUPERSEDED" | "FAILED"
 type FilterChannel = "all" | "EMAIL" | "SMS" | "PUSH"
@@ -176,6 +176,7 @@ function getDaysUntil(date: Date | string, t: (key: string, values?: Record<stri
 
 export function TouchesTable() {
   const t = useTranslations("admin.touches")
+  const format = useFormatter()
   const locale = useLocale()
 
   const statusLabels: Record<string, string> = {
@@ -546,7 +547,9 @@ export function TouchesTable() {
 
         <div className="flex items-center gap-6">
           <span className="text-sm text-muted-foreground">
-            {total > 0 ? `${startItem}-${endItem} / ${total.toLocaleString()}` : t("zeroResults")}
+            {total > 0
+              ? `${format.number(startItem)}-${format.number(endItem)} / ${format.number(total)}`
+              : t("zeroResults")}
           </span>
           <div className="flex items-center gap-1">
             <Button
@@ -794,4 +797,3 @@ export function TouchesTable() {
     </div>
   )
 }
-

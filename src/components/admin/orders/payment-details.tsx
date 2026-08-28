@@ -35,7 +35,7 @@ export function PaymentDetails({ payments, currency }: PaymentDetailsProps) {
                     {paymentStatusConfig[payment.status]?.labelKey ? t(paymentStatusConfig[payment.status]!.labelKey) : payment.status}
                   </Badge>
                   <span className="text-sm font-medium">
-                    {formatPrice(payment.amount, currency)}
+                    {formatPrice(payment.amount, currency, locale)}
                   </span>
                   <span className="text-xs text-muted-foreground">
                     {payment.paymentGateway}
@@ -62,4 +62,3 @@ export function PaymentDetails({ payments, currency }: PaymentDetailsProps) {
     </TableRow>
   )
 }
-
