@@ -9,6 +9,7 @@
  * `pnpm dev:all` works out of the box without a prior build step.
  */
 import { createLogger } from "@/lib/logger";
+import { env } from "@/env";
 import { fork, type ChildProcess } from "child_process";
 import fs from "fs";
 import path from "path";
@@ -16,15 +17,13 @@ import http from "http";
 
 const log = createLogger("web");
 
-const DEFAULT_WEB_PORT = 3000;
-
 export interface WebHandle {
   shutdown: () => Promise<void>;
 }
 
 export async function startWeb(): Promise<WebHandle> {
-  const port = parseInt(process.env.PORT ?? String(DEFAULT_WEB_PORT), 10);
-  const hostname = process.env.WEB_HOST ?? "0.0.0.0";
+  const port = env.PORT;
+  const hostname = env.WEB_HOST;
 
   const serverJs = path.resolve(process.cwd(), "server.js");
 

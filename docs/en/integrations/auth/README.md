@@ -13,7 +13,9 @@ Auth uses NextAuth with OAuth providers such as Google and GitHub, plus framewor
 
 Common environment variables:
 
-- `NEXTAUTH_SECRET`
+- `AUTH_SECRET` and optional `AUTH_URL` (Auth.js v5 names).
+- `NEXTAUTH_SECRET` and `NEXTAUTH_URL` remain supported for backwards
+  compatibility. When both forms are set, `AUTH_*` takes precedence.
 - OAuth provider client IDs and secrets, such as Google or GitHub keys.
 - Optional anti-abuse or email settings when the login flow sends email.
 

@@ -314,10 +314,10 @@ export const authConfig = {
         secure: true,
         auth: {
           user: "resend",
-          pass: process.env.RESEND_API_KEY ?? "",
+          pass: env.RESEND_API_KEY ?? "",
         },
       },
-      from: process.env.EMAIL_FROM ?? `${APP_NAME} <onboarding@resend.dev>`,
+      from: env.EMAIL_FROM ?? `${APP_NAME} <onboarding@resend.dev>`,
       // Magic Link expires in 15 minutes
       maxAge: 15 * 60,
       // Custom email sending via Resend SDK with rate limiting
@@ -394,19 +394,14 @@ export const authConfig = {
     signIn: "/auth/signin",
   },
   adapter: CustomPrismaAdapter(db),
-  secret: env.NEXTAUTH_SECRET,
+  secret: env.AUTH_SECRET,
   // Cookie secure 属性：
   // - Cloudflare Flexible SSL (CF → HTTP → 源站): 必须 secure=false
   // - 开发环境 (localhost HTTP): 必须 secure=false
   // - 生产 Full SSL / 直连 HTTPS: secure=true
   // 通过 COOKIE_SECURE env var 覆盖，或自动推断（非生产 = false）
   cookies: (() => {
-    const secure =
-      process.env.COOKIE_SECURE === "true"
-        ? true
-        : process.env.COOKIE_SECURE === "false"
-          ? false
-          : process.env.NODE_ENV === "production";
+    const secure = env.COOKIE_SECURE ?? (env.NODE_ENV === "production");
     return {
       sessionToken: {
         name: `next-auth.session-token`,

@@ -16,10 +16,9 @@ import { createLogger } from "@/lib/logger";
 import { WorkerRegistry } from "./registry";
 import { createServer } from "./server";
 import { getPlatformWorkerContributions } from "./platform";
+import { env } from "@/env";
 
 const log = createLogger("worker");
-
-const DEFAULT_WORKER_PORT = 3001;
 
 export interface WorkerHandle {
   registry: WorkerRegistry;
@@ -27,10 +26,7 @@ export interface WorkerHandle {
 }
 
 export async function startWorker(): Promise<WorkerHandle> {
-  const port = parseInt(
-    process.env.WORKER_PORT ?? String(DEFAULT_WORKER_PORT),
-    10,
-  );
+  const port = env.WORKER_PORT;
 
   const registry = new WorkerRegistry();
 

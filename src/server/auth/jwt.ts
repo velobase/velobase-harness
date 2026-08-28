@@ -7,10 +7,10 @@ import { SignJWT } from "jose";
  * Compatible with jose.jwtVerify() in MCP worker
  */
 export async function generateMcpToken(userId: string): Promise<string> {
-  const secret = new TextEncoder().encode(env.NEXTAUTH_SECRET);
+  const secret = new TextEncoder().encode(env.AUTH_SECRET);
   
   if (!secret) {
-    throw new Error("NEXTAUTH_SECRET is not configured");
+    throw new Error("AUTH_SECRET is not configured");
   }
 
   const token = await new SignJWT({ sub: userId, userId })
@@ -20,4 +20,3 @@ export async function generateMcpToken(userId: string): Promise<string> {
 
   return token;
 }
-

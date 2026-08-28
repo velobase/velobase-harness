@@ -2,6 +2,7 @@ import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 import { auth } from '@/server/auth';
 import { db } from '@/server/db';
+import { env } from '@/env';
 
 export async function GET(request: NextRequest) {
   try {
@@ -32,8 +33,8 @@ export async function GET(request: NextRequest) {
         Accept: 'application/json',
       },
       body: JSON.stringify({
-        client_id: process.env.GITHUB_CLIENT_ID!,
-        client_secret: process.env.GITHUB_CLIENT_SECRET!,
+        client_id: env.GITHUB_CLIENT_ID!,
+        client_secret: env.GITHUB_CLIENT_SECRET!,
         code,
       }),
     });
@@ -89,4 +90,3 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(new URL('/chat?github_error=unknown', request.url));
   }
 }
-

@@ -13,7 +13,9 @@
 
 常见环境变量：
 
-- `NEXTAUTH_SECRET`
+- `AUTH_SECRET` 和可选的 `AUTH_URL`（Auth.js v5 命名）。
+- 为保持向后兼容，仍支持 `NEXTAUTH_SECRET` 和 `NEXTAUTH_URL`；两组同时配置时，
+  `AUTH_*` 优先。
 - OAuth provider client IDs 和 secrets，例如 Google 或 GitHub keys。
 - 登录流程发送邮件时，可能需要邮件或反滥用相关配置。
 

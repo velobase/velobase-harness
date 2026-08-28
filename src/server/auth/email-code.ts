@@ -22,7 +22,7 @@ function buildKey(email: string): string {
 }
 
 function getEmailCodeSecret(): string {
-  return env.NEXTAUTH_SECRET ?? DEV_SECRET;
+  return env.AUTH_SECRET ?? DEV_SECRET;
 }
 
 export async function createEmailLoginCode(email: string): Promise<{

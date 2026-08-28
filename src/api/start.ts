@@ -11,10 +11,9 @@ import { serve } from "@hono/node-server";
 import type { ServerType } from "@hono/node-server";
 import { createApiApp } from "./app";
 import { createLogger } from "@/lib/logger";
+import { env } from "@/env";
 
 const log = createLogger("api");
-
-const DEFAULT_API_PORT = 3002;
 
 export interface ApiHandle {
   server: ServerType;
@@ -22,7 +21,7 @@ export interface ApiHandle {
 }
 
 export async function startApi(): Promise<ApiHandle> {
-  const port = parseInt(process.env.API_PORT ?? String(DEFAULT_API_PORT), 10);
+  const port = env.API_PORT;
   const app = createApiApp();
 
   const server = serve({ fetch: app.fetch, port, hostname: "0.0.0.0" }, () => {

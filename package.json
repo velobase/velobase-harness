@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "build": "NODE_OPTIONS='--max-old-space-size=4096' next build",
-    "check": "eslint . && tsc --noEmit",
+    "check": "pnpm check:env && eslint . && tsc --noEmit",
+    "check:env": "node scripts/check-env.mjs",
     "docker:up": "docker compose --profile stripe up -d",
     "docker:down": "docker compose --profile stripe down --remove-orphans",
     "docker:db:up": "docker compose up -d postgres redis",

@@ -9,6 +9,7 @@ import type { LarkCard } from "@/lib/lark";
 import { approveDraft, rejectDraft } from "../services/approve-draft";
 import { supportSendQueue } from "@/workers/queues/support-send.queue";
 import { updateTicketStatus } from "../services/update-status";
+import { env } from "@/env";
 
 const logger = createLogger("support-card-action");
 
@@ -134,8 +135,7 @@ function buildResultCard(
   };
 
   const config = statusConfig[status];
-  const CALLBACK_BASE_URL =
-    process.env.APP_URL ?? process.env.NEXTAUTH_URL ?? "https://example.com";
+  const CALLBACK_BASE_URL = env.APP_URL ?? "https://example.com";
 
   return {
     config: {

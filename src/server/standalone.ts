@@ -16,12 +16,13 @@
  */
 import "dotenv/config";
 
+import { env } from "@/env";
 import { createLogger } from "@/lib/logger";
 import { redis } from "@/server/redis";
 
 const log = createLogger("standalone");
 
-const SERVICE_MODE = process.env.SERVICE_MODE ?? "web,worker";
+const SERVICE_MODE = env.SERVICE_MODE;
 const modes = SERVICE_MODE.split(",").map((m) => m.trim().toLowerCase());
 
 function shouldStart(service: string): boolean {
@@ -33,11 +34,17 @@ const shutdowns: Array<() => Promise<void>> = [];
 function logResourceStatus() {
   const mask = (v?: string) => v ? "configured" : "NOT SET";
   const resources = {
-    DATABASE_URL: mask(process.env.DATABASE_URL),
-    REDIS: process.env.REDIS_URL ? "URL mode" : process.env.REDIS_HOST ? `HOST mode (${process.env.REDIS_HOST}:${process.env.REDIS_PORT ?? "6379"})` : "NOT SET",
-    STORAGE: process.env.STORAGE_BUCKET ? `${process.env.STORAGE_PROVIDER ?? "aws"} / ${process.env.STORAGE_BUCKET}` : "NOT SET",
-    NEXTAUTH_SECRET: mask(process.env.NEXTAUTH_SECRET),
-    APP_URL: process.env.APP_URL ?? process.env.NEXTAUTH_URL ?? "NOT SET",
+    DATABASE_URL: mask(env.DATABASE_URL),
+    REDIS: env.REDIS_URL
+      ? "URL mode"
+      : env.REDIS_HOST
+        ? `HOST mode (${env.REDIS_HOST}:${env.REDIS_PORT ?? 6379})`
+        : "NOT SET",
+    STORAGE: env.STORAGE_BUCKET
+      ? `${env.STORAGE_PROVIDER} / ${env.STORAGE_BUCKET}`
+      : "NOT SET",
+    AUTH_SECRET: mask(env.AUTH_SECRET),
+    APP_URL: env.APP_URL ?? "NOT SET",
   };
   log.info(resources, "Resource status");
 }
