@@ -5,7 +5,9 @@ import { getRecords } from "../../services/get-records";
 export const getRecordsProcedure = protectedProcedure
   .input(GetRecordsInputSchema)
   .output(GetRecordsOutputSchema)
-  .query(async ({ input }) => {
-    return getRecords(input);
+  .query(async ({ input, ctx }) => {
+    return getRecords({
+      ...input,
+      userId: ctx.session.user.id,
+    });
   });
-

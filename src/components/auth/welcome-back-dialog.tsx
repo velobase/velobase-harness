@@ -35,9 +35,7 @@ export function WelcomeBackDialog({ onTopUp, open: controlledOpen, onOpenChange 
   
   // 获取当前积分余额，用于辅助判断（仅非受控模式需要）
   const { data: balance } = api.billing.getBalance.useQuery(
-    { 
-      userId: session?.user?.id ?? "",
-    },
+    {},
     { 
       enabled: !!session?.user?.id && !isControlled,
       staleTime: 60000 

@@ -1,7 +1,6 @@
 import { z } from "zod";
 
 export const GetRecordsInputSchema = z.object({
-  userId: z.string().min(1),
   limit: z.number().int().min(1).max(100).optional(),
   cursor: z.string().optional(),
   operationType: z.string().optional(),

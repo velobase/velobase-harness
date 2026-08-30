@@ -24,13 +24,11 @@ export default async function BillingPage() {
     redirect('/api/auth/signin?callbackUrl=%2Faccount%2Fbilling');
   }
 
-  const userId = session.user.id;
-
   // Parallel fetch: status, balance, usage, subscriptions, credits packages
   const [billingStatus, balance, usage, subscriptionData, creditsData] = await Promise.all([
     api.account.getBillingStatus(),
-    api.billing.getBalance({ userId }),
-    api.billing.getRecords({ userId, limit: 5 }),
+    api.billing.getBalance({}),
+    api.billing.getRecords({ limit: 5 }),
     api.product.listForPricing({ type: 'SUBSCRIPTION', limit: 10 }),
     api.product.listForPricing({ type: 'CREDITS_PACKAGE', limit: 20 }),
   ]);
