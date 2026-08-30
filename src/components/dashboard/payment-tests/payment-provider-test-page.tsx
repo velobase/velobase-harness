@@ -71,10 +71,7 @@ export function PaymentProviderTestPage({
     { limit: 5 },
     { enabled: false },
   );
-  const balanceQuery = api.billing.getBalance.useQuery(
-    { userId: session?.user.id ?? "" },
-    { enabled: false },
-  );
+  const balanceQuery = api.billing.getBalance.useQuery({}, { enabled: false });
   const subscriptionQuery = api.membership.getSubscriptionStatus.useQuery(
     { userId: session?.user.id ?? "" },
     { enabled: false },

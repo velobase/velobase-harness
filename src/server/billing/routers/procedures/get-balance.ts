@@ -5,7 +5,9 @@ import { getBalance } from "../../services/get-balance";
 export const getBalanceProcedure = protectedProcedure
   .input(GetBalanceInputSchema)
   .output(GetBalanceOutputSchema)
-  .query(async ({ input }) => {
-    return getBalance(input);
+  .query(async ({ input, ctx }) => {
+    return getBalance({
+      ...input,
+      userId: ctx.session.user.id,
+    });
   });
-
