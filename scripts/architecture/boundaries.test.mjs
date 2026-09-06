@@ -2,6 +2,21 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { checkBoundaries, checkSource } from "./boundaries.mjs";
 
+test("tsx is restricted to Expo build config, never native application code", () => {
+  assert.deepEqual(
+    checkSource("apps/mobile/app.config.ts", 'import "tsx/cjs";'),
+    [],
+  );
+  for (const file of [
+    "apps/mobile/App.tsx",
+    "apps/mobile/src/env.ts",
+    "apps/desktop/src/renderer/index.ts",
+    "apps/desktop/src/preload/index.ts",
+  ]) {
+    assert.ok(checkSource(file, 'import "tsx/cjs";').length);
+  }
+});
+
 test("workspace sources and manifests respect dependency direction", () => {
   assert.deepEqual(checkBoundaries(), []);
 });

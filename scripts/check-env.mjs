@@ -41,6 +41,8 @@ export const SCHEMA_ONLY_EXCEPTIONS = new Map([
 // Direct process.env reads outside the application schema must stay limited to
 // framework internals and tooling/bootstrap entry points.
 export const SOURCE_ONLY_EXCEPTIONS = new Map([
+  ["HOME", "Expo CLI and service smoke tests preserve the package-manager home"],
+  ["PATH", "Expo CLI and service smoke tests locate the selected Node and pnpm"],
   ["VELOBASE_DESKTOP_API_ORIGIN", "Desktop main-process environment boundary"],
   ["VELOBASE_MOBILE_API_ORIGIN", "Expo build-time public environment boundary"],
   ["VELOBASE_MOBILE_ENV", "Expo build-time environment boundary"],

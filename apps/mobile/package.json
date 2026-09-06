@@ -27,6 +27,7 @@
   },
   "devDependencies": {
     "@types/react": "^19.2.15",
-    "babel-preset-expo": "~57.0.7"
+    "babel-preset-expo": "~57.0.7",
+    "tsx": "^4.21.0"
   }
 }

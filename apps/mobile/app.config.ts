@@ -1,3 +1,5 @@
+// Expo transforms this file only; imported TypeScript needs its own loader on Node 20.
+import "tsx/cjs";
 import { createMobileConfig } from "./config.ts";
 
 export default createMobileConfig({

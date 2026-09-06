@@ -96,6 +96,8 @@ export function checkSource(file, code) {
         (name) => specifier === name || specifier.startsWith(`${name}/`),
       );
       if (specifier.startsWith("node:") && main) valid = true;
+      if (file === "apps/mobile/app.config.ts" && specifier === "tsx/cjs")
+        valid = true;
       if (renderer && specifier === "electron") valid = false;
     }
     if (

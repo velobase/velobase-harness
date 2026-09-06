@@ -62,6 +62,13 @@ only `extra.apiOrigin`; application code reads it through `expo-constants`.
 Neither shell imports `src/env.js`. Root `.env.example` documents the platform keys,
 and environment drift checks recognize their separately validated owners.
 
+Expo checks require the same explicit origin as exports. Without it, validation
+fails with the variable name. `app.config.ts` registers Expo's documented
+[`tsx/cjs` loader](https://docs.expo.dev/guides/typescript/#appconfigjs) for imported
+TypeScript on Node 20/22; validation throws plain, sanitized errors because Expo
+annotates `Error.message` and Zod's message is read-only. CLI regression tests run
+without native TypeScript stripping or inherited dotenv/loader settings.
+
 ```bash
 pnpm check                          # existing Web/env/lint/typecheck gate
 pnpm test:existing                   # Node 22 module mocks, existing Redis build stub
@@ -71,6 +78,7 @@ pnpm test:platforms
 pnpm check:api && pnpm check:worker
 pnpm check:desktop && pnpm package:desktop
 pnpm check:mobile
+VELOBASE_MOBILE_API_ORIGIN=https://example.com pnpm --filter @velobase/mobile verify:dependencies
 VELOBASE_MOBILE_API_ORIGIN=https://example.com pnpm config:mobile
 VELOBASE_MOBILE_API_ORIGIN=https://example.com pnpm build:mobile
 SKIP_ENV_VALIDATION=true pnpm build:web
@@ -114,3 +122,28 @@ Web before building images. `multiplatform-check.yml` checks shared code, backen
 entries, Electron packaging, and both Expo exports on Linux. Docker copies neutral
 packages before frozen install and filters to the root server dependency closure;
 `tsx` and Prisma are locked runtime dependencies, so image builds never run `pnpm add`.
+
+The filtered install selects the root and both neutral packages. Service manifests
+have no dependencies of their own; their launchers and legacy backend use the
+root's dependencies. Keeping `tsx` and Prisma there supports root production,
+combined-launcher, migration, and seed commands. Copying all `src` retains dynamic
+module imports without a source allowlist; moving tooling to service manifests
+alone would not shrink that dependency closure.
+
+`pnpm test:runtime` requires `redis-server`. It reproduces the Docker production
+install in a temporary directory, generates Prisma, excludes Expo/Electron,
+starts both service and compatibility entrypoints with validated test config,
+checks HTTP health, processes a real cleanup job, and verifies SIGTERM shutdown.
+It uses disposable Redis, no external providers, and no database fixture. CI repeats
+this on Node 20 and 22.18.0, builds the three split images on Node 20, and runs
+`pnpm test:runtime --images` against those images (Web migrations are skipped).
+This does not verify database migrations or every optional integration; some
+existing dependencies, including React Email, declare Node 22 minimum engines.
+
+Expo 57.0.20 / CLI 57.0.22 were the latest compatible releases when checked.
+Exact parent-scoped overrides pin compatible `picomatch` 2.3.2 patches under
+`jest-util` and `micromatch`, and `js-yaml` 4.3.2 under `@expo/xcpretty` to address
+[picomatch](https://github.com/advisories/GHSA-c2c7-rcm5-vvqj) and
+[js-yaml](https://github.com/advisories/GHSA-5p4m-2wfm-xmqj) high advisories.
+Keep them until upstream lock resolution selects safe versions. CI runs
+`pnpm audit --prod --audit-level high`; lower-severity findings remain visible.

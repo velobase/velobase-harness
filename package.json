@@ -51,7 +51,8 @@
     "test:existing": "SKIP_ENV_VALIDATION=true NEXT_PHASE=phase-production-build node --import tsx --experimental-test-module-mocks --test src/server/auth/email-code-utils.test.ts src/server/billing/routers/billing-router.test.ts",
     "check:api": "pnpm --filter @velobase/api-service check",
     "check:worker": "pnpm --filter @velobase/worker-service check",
-    "test:services": "SKIP_ENV_VALIDATION=true NEXT_PHASE=phase-production-build node --import tsx --test services/*/tests/*.test.ts"
+    "test:services": "SKIP_ENV_VALIDATION=true NEXT_PHASE=phase-production-build node --import tsx --test services/*/tests/*.test.ts",
+    "test:runtime": "node scripts/test-service-runtime.mjs"
   },
   "dependencies": {
     "@ai-sdk/openai": "^2.0.53",

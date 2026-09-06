@@ -5,13 +5,25 @@ import { z } from "zod";
 export function createMobileConfig(
   source: Record<string, string | undefined>,
 ): ExpoConfig {
-  const environment = z
+  const environmentResult = z
     .enum(["development", "production"])
     .default("production")
-    .parse(source.VELOBASE_MOBILE_ENV);
-  const url = new URL(
-    z.string().url().parse(source.VELOBASE_MOBILE_API_ORIGIN),
-  );
+    .safeParse(source.VELOBASE_MOBILE_ENV);
+  if (!environmentResult.success) {
+    // Expo annotates Error.message; ZodError.message is a getter. Do not expose input values.
+    throw new Error("VELOBASE_MOBILE_ENV must be development or production");
+  }
+  const originResult = z
+    .string()
+    .url()
+    .safeParse(source.VELOBASE_MOBILE_API_ORIGIN);
+  if (!originResult.success) {
+    throw new Error(
+      "VELOBASE_MOBILE_API_ORIGIN must be an explicit valid server origin",
+    );
+  }
+  const environment = environmentResult.data;
+  const url = new URL(originResult.data);
   if (
     url.username ||
     url.password ||
@@ -22,7 +34,7 @@ export function createMobileConfig(
       !(environment === "development" && url.protocol === "http:"))
   ) {
     throw new Error(
-      "Mobile API origin must be HTTPS (HTTP is allowed only in development)",
+      "VELOBASE_MOBILE_API_ORIGIN must be an HTTPS origin without credentials, path, query, or fragment (HTTP is allowed only in development)",
     );
   }
   return {
