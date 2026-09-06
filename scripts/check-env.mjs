@@ -10,6 +10,18 @@ const defaultRoot = path.resolve(path.dirname(scriptPath), "..");
 // Documented values that are intentionally consumed before application
 // startup or implicitly by supporting libraries.
 export const EXAMPLE_ONLY_EXCEPTIONS = new Map([
+  [
+    "VELOBASE_DESKTOP_API_ORIGIN",
+    "Desktop main-process public origin; validated in apps/desktop/src/main/env.ts",
+  ],
+  [
+    "VELOBASE_MOBILE_API_ORIGIN",
+    "Expo public build origin; validated in apps/mobile/config.ts",
+  ],
+  [
+    "VELOBASE_MOBILE_ENV",
+    "Expo build profile; validated in apps/mobile/config.ts",
+  ],
   ["ADMIN_EMAIL", "Prisma seed bootstrap setting"],
   ["DEBUG", "conventional debug-library setting"],
   ["HTTP_PROXY", "conventional HTTP client proxy setting"],
@@ -29,6 +41,9 @@ export const SCHEMA_ONLY_EXCEPTIONS = new Map([
 // Direct process.env reads outside the application schema must stay limited to
 // framework internals and tooling/bootstrap entry points.
 export const SOURCE_ONLY_EXCEPTIONS = new Map([
+  ["VELOBASE_DESKTOP_API_ORIGIN", "Desktop main-process environment boundary"],
+  ["VELOBASE_MOBILE_API_ORIGIN", "Expo build-time public environment boundary"],
+  ["VELOBASE_MOBILE_ENV", "Expo build-time environment boundary"],
   ["ADMIN_EMAIL", "Prisma seed bootstrap setting"],
   ["NEXT_PHASE", "injected by Next.js"],
   ["NEXT_RUNTIME", "injected by Next.js"],
@@ -49,6 +64,9 @@ const ignoredDirectories = new Set([
   ".next",
   ".pnpm-store",
   "node_modules",
+  "dist",
+  "out",
+  ".expo",
 ]);
 const sourceExtensions = new Set([".cjs", ".js", ".mjs", ".ts", ".tsx"]);
 

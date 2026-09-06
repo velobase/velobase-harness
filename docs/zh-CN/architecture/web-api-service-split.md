@@ -1,5 +1,10 @@
 # Web、API 与 Worker 拆分
 
+应用宿主和共享包边界见[多平台工作区](./multiplatform.md)。API/Worker 进程入口迁至
+`services/api/src/index.ts`、`services/worker/src/index.ts`，下文原 `src` 入口继续兼容。
+Web 组装归 `apps/web`，Next 项目根目录与生产产物路径保持不变。
+
+
 Velobase Harness 按三个 runtime 边界设计，但默认部署路径是 **Web + Worker**。独立 Hono API 服务是可选扩展点，不是当前生产集成的必需服务。
 
 ## 服务类型

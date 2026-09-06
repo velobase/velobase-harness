@@ -16,9 +16,11 @@ Before writing product code:
 
 ## Architecture
 
-Velobase Harness is a T3-style AI SaaS foundation:
+Velobase Harness is a multiplatform AI SaaS foundation with incremental workspace boundaries:
 
 - Next.js App Router and React for Web.
+- Electron Desktop with isolated main/preload/renderer, and one Expo app for Android/iOS.
+- Platform-neutral contracts and typed clients shared by all application hosts.
 - tRPC for typed application APIs.
 - Optional Hono API for standalone external HTTP routes when Web should not own them.
 - Prisma, PostgreSQL, and Redis for persistence and queues.
@@ -27,6 +29,10 @@ Velobase Harness is a T3-style AI SaaS foundation:
 - Event bus and pluggable modules for analytics, ads, notifications, and other side effects.
 
 Runtime services:
+
+See [Multiplatform workspace](./docs/en/architecture/multiplatform.md) for ownership,
+platform commands, Linux validation, and how to extend the shared health slice.
+`apps/web` owns Web composition while root `src/app` remains a compatible route table.
 
 | Service | Responsibility | Docs |
 | --- | --- | --- |
@@ -60,6 +66,9 @@ Framework code should remain generic. Product behavior belongs in `src/modules/<
 
 | Area | Ownership |
 | --- | --- |
+| `apps/web`, `apps/desktop`, `apps/mobile` | Platform composition, UI, and adapters |
+| `packages/contracts`, `packages/api-client` | Neutral wire schemas and client operations |
+| `services/api`, `services/worker` | Backend process launchers; legacy source paths forward here |
 | `src/server/auth` | Framework auth |
 | `src/server/billing`, `src/server/order`, `src/server/membership` | Framework commerce |
 | `src/server/features` | Built-in reusable features |

@@ -2,6 +2,15 @@
 
 # dependencies
 /node_modules
+**/node_modules/
+.pnpm-store/
+**/dist/
+**/out/
+**/.expo/
+apps/mobile/android/
+apps/mobile/ios/
+.prettiercache
+.env.*
 /.pnp
 .pnp.js
 .yarn/install-state.gz

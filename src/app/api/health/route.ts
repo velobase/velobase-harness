@@ -1,8 +1,1 @@
-import { NextResponse } from "next/server";
-
-export function GET() {
-  return NextResponse.json({
-    status: "ok",
-    timestamp: new Date().toISOString(),
-  });
-}
+export { GET } from "../../../../apps/web/src/health/route";

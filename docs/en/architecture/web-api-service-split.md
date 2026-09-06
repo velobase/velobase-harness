@@ -1,5 +1,11 @@
 # Web, API, And Worker Split
 
+Application hosts and shared package boundaries are described in
+[Multiplatform workspace](./multiplatform.md). API/Worker process launchers now live
+in `services/api/src/index.ts` and `services/worker/src/index.ts`; the `src` entries
+below remain compatible. Web composition lives in `apps/web`, with the Next project
+root and production output paths preserved.
+
 Velobase Harness is designed around three runtime boundaries, but the default deployment path is **Web + Worker**. The standalone Hono API service is an optional extension point, not required for the current production integrations.
 
 ## Service Types

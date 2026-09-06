@@ -1,0 +1,16 @@
+{
+  "name": "@velobase/web",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "pnpm -C ../.. dev",
+    "build": "pnpm -C ../.. build",
+    "start": "pnpm -C ../.. start",
+    "check": "pnpm -C ../.. check"
+  },
+  "dependencies": {
+    "@velobase/api-client": "workspace:*",
+    "@velobase/contracts": "workspace:*"
+  }
+}

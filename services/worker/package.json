@@ -1,0 +1,11 @@
+{
+  "name": "@velobase/worker-service",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "pnpm -C ../.. worker:dev",
+    "start": "pnpm -C ../.. worker:prod",
+    "check": "tsc --noEmit"
+  }
+}

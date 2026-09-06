@@ -1,0 +1,42 @@
+name: Multiplatform Check
+
+on:
+  pull_request:
+  push:
+    branches: [main, dev, pre, prod, "codex/**"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  platforms:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      VELOBASE_MOBILE_API_ORIGIN: https://example.com
+      VELOBASE_MOBILE_ENV: production
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.12.1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm check:architecture
+      - run: pnpm check:packages
+      - run: pnpm test:services
+      - run: pnpm test:existing
+      - run: pnpm test:platforms
+      - run: pnpm check:api && pnpm check:worker
+      - run: pnpm check:desktop
+      - name: Build and package Linux Desktop (no display required)
+        run: pnpm package:desktop
+      - run: pnpm check:mobile
+      - run: pnpm --filter @velobase/mobile verify:dependencies
+      - run: pnpm config:mobile
+      - name: Export Android and iOS JavaScript (no native toolchains)
+        run: pnpm build:mobile

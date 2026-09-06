@@ -14,9 +14,11 @@
 
 ## 架构
 
-Velobase Harness 是 T3 风格的 AI SaaS 底座：
+Velobase Harness 是采用渐进式工作区边界的多平台 AI SaaS 底座：
 
 - Next.js App Router 和 React 作为 Web。
+- Electron 桌面端隔离 main/preload/renderer，Expo 单一代码库支持 Android/iOS。
+- 各应用宿主共用平台无关契约与类型化客户端。
 - tRPC 提供类型安全应用 API。
 - 可选 Hono API 用于不适合由 Web 承接的独立外部 HTTP routes。
 - Prisma、PostgreSQL、Redis 提供持久化和队列依赖。
@@ -25,6 +27,10 @@ Velobase Harness 是 T3 风格的 AI SaaS 底座：
 - Event bus 和可插拔模块处理 analytics、ads、notifications 等副作用。
 
 Runtime services：
+
+目录归属、平台命令、Linux 验证与共享健康检查扩展方式见
+[多平台工作区](./docs/zh-CN/architecture/multiplatform.md)。
+Web 组装归 `apps/web`，根 `src/app` 保留兼容路由表。
 
 | 服务 | 职责 | 文档 |
 | --- | --- | --- |
@@ -58,6 +64,9 @@ pnpm worker:dev
 
 | 区域 | 归属 |
 | --- | --- |
+| `apps/web`、`apps/desktop`、`apps/mobile` | 平台组装、UI 与适配器 |
+| `packages/contracts`、`packages/api-client` | 平台无关接口契约与客户端操作 |
+| `services/api`、`services/worker` | 后台进程入口，原有路径继续转发 |
 | `src/server/auth` | 框架认证 |
 | `src/server/billing`、`src/server/order`、`src/server/membership` | 框架商业化能力 |
 | `src/server/features` | 内置可复用功能 |

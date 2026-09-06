@@ -1038,5 +1038,15 @@
       "save": "保存",
       "fullMetadata": "完整 Metadata"
     }
+  },
+  "product": {
+    "platformHealth": {
+      "title": "服务状态",
+      "description": "检查与 Velobase 服务器的连接。",
+      "loading": "连接中…",
+      "ok": "已连接",
+      "error": "无法连接，请检查服务器后重试。",
+      "refresh": "刷新"
+    }
   }
 }

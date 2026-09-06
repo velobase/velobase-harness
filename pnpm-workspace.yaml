@@ -1,4 +1,10 @@
+packages:
+  - "apps/*"
+  - "packages/*"
+  - "services/*"
+
 onlyBuiltDependencies:
+  - electron
   - sharp
 
 overrides:
