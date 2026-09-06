@@ -1,0 +1,33 @@
+{
+  "name": "@velobase/mobile",
+  "private": true,
+  "version": "0.1.0",
+  "main": "index.ts",
+  "scripts": {
+    "dev": "expo start",
+    "android": "expo run:android",
+    "ios": "expo run:ios",
+    "typecheck": "tsc --noEmit",
+    "test": "node --import tsx --test tests/*.test.ts",
+    "check": "pnpm typecheck && pnpm test",
+    "config": "expo config --type public",
+    "export": "expo export --platform android --platform ios --output-dir dist --max-workers 2 --source-maps && node scripts/verify-export.mjs",
+    "build": "pnpm export",
+    "verify:dependencies": "expo install --check"
+  },
+  "dependencies": {
+    "@velobase/api-client": "workspace:*",
+    "@velobase/contracts": "workspace:*",
+    "expo": "~57.0.20",
+    "expo-constants": "~57.0.17",
+    "react": "19.2.3",
+    "react-native": "0.86.3",
+    "react-native-safe-area-context": "~5.7.0",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.15",
+    "babel-preset-expo": "~57.0.7",
+    "tsx": "^4.21.0"
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "name": "@velobase/api-service",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "pnpm -C ../.. api:dev",
+    "start": "pnpm -C ../.. api:prod",
+    "check": "tsc --noEmit"
+  }
+}

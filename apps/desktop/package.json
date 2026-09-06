@@ -1,0 +1,25 @@
+{
+  "name": "@velobase/desktop",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "main": "dist/main.cjs",
+  "scripts": {
+    "dev": "pnpm build && electron .",
+    "build": "node scripts/build.mjs && node --test tests/bundle.test.mjs",
+    "package": "pnpm build && node scripts/package.mjs",
+    "typecheck": "tsc -p tsconfig.json && tsc -p tsconfig.renderer.json",
+    "test": "node --import tsx --test tests/*.test.ts",
+    "check": "pnpm typecheck && pnpm test"
+  },
+  "dependencies": {
+    "@velobase/api-client": "workspace:*",
+    "@velobase/contracts": "workspace:*",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "electron": "44.2.0",
+    "@electron/packager": "20.3.0",
+    "esbuild": "0.28.2"
+  }
+}

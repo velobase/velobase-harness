@@ -1,0 +1,26 @@
+:root {
+  color-scheme: light dark;
+  font-family: system-ui, sans-serif;
+}
+body {
+  margin: 0;
+}
+main {
+  max-width: 36rem;
+  margin: 12vh auto;
+  padding: 2rem;
+}
+time {
+  display: block;
+  min-height: 2rem;
+  overflow-wrap: anywhere;
+}
+button {
+  font: inherit;
+  padding: 0.75rem 1.5rem;
+  cursor: pointer;
+}
+button:disabled {
+  cursor: wait;
+  opacity: 0.6;
+}

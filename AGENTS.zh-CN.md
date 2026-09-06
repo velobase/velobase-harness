@@ -6,6 +6,10 @@
 
 ## 任务路由
 
+跨平台工作请阅读 `docs/zh-CN/architecture/multiplatform.md`。应用组装放在 `apps/*`，
+进程入口放在 `services/*`，平台无关契约/客户端放在 `packages/*`。
+Desktop/Mobile 禁止引用既有 `src` 或 Web/Server 包，环境配置使用各平台独立校验边界。
+
 如果用户要求从零构建新产品：
 
 - 必须阅读 `docs/zh-CN/ai/design.md`。

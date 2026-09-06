@@ -12,6 +12,7 @@ COPY public ./public
 COPY .next/standalone ./
 COPY .next/static ./.next/static
 COPY next.config.js ./
+COPY apps/web/next.config.js ./apps/web/next.config.js
 COPY package.json pnpm-lock.yaml ./
 COPY prisma ./prisma
 COPY docker-entrypoint.web.sh ./

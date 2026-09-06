@@ -8,10 +8,10 @@ ENV NODE_ENV=production
 
 # Install dependencies
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY packages ./packages
 COPY prisma ./prisma
 RUN corepack enable pnpm && \
-    pnpm install --frozen-lockfile --prod --ignore-scripts && \
-    pnpm add tsx && \
+    pnpm --filter velobase-harness... install --frozen-lockfile --prod --ignore-scripts && \
     pnpm prisma generate && \
     rm -rf /root/.cache
 
@@ -20,13 +20,9 @@ RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 worker && \
     mkdir -p /app/logs && chown worker:nodejs /app/logs
 
-# Copy worker source and shared modules
-COPY --chown=worker:nodejs src/workers ./src/workers
-COPY --chown=worker:nodejs src/lib ./src/lib
-COPY --chown=worker:nodejs src/server ./src/server
-COPY --chown=worker:nodejs src/analytics ./src/analytics
-COPY --chown=worker:nodejs src/config ./src/config
-COPY --chown=worker:nodejs src/env.js ./src/env.js
+# Preserve the complete backend import closure, including compatibility entries.
+COPY --chown=worker:nodejs src ./src
+COPY --chown=worker:nodejs services ./services
 COPY --chown=worker:nodejs tsconfig.json ./
 COPY --chown=worker:nodejs public/data/disposable-domains.txt ./public/data/disposable-domains.txt
 

@@ -1038,5 +1038,15 @@
       "save": "Save",
       "fullMetadata": "Full Metadata"
     }
+  },
+  "product": {
+    "platformHealth": {
+      "title": "Service status",
+      "description": "Check the connection to your Velobase server.",
+      "loading": "Connecting…",
+      "ok": "Connected",
+      "error": "Unable to connect. Check your server and try again.",
+      "refresh": "Refresh"
+    }
   }
 }

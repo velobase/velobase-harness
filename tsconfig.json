@@ -50,6 +50,10 @@
     "node_modules",
     "docs",
     "scripts",
+    "apps/desktop",
+    "apps/mobile",
+    "packages",
+    "apps/web/tests",
     "shipfast-reference"
   ]
 }

@@ -25,6 +25,7 @@ jobs:
         run: pnpm test:env
       - run: pnpm lint
       - run: pnpm typecheck
+      - run: pnpm check:architecture
       - name: Build production application
         run: pnpm build
         env:

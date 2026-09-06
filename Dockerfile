@@ -28,9 +28,10 @@ RUN apt-get update -y && \
 RUN corepack enable pnpm
 
 # Install dependencies (layer cache: only re-run when lock file changes)
-COPY package.json pnpm-lock.yaml ./
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY packages ./packages
 COPY prisma ./prisma
-RUN pnpm install --frozen-lockfile --ignore-scripts && \
+RUN pnpm --filter velobase-harness... install --frozen-lockfile --ignore-scripts && \
     pnpm prisma generate
 
 # Copy all source for the build
@@ -54,11 +55,11 @@ RUN apt-get update -y && \
 ENV NODE_ENV=production
 
 # Install production dependencies + tsx (for API/Worker runtime)
-COPY package.json pnpm-lock.yaml ./
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY packages ./packages
 COPY prisma ./prisma
 RUN corepack enable pnpm && \
-    pnpm install --frozen-lockfile --prod --ignore-scripts && \
-    pnpm add tsx prisma && \
+    pnpm --filter velobase-harness... install --frozen-lockfile --prod --ignore-scripts && \
     pnpm prisma generate && \
     rm -rf /root/.cache
 
@@ -75,6 +76,8 @@ COPY --from=builder --chown=appuser:nodejs /app/next.config.js ./
 
 # --- Source code (for api / worker / standalone modes) ---
 COPY --chown=appuser:nodejs src ./src
+COPY --chown=appuser:nodejs services ./services
+COPY --chown=appuser:nodejs apps/web ./apps/web
 COPY --chown=appuser:nodejs tsconfig.json ./
 
 # --- Entrypoint script (runs migrations then starts services) ---

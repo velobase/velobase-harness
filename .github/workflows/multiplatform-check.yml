@@ -1,0 +1,78 @@
+name: Multiplatform Check
+
+on:
+  pull_request:
+  push:
+    branches: [main, dev, pre, prod, "codex/**"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  platforms:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      VELOBASE_MOBILE_API_ORIGIN: https://example.com
+      VELOBASE_MOBILE_ENV: production
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.12.1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm audit --prod --audit-level high
+      - run: pnpm check:architecture
+      - run: pnpm check:packages
+      - run: pnpm test:services
+      - run: pnpm test:existing
+      - run: pnpm test:platforms
+      - run: pnpm check:api && pnpm check:worker
+      - run: pnpm check:desktop
+      - name: Build and package Linux Desktop (no display required)
+        run: pnpm package:desktop
+      - run: pnpm check:mobile
+      - run: pnpm --filter @velobase/mobile verify:dependencies
+      - run: pnpm config:mobile
+      - name: Export Android and iOS JavaScript (no native toolchains)
+        run: pnpm build:mobile
+
+  runtime:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        node: ["20", "22.18.0"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.12.1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Exercise real Expo CLI without native TypeScript support
+        run: pnpm --filter @velobase/mobile exec node --import tsx --test tests/expo-cli.test.ts
+      - run: sudo apt-get update && sudo apt-get install -y redis-server
+      - name: Test isolated production install and service lifecycle with disposable Redis
+        run: pnpm test:runtime
+      - name: Build Web with the production Node version
+        if: matrix.node == '20'
+        run: SKIP_ENV_VALIDATION=true pnpm build:web
+      - name: Build split images without publishing
+        if: matrix.node == '20'
+        run: |
+          docker build -f Dockerfile.web -t velobase-web-smoke .
+          docker build -f Dockerfile.api -t velobase-api-smoke .
+          docker build -f Dockerfile.worker -t velobase-worker-smoke .
+      - name: Exercise image entrypoints, HTTP, Redis jobs, and graceful shutdown
+        if: matrix.node == '20'
+        run: pnpm test:runtime --images

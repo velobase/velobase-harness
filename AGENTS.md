@@ -66,6 +66,9 @@ IF you touch anti-abuse, captcha, rate limiting, IP, country, or security bounda
 
 ### General
 
+- For cross-platform work, read `docs/en/architecture/multiplatform.md`. New host composition belongs in `apps/*`; process launchers in `services/*`; neutral schemas/clients in `packages/*`.
+- Desktop and Mobile must never import legacy `src` or Web/server packages. Platform environment configuration uses its own validated adapter, never `src/env.js`.
+
 - Keep framework code generic. Put product-specific behavior in `src/modules/<name>/` unless an existing framework extension point is the correct owner.
 - Validate all user input with Zod or an equivalent schema.
 - Paginate list queries with cursor-based pagination; default page size should be 20.

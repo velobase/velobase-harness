@@ -1,4 +1,13 @@
 node_modules
+apps/**/node_modules
+packages/**/node_modules
+services/**/node_modules
+.pnpm-store
+apps/*/dist
+apps/*/out
+apps/mobile/.expo
+apps/mobile/android
+apps/mobile/ios
 .git
 .gitignore
 .next/cache
@@ -20,4 +29,3 @@ build
 .eslintcache
 prisma/*.db
 prisma/*.db-journal
-

@@ -81,6 +81,9 @@ jobs:
             cp .env.dev .env
           fi
 
+      - name: Validate Web and workspace boundaries
+        run: pnpm check && pnpm check:architecture
+
       - name: Build Next.js application
         run: pnpm build
 
