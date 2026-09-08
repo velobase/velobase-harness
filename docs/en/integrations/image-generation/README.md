@@ -5,6 +5,7 @@ Image generation is a framework feature that exposes a provider-neutral `imageGe
 Supported providers:
 
 - WaveSpeedAI through `WavespeedProvider`.
+- ModelRunner through `ModelrunnerProvider`.
 
 WaveSpeedAI API references:
 
@@ -16,13 +17,13 @@ WaveSpeedAI API references:
 
 Layers:
 
-- Provider adapter: `src/server/ai/image-generation/providers/wavespeed.ts`
+- Provider adapters: `src/server/ai/image-generation/providers/wavespeed.ts`, `src/server/ai/image-generation/providers/modelrunner.ts`
 - Framework service: `src/server/ai/image-generation/service.ts`
 - Worker: `src/workers/processors/image-generation/processor.ts`
 - Queue: `src/workers/queues/image-generation.queue.ts`
 - AI Chat tools: `src/server/api/tools/image-generation-tools.ts`
 
-Business modules should call `imageGeneration` from `@/server/ai/image-generation` and should not import WaveSpeed provider code directly.
+Business modules should call `imageGeneration` from `@/server/ai/image-generation` and should not import provider code directly.
 
 ## Configuration
 
@@ -35,9 +36,30 @@ WaveSpeed connection testing requires:
 
 `auto` enables the module when required configuration is present:
 
-- `WAVESPEED_API_KEY`
-- `WAVESPEED_BASE_URL`
+- At least one provider key: `WAVESPEED_API_KEY` or `MODELRUNNER_KEY`
 - Redis connection through `REDIS_URL` or `REDIS_HOST`
+
+### ModelRunner
+
+ModelRunner connection requires:
+
+- `MODELRUNNER_KEY`
+
+Optional settings, both defaulted:
+
+- `MODELRUNNER_BASE_URL`, default `https://modelrunner.run` — the catalog host, used by `listModels()` and cost estimates
+- `MODELRUNNER_QUEUE_URL`, default `https://queue.modelrunner.run` — the submit and poll host
+- `MODELRUNNER_REQUEST_TIMEOUT_MS`, default `30000`
+
+Models are addressed as `owner/alias`, for example `alibaba/qwen-image/v3.0/text-to-image`. `listModels()`
+reads the public catalog and returns the image-output models. `estimateCost()` quotes a price only for
+models with a flat per-output rate; models priced per megapixel, in tiers or per token are priced from the
+finished request, so it returns `undefined` rather than a guess.
+
+ModelRunner API references:
+
+- [Docs](https://modelrunner.ai/docs)
+- [Model catalog](https://modelrunner.ai/models)
 
 Optional settings:
 
