@@ -186,8 +186,10 @@ export const MODULE_DEFINITIONS = [
     label: "Image Generation",
     modeEnv: "IMAGE_GENERATION_MODE",
     config: [
-      "WAVESPEED_API_KEY",
-      "WAVESPEED_BASE_URL",
+      {
+        anyOf: ["WAVESPEED_API_KEY", "MODELRUNNER_KEY"],
+        name: "image generation provider key",
+      },
       { anyOf: ["REDIS_URL", "REDIS_HOST"], name: "Redis connection" },
     ],
     loadFrameworkModule: async () =>
@@ -240,6 +242,8 @@ const MODULE_ENV = {
   VELOBASE_GATEWAY_API_KEY: env.VELOBASE_GATEWAY_API_KEY,
   WAVESPEED_API_KEY: env.WAVESPEED_API_KEY,
   WAVESPEED_BASE_URL: env.WAVESPEED_BASE_URL,
+  MODELRUNNER_KEY: env.MODELRUNNER_KEY,
+  MODELRUNNER_BASE_URL: env.MODELRUNNER_BASE_URL,
   REDIS_URL: env.REDIS_URL,
   REDIS_HOST: env.REDIS_HOST,
 } satisfies EnvReader;
