@@ -4,7 +4,7 @@ import type {
   ImageGenerationTaskStatus as PrismaImageGenerationTaskStatus,
 } from "@prisma/client";
 
-export type ImageGenerationProviderId = "wavespeed";
+export type ImageGenerationProviderId = "wavespeed" | "modelrunner";
 
 export type ImageGenerationOperation =
   | "text-to-image"
@@ -79,6 +79,7 @@ export type ImageGenerationAsset = {
 
 export const PROVIDER_TO_PRISMA = {
   wavespeed: "WAVESPEED",
+  modelrunner: "MODELRUNNER",
 } as const satisfies Record<
   ImageGenerationProviderId,
   PrismaImageGenerationProvider
@@ -86,6 +87,7 @@ export const PROVIDER_TO_PRISMA = {
 
 export const PRISMA_TO_PROVIDER = {
   WAVESPEED: "wavespeed",
+  MODELRUNNER: "modelrunner",
 } as const satisfies Record<
   PrismaImageGenerationProvider,
   ImageGenerationProviderId

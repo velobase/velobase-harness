@@ -1,6 +1,7 @@
 import { env } from "@/env";
 import type { ImageGenerationProviderId } from "../types";
 import type { ImageGenerationProviderAdapter } from "./types";
+import { ModelrunnerProvider } from "./modelrunner";
 import { WavespeedProvider } from "./wavespeed";
 
 class ImageGenerationProviderRegistry {
@@ -43,6 +44,10 @@ export function registerDefaultImageGenerationProviders(): void {
 
   if (env.WAVESPEED_API_KEY) {
     imageGenerationProviderRegistry.register(new WavespeedProvider());
+  }
+
+  if (env.MODELRUNNER_KEY) {
+    imageGenerationProviderRegistry.register(new ModelrunnerProvider());
   }
 }
 

@@ -92,6 +92,22 @@ export const env = createEnv({
       .regex(/^\d+$/)
       .optional()
       .transform((val) => (val ? parseInt(val, 10) : 30000)),
+    MODELRUNNER_KEY: z.string().optional(),
+    MODELRUNNER_BASE_URL: z
+      .string()
+      .url()
+      .optional()
+      .default("https://modelrunner.run"),
+    MODELRUNNER_QUEUE_URL: z
+      .string()
+      .url()
+      .optional()
+      .default("https://queue.modelrunner.run"),
+    MODELRUNNER_REQUEST_TIMEOUT_MS: z
+      .string()
+      .regex(/^\d+$/)
+      .optional()
+      .transform((val) => (val ? parseInt(val, 10) : 30000)),
     CDN_BASE_URL: z.string().url().optional(),
     STORAGE_PROVIDER: z
       .enum(["aws", "aliyun", "gcs", "minio", "r2", "filesystem"])
@@ -312,6 +328,10 @@ export const env = createEnv({
     WAVESPEED_API_KEY: process.env.WAVESPEED_API_KEY,
     WAVESPEED_BASE_URL: process.env.WAVESPEED_BASE_URL,
     WAVESPEED_REQUEST_TIMEOUT_MS: process.env.WAVESPEED_REQUEST_TIMEOUT_MS,
+    MODELRUNNER_KEY: process.env.MODELRUNNER_KEY,
+    MODELRUNNER_BASE_URL: process.env.MODELRUNNER_BASE_URL,
+    MODELRUNNER_QUEUE_URL: process.env.MODELRUNNER_QUEUE_URL,
+    MODELRUNNER_REQUEST_TIMEOUT_MS: process.env.MODELRUNNER_REQUEST_TIMEOUT_MS,
     CDN_BASE_URL: process.env.CDN_BASE_URL,
     STORAGE_PROVIDER: process.env.STORAGE_PROVIDER,
     STORAGE_REGION: process.env.STORAGE_REGION,

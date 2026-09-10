@@ -162,6 +162,19 @@ export const integrationDiagnosticsRouter = createTRPCRouter({
           missingEnv: imageGenerationState?.missingEnv ?? [],
         },
         {
+          id: "modelrunner",
+          label: "ModelRunner",
+          category: "llm",
+          enabled: imageGenerationState?.enabled ?? false,
+          configured: Boolean(env.MODELRUNNER_KEY),
+          implementationPresent: true,
+          // No dedicated connection test yet; the provider is exercised through
+          // the shared image generation service.
+          testKey: null,
+          config: envStatus(["MODELRUNNER_KEY", "MODELRUNNER_BASE_URL"]),
+          missingEnv: imageGenerationState?.missingEnv ?? [],
+        },
+        {
           id: "ai-chat-openrouter",
           label: "AI Chat / OpenRouter",
           category: "llm",
@@ -303,6 +316,19 @@ export const integrationDiagnosticsRouter = createTRPCRouter({
           testAvailable: true,
           testPath: null,
           config: envStatus(["WAVESPEED_API_KEY", "WAVESPEED_BASE_URL"]),
+          missingEnv: imageGenerationState?.missingEnv ?? [],
+        },
+        {
+          id: "modelrunner",
+          label: "ModelRunner",
+          moduleId: "image-generation",
+          category: "image-generation",
+          enabled: imageGenerationState?.enabled ?? false,
+          configured: Boolean(env.MODELRUNNER_KEY),
+          implementationPresent: true,
+          testAvailable: false,
+          testPath: null,
+          config: envStatus(["MODELRUNNER_KEY", "MODELRUNNER_BASE_URL"]),
           missingEnv: imageGenerationState?.missingEnv ?? [],
         },
         {
@@ -646,7 +672,7 @@ function assertImageGenerationEnabled(): void {
     throw new TRPCError({
       code: "BAD_REQUEST",
       message:
-        "Image generation is not enabled. Set IMAGE_GENERATION_MODE=auto and configure WaveSpeed + Redis env vars.",
+        "Image generation is not enabled. Set IMAGE_GENERATION_MODE=auto and configure a provider key (WAVESPEED_API_KEY or MODELRUNNER_KEY) plus Redis env vars.",
     });
   }
 }

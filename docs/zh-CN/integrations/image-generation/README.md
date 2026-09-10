@@ -5,6 +5,7 @@
 当前支持的 provider：
 
 - WaveSpeedAI，通过 `WavespeedProvider` 接入。
+- ModelRunner，通过 `ModelrunnerProvider` 接入。
 
 WaveSpeedAI API 参考：
 
@@ -16,13 +17,13 @@ WaveSpeedAI API 参考：
 
 分层：
 
-- Provider adapter：`src/server/ai/image-generation/providers/wavespeed.ts`
+- Provider adapter：`src/server/ai/image-generation/providers/wavespeed.ts`、`src/server/ai/image-generation/providers/modelrunner.ts`
 - 框架 service：`src/server/ai/image-generation/service.ts`
 - Worker：`src/workers/processors/image-generation/processor.ts`
 - Queue：`src/workers/queues/image-generation.queue.ts`
 - AI Chat 工具：`src/server/api/tools/image-generation-tools.ts`
 
-业务模块应从 `@/server/ai/image-generation` 调用 `imageGeneration`，不要直接 import WaveSpeed provider 代码。
+业务模块应从 `@/server/ai/image-generation` 调用 `imageGeneration`，不要直接 import provider 代码。
 
 ## 配置
 
@@ -35,9 +36,29 @@ WaveSpeed 连接测试需要：
 
 `auto` 会在以下配置齐全时启用模块：
 
-- `WAVESPEED_API_KEY`
-- `WAVESPEED_BASE_URL`
+- 至少配置一个 provider key：`WAVESPEED_API_KEY` 或 `MODELRUNNER_KEY`
 - 通过 `REDIS_URL` 或 `REDIS_HOST` 配置 Redis 连接
+
+### ModelRunner
+
+ModelRunner 连接需要：
+
+- `MODELRUNNER_KEY`
+
+可选配置，均有默认值：
+
+- `MODELRUNNER_BASE_URL`，默认 `https://modelrunner.run`——catalog host，`listModels()` 和费用预估从这里读取
+- `MODELRUNNER_QUEUE_URL`，默认 `https://queue.modelrunner.run`——提交与轮询的 host
+- `MODELRUNNER_REQUEST_TIMEOUT_MS`，默认 `30000`
+
+模型以 `owner/alias` 寻址，例如 `alibaba/qwen-image/v3.0/text-to-image`。`listModels()` 读取公开 catalog，
+返回输出为图片的模型。`estimateCost()` 只对按次计价（flat per-output）的模型给出价格；按 megapixel、分档
+或按 token 计价的模型要等请求跑完才能定价，因此返回 `undefined`，而不是给一个猜测值。
+
+ModelRunner API 参考：
+
+- [Docs](https://modelrunner.ai/docs)
+- [模型 catalog](https://modelrunner.ai/models)
 
 可选配置：
 

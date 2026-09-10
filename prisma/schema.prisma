@@ -573,6 +573,7 @@ model ImageAsset {
 
 enum ImageGenerationProvider {
   WAVESPEED
+  MODELRUNNER
 }
 
 enum ImageGenerationOperation {
