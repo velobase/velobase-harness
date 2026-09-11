@@ -49,6 +49,7 @@ export const SOURCE_ONLY_EXCEPTIONS = new Map([
   ["ADMIN_EMAIL", "Prisma seed bootstrap setting"],
   ["NEXT_PHASE", "injected by Next.js"],
   ["NEXT_RUNTIME", "injected by Next.js"],
+  ["NODE_OPTIONS", "local development launcher preserves Node.js runtime options"],
   ["SKIP_ENV_VALIDATION", "controls createEnv itself"],
   ["TEMPLATE_BUILD", "internal template-seed workflow switch"],
   ["VERCEL_URL", "injected by Vercel"],

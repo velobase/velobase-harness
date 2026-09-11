@@ -10,7 +10,7 @@ apps/mobile/.expo
 apps/mobile/android
 apps/mobile/ios
 .git
-.next
+.next/cache
 .env*
 **/.env*
 apps/**/.next
