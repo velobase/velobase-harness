@@ -6,6 +6,7 @@ Supported providers:
 
 - WaveSpeedAI through `WavespeedProvider`.
 - ModelRunner through `ModelrunnerProvider`.
+- Atlas Cloud through `AtlasCloudProvider`.
 
 WaveSpeedAI API references:
 
@@ -17,7 +18,7 @@ WaveSpeedAI API references:
 
 Layers:
 
-- Provider adapters: `src/server/ai/image-generation/providers/wavespeed.ts`, `src/server/ai/image-generation/providers/modelrunner.ts`
+- Provider adapters: `src/server/ai/image-generation/providers/wavespeed.ts`, `src/server/ai/image-generation/providers/modelrunner.ts`, `src/server/ai/image-generation/providers/atlascloud.ts`
 - Framework service: `src/server/ai/image-generation/service.ts`
 - Worker: `src/workers/processors/image-generation/processor.ts`
 - Queue: `src/workers/queues/image-generation.queue.ts`
@@ -36,7 +37,7 @@ WaveSpeed connection testing requires:
 
 `auto` enables the module when required configuration is present:
 
-- At least one provider key: `WAVESPEED_API_KEY` or `MODELRUNNER_KEY`
+- At least one provider key: `WAVESPEED_API_KEY`, `MODELRUNNER_KEY`, or `ATLASCLOUD_API_KEY`
 - Redis connection through `REDIS_URL` or `REDIS_HOST`
 
 ### ModelRunner
@@ -60,6 +61,19 @@ ModelRunner API references:
 
 - [Docs](https://modelrunner.ai/docs)
 - [Model catalog](https://modelrunner.ai/models)
+
+### Atlas Cloud
+
+Atlas Cloud text-to-image generation requires:
+
+- `ATLASCLOUD_API_KEY`
+
+Optional settings, both defaulted:
+
+- `ATLASCLOUD_BASE_URL`, default `https://api.atlascloud.ai`
+- `ATLASCLOUD_REQUEST_TIMEOUT_MS`, default `30000`
+
+Use an Atlas Cloud image model id such as `bytedance/seedream-v5.0-lite`. The adapter submits each generation exactly once, polls the returned prediction id, and supports PNG or JPEG output. It maps common aspect ratios to the model's published 2K and 4K dimensions; a requested 1K resolution uses the model's 2K minimum. Pricing and remote model listing are not exposed by this adapter.
 
 Optional settings:
 

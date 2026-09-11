@@ -187,7 +187,7 @@ export const MODULE_DEFINITIONS = [
     modeEnv: "IMAGE_GENERATION_MODE",
     config: [
       {
-        anyOf: ["WAVESPEED_API_KEY", "MODELRUNNER_KEY"],
+        anyOf: ["WAVESPEED_API_KEY", "MODELRUNNER_KEY", "ATLASCLOUD_API_KEY"],
         name: "image generation provider key",
       },
       { anyOf: ["REDIS_URL", "REDIS_HOST"], name: "Redis connection" },
@@ -244,6 +244,8 @@ const MODULE_ENV = {
   WAVESPEED_BASE_URL: env.WAVESPEED_BASE_URL,
   MODELRUNNER_KEY: env.MODELRUNNER_KEY,
   MODELRUNNER_BASE_URL: env.MODELRUNNER_BASE_URL,
+  ATLASCLOUD_API_KEY: env.ATLASCLOUD_API_KEY,
+  ATLASCLOUD_BASE_URL: env.ATLASCLOUD_BASE_URL,
   REDIS_URL: env.REDIS_URL,
   REDIS_HOST: env.REDIS_HOST,
 } satisfies EnvReader;
