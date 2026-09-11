@@ -37,14 +37,11 @@ export default function CreditsPage() {
   }
 
   return (
-    <div className="space-y-6 max-w-5xl mx-auto">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">{t("title")}</h1>
-        <p className="text-muted-foreground">{t("subtitle")}</p>
-      </div>
+    <div className="admin-module-page space-y-4">
+      <h1 className="sr-only">{t("title")}</h1>
 
-      <div className="flex gap-2">
-        <div className="relative flex-1">
+      <div className="admin-module-toolbar justify-start">
+        <div className="relative w-full max-w-md">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             placeholder={t("searchPlaceholder")}
@@ -60,7 +57,7 @@ export default function CreditsPage() {
       </div>
 
       {!searchQuery && (
-        <div className="border rounded-lg p-12 text-center text-muted-foreground">
+        <div className="admin-module-empty">
           <Coins className="h-12 w-12 mx-auto mb-4 opacity-50" />
           <p>{t("searchPrompt")}</p>
         </div>

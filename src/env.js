@@ -233,6 +233,7 @@ export const env = createEnv({
     PAYMENT_RECONCILIATION_MODE: z.enum(["off", "auto", "on"]).optional(),
     AFFILIATE_MODE: z.enum(["off", "auto", "on"]).optional(),
     TOUCH_MODE: z.enum(["off", "auto", "on"]).optional(),
+    EMAIL_MANAGEMENT_MODE: z.enum(["off", "auto", "on"]).optional(),
     SUPPORT_AUTOMATION_MODE: z.enum(["off", "auto", "on"]).optional(),
     CONVERSION_ALERT_MODE: z.enum(["off", "auto", "on"]).optional(),
     AI_CHAT_MODE: z.enum(["off", "auto", "on"]).optional(),
@@ -249,6 +250,7 @@ export const env = createEnv({
    * `NEXT_PUBLIC_`.
    */
   client: {
+    NEXT_PUBLIC_LOCAL_DEMO: z.enum(["off", "on"]).default("off"),
     NEXT_PUBLIC_APP_ENV: z.enum(["dev", "staging", "prod"]).default("dev"),
     NEXT_PUBLIC_APP_NAME: z.string().optional(),
     NEXT_PUBLIC_SUPPORT_EMAIL: z.string().email().optional(),
@@ -285,6 +287,7 @@ export const env = createEnv({
    * middlewares) or client-side so we need to destruct manually.
    */
   runtimeEnv: {
+    NEXT_PUBLIC_LOCAL_DEMO: process.env.NEXT_PUBLIC_LOCAL_DEMO,
     AUTH_SECRET: authSecret,
     AUTH_URL: authUrl,
     NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET,
@@ -414,6 +417,7 @@ export const env = createEnv({
     PAYMENT_RECONCILIATION_MODE: process.env.PAYMENT_RECONCILIATION_MODE,
     AFFILIATE_MODE: process.env.AFFILIATE_MODE,
     TOUCH_MODE: process.env.TOUCH_MODE,
+    EMAIL_MANAGEMENT_MODE: process.env.EMAIL_MANAGEMENT_MODE,
     SUPPORT_AUTOMATION_MODE: process.env.SUPPORT_AUTOMATION_MODE,
     CONVERSION_ALERT_MODE: process.env.CONVERSION_ALERT_MODE,
     AI_CHAT_MODE: process.env.AI_CHAT_MODE,

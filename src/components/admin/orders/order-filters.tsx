@@ -23,7 +23,7 @@ interface OrderFiltersProps {
 export function OrderFilters({ filters, onFilterChange, onClearFilters, hasActiveFilters }: OrderFiltersProps) {
   const t = useTranslations("admin.orders")
   return (
-    <div className="border rounded-lg p-4 bg-muted/30 space-y-4">
+    <div className="admin-module-filters space-y-4">
       <div className="flex items-center justify-between">
         <h3 className="font-medium text-sm">{t("filters")}</h3>
         {hasActiveFilters && (
@@ -40,7 +40,7 @@ export function OrderFilters({ filters, onFilterChange, onClearFilters, hasActiv
             <SelectTrigger className="h-9">
               <SelectValue />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="admin-theme admin-popup">
               <SelectItem value="all">{t("all")}</SelectItem>
               <SelectItem value="PENDING">{t("statuses.pending")}</SelectItem>
               <SelectItem value="COMPLETED">{t("statuses.completed")}</SelectItem>
@@ -56,7 +56,7 @@ export function OrderFilters({ filters, onFilterChange, onClearFilters, hasActiv
             <SelectTrigger className="h-9">
               <SelectValue />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="admin-theme admin-popup">
               <SelectItem value="all">{t("all")}</SelectItem>
               <SelectItem value="NEW_PURCHASE">{t("types.newPurchase")}</SelectItem>
               <SelectItem value="RENEWAL">{t("types.renewal")}</SelectItem>

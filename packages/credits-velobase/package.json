@@ -1,0 +1,14 @@
+{
+  "name": "@velobase/credits-velobase",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./details": "./src/details.ts"
+  },
+  "dependencies": {
+    "@velobase/credits": "workspace:*",
+    "@velobaseai/billing": "^1.1.0"
+  }
+}

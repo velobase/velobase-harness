@@ -1,3 +1,4 @@
+import { isFeatureEnabled } from "@/server/features/state";
 import { z } from "zod";
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
 import { getSubscriptionStatus } from "@/server/membership/services/get-subscription-status";
@@ -61,15 +62,15 @@ export const accountRouter = createTRPCRouter({
         getSubscriptionStatus({ userId }).catch(
           () => ({ status: "NONE" }) as SubscriptionStatusResult,
         );
-      const balancePromise: Promise<GetBalanceOutput> = getBalance({
-        userId,
-      }).catch(
-        () =>
-          ({
-            totalSummary: { total: 0, used: 0, frozen: 0, available: 0 },
-            accounts: [],
-          }) as GetBalanceOutput,
-      );
+      const emptyBalance: GetBalanceOutput = {
+        totalSummary: { total: 0, used: 0, frozen: 0, available: 0 },
+        accounts: [],
+      };
+      const balancePromise: Promise<GetBalanceOutput> = (await isFeatureEnabled(
+        "credits",
+      ))
+        ? getBalance({ userId }).catch(() => emptyBalance)
+        : Promise.resolve(emptyBalance);
       const userPromise = ctx.db.user
         .findUnique({
           where: { id: userId },

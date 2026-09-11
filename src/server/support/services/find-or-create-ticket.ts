@@ -1,168 +1,84 @@
-/**
- * 根据邮件查找或创建工单
- * 
- * 逻辑：
- * 1. 如果邮件有 In-Reply-To，尝试通过 messageId 找到对应的工单
- * 2. 如果找不到，创建新工单
- * 3. 添加 MESSAGE 事件到 timeline
- */
-
 import { db } from "@/server/db";
-import { logger } from "@/lib/logger";
-import type { SupportTicket, Prisma } from "@prisma/client";
-import type { ParsedEmail, EmailMetadata } from "../types";
+import type { Prisma, SupportActorType } from "@prisma/client";
+import type { ParsedEmail } from "../types";
 
-/**
- * 根据邮件查找或创建工单
- */
-export async function findOrCreateTicket(email: ParsedEmail): Promise<SupportTicket> {
-  const fromEmail = email.from.address.toLowerCase();
-
-  // 1. 如果是回复邮件，尝试找到原始工单
-  if (email.inReplyTo) {
-    const existingEvent = await db.supportTimeline.findFirst({
-      where: {
-        metadata: {
-          path: ["messageId"],
-          equals: email.inReplyTo,
-        },
-      },
-      include: {
-        ticket: true,
-      },
+/** Persist receipt and ticket update atomically. A sender cannot attach mail to someone else's thread. */
+export async function findOrCreateTicket(
+  email: ParsedEmail,
+  assignedTo: SupportActorType = "AGENT",
+) {
+  const contact = email.from.address.toLowerCase();
+  return db.$transaction(async (tx) => {
+    await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${email.messageId}))`;
+    const existing = await tx.supportTimeline.findFirst({
+      where: { metadata: { path: ["messageId"], equals: email.messageId } },
+      include: { ticket: true },
     });
-
-    if (existingEvent?.ticket) {
-      logger.info(
-        { ticketId: existingEvent.ticket.id, inReplyTo: email.inReplyTo },
-        "Found existing ticket via In-Reply-To"
-      );
-
-      // 添加新消息到 timeline
-      await addMessageToTimeline(existingEvent.ticket.id, email);
-
-      // 更新工单状态（用户回复了，重新进入 OPEN）
-      const updatedTicket = await db.supportTicket.update({
-        where: { id: existingEvent.ticket.id },
-        data: {
-          status: "OPEN",
-          assignedTo: "AI",
-          updatedAt: new Date(),
-        },
-      });
-
-      return updatedTicket;
-    }
-  }
-
-  // 2. 尝试通过 References 查找
-  if (email.references) {
-    const refIds = email.references.split(/\s+/).filter(Boolean);
-    for (const refId of refIds) {
-      const existingEvent = await db.supportTimeline.findFirst({
-        where: {
-          metadata: {
-            path: ["messageId"],
-            equals: refId,
+    if (existing) return existing.ticket;
+    const references = [
+      email.inReplyTo,
+      ...(email.references?.split(/\s+/) ?? []),
+    ].filter((value): value is string => Boolean(value));
+    const parent = references.length
+      ? await tx.supportTimeline.findFirst({
+          where: {
+            ticket: { contact, channel: "email" },
+            OR: references.map((id) => ({
+              metadata: { path: ["messageId"], equals: id },
+            })),
           },
-        },
-        include: {
-          ticket: true,
-        },
-      });
-
-      if (existingEvent?.ticket) {
-        logger.info(
-          { ticketId: existingEvent.ticket.id, reference: refId },
-          "Found existing ticket via References"
-        );
-
-        await addMessageToTimeline(existingEvent.ticket.id, email);
-
-        const updatedTicket = await db.supportTicket.update({
-          where: { id: existingEvent.ticket.id },
+          include: { ticket: true },
+          orderBy: { createdAt: "desc" },
+        })
+      : null;
+    const user = parent
+      ? null
+      : await tx.user.findFirst({
+          where: { OR: [{ email: contact }, { canonicalEmail: contact }] },
+          select: { id: true },
+        });
+    const ticket = parent
+      ? await tx.supportTicket.update({
+          where: { id: parent.ticketId },
           data: {
             status: "OPEN",
-            assignedTo: "AI",
-            updatedAt: new Date(),
+            resolvedAt: null,
+            assignedTo:
+              parent.ticket.assignedTo === "AGENT" ? "AGENT" : assignedTo,
+          },
+        })
+      : await tx.supportTicket.create({
+          data: {
+            userId: user?.id,
+            contact,
+            channel: "email",
+            subject: email.subject,
+            status: "OPEN",
+            assignedTo,
           },
         });
-
-        return updatedTicket;
-      }
-    }
-  }
-
-  // 3. 创建新工单
-  logger.info({ from: fromEmail, subject: email.subject }, "Creating new ticket");
-
-  // 尝试匹配系统用户
-  const user = await db.user.findFirst({
-    where: {
-      OR: [
-        { email: fromEmail },
-        { canonicalEmail: fromEmail },
-      ],
-    },
-  });
-
-  const ticket = await db.supportTicket.create({
-    data: {
-      userId: user?.id,
-      contact: fromEmail,
-      channel: "email",
-      subject: email.subject,
-      status: "OPEN",
-      assignedTo: "AI",
-    },
-  });
-
-  // 添加第一条消息
-  await addMessageToTimeline(ticket.id, email);
-
-  logger.info(
-    { ticketId: ticket.id, userId: user?.id, from: fromEmail },
-    "New ticket created"
-  );
-
-  return ticket;
-}
-
-/**
- * 添加消息到工单 timeline
- */
-async function addMessageToTimeline(ticketId: string, email: ParsedEmail): Promise<void> {
-  const metadata: EmailMetadata = {
-    messageId: email.messageId,
-    inReplyTo: email.inReplyTo,
-    references: email.references,
-    cc: email.cc,
-  };
-
-  await db.supportTimeline.create({
-    data: {
-      ticketId,
-      actor: "USER",
-      type: "MESSAGE",
-      content: email.text ?? email.html ?? "",
-      metadata: metadata as unknown as Prisma.InputJsonValue,
-    },
-  });
-}
-
-/**
- * 检查邮件是否已处理过（防止重复导入）
- */
-export async function isEmailProcessed(messageId: string): Promise<boolean> {
-  const existing = await db.supportTimeline.findFirst({
-    where: {
-      metadata: {
-        path: ["messageId"],
-        equals: messageId,
+    await tx.supportTimeline.create({
+      data: {
+        ticketId: ticket.id,
+        actor: "USER",
+        type: "MESSAGE",
+        content: email.text ?? "",
+        metadata: {
+          messageId: email.messageId,
+          inReplyTo: email.inReplyTo,
+          references: email.references,
+          cc: email.cc,
+        } as Prisma.InputJsonValue,
       },
-    },
+    });
+    return ticket;
   });
-
-  return !!existing;
 }
-
+export async function isEmailProcessed(messageId: string): Promise<boolean> {
+  return Boolean(
+    await db.supportTimeline.findFirst({
+      where: { metadata: { path: ["messageId"], equals: messageId } },
+      select: { id: true },
+    }),
+  );
+}

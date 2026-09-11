@@ -12,7 +12,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { User, ArrowDownCircle, ArrowUpCircle } from "lucide-react";
+import { ArrowDownCircle, ArrowUpCircle } from "lucide-react";
 import { GrantCreditsDialog } from "./grant-credits-dialog";
 import { DeductCreditsDialog } from "./deduct-credits-dialog";
 import { OperationIcon, OperationBadge } from "./operation-status";
@@ -53,17 +53,9 @@ export function UserCreditsDisplay({
     consumptionQuery.data?.pages.flatMap((p) => p.items) ?? [];
 
   return (
-    <div className={cn("space-y-6 rounded-lg border p-6", className)}>
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="bg-muted flex h-10 w-10 items-center justify-center rounded-full">
-            <User className="text-muted-foreground h-5 w-5" />
-          </div>
-          <div>
-            <p className="font-medium">{userName || t("unknown")}</p>
-            <p className="text-muted-foreground text-sm">{userId}</p>
-          </div>
-        </div>
+    <div className={cn("space-y-6", className)}>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <p className="break-all font-mono text-xs text-muted-foreground">{userId}</p>
         <div className="flex gap-2">
           <GrantCreditsDialog
             userId={userId}
@@ -78,13 +70,13 @@ export function UserCreditsDisplay({
         </div>
       </div>
 
-      <div className="grid grid-cols-4 gap-4">
+      <div className="admin-module-metrics">
         <div className="bg-muted/50 rounded-md p-4">
           <p className="text-muted-foreground text-sm">{t("available")}</p>
           {isLoading ? (
             <Skeleton className="mt-1 h-7 w-16" />
           ) : (
-            <p className="text-2xl font-bold text-green-600">
+            <p className="text-2xl font-bold text-foreground">
               {format.number(data?.totalSummary?.available ?? 0)}
             </p>
           )}
@@ -104,7 +96,7 @@ export function UserCreditsDisplay({
           {isLoading ? (
             <Skeleton className="mt-1 h-7 w-16" />
           ) : (
-            <p className="text-2xl font-bold text-amber-600">
+            <p className="text-2xl font-bold text-foreground">
               {format.number(data?.totalSummary?.used ?? 0)}
             </p>
           )}
@@ -114,7 +106,7 @@ export function UserCreditsDisplay({
           {isLoading ? (
             <Skeleton className="mt-1 h-7 w-16" />
           ) : (
-            <p className="text-2xl font-bold text-blue-600">
+            <p className="text-2xl font-bold text-foreground">
               {format.number(data?.totalSummary?.frozen ?? 0)}
             </p>
           )}
@@ -214,7 +206,7 @@ export function UserCreditsDisplay({
                       <TableCell className="font-medium">
                         {record.source}
                       </TableCell>
-                      <TableCell className="text-right font-medium text-green-600">
+                      <TableCell className="text-right font-medium text-foreground">
                         +{format.number(record.amount)}
                       </TableCell>
                       <TableCell className="text-muted-foreground max-w-[200px] truncate text-sm">
@@ -284,7 +276,7 @@ export function UserCreditsDisplay({
                           <OperationBadge type={record.operationType} />
                         </div>
                       </TableCell>
-                      <TableCell className="text-right font-medium text-amber-600">
+                      <TableCell className="text-right font-medium text-foreground">
                         -{format.number(record.amount)}
                       </TableCell>
                       <TableCell className="text-muted-foreground text-sm">

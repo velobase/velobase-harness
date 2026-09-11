@@ -2,13 +2,31 @@
 
 **其他语言:** [English](./README.md)
 
+## 先运行起来
+
+下载或克隆仓库，准备 Node.js、pnpm 并打开 Docker Desktop，在仓库目录执行：
+
+```sh
+pnpm install && pnpm dev:local
+```
+
+打开 [Harness](http://localhost:3003)，看到原来的首页、Admin 和业务页面。点击 **登录 / Sign in**，选择 **以本地管理员身份体验 / Explore as local administrator**。Web 和 Worker 直接在 Mac / 本机上运行，保存源码后浏览器热更新；Docker 只运行 PostgreSQL 和 Redis。命令自动准备原有数据库结构和种子数据，后续只需执行 `pnpm dev:local`。
+
+浏览应用无需外部账号。调用模型、真实支付和收发邮件时，再配置对应服务。按 `Ctrl+C` 停止应用开发进程，数据库继续运行，数据保存在原有 Docker 卷中。语言和登录偏好保留；本地认证密钥保存在忽略提交的 `.harness-local/`。体验模式仅用于本机开发；部署时使用自己的认证配置。
+
+此前用 Docker 运行整个应用时，`pnpm dev:local` 会停止同一个体验项目中的 Web 容器、保留登录密钥和数据，再切换为本机开发。数据库仅映射到本机 `127.0.0.1:54333`，Redis 为 `127.0.0.1:56380`。
+
+只想用 Docker 体验、不编辑源码时，仍可执行 `docker compose -f compose.demo.yml up --build`；先停止本机开发进程，避免占用同一个 `3003` 端口。
+
+继续在同一个 Harness 中查看[模块目录](./docs/zh-CN/modules/catalog.md)和[配置与组合方式](./docs/zh-CN/modules/composition.md)。
+
 ShipFast / ShipAny 之外，面向 AI SaaS builder 的免费开源选择。
 
 把 AI Demo 变成能收钱、能运营、能部署的 SaaS 产品底座。
 
 Velobase Harness 是一个 MIT 开源的 AI SaaS 框架。它把用户体系、计费与积分、支付、增长归因、联盟分销、反滥用、后台任务、AI Chat、部署文档先搭好，让你把时间花在真正的产品功能上。
 
-如果你是从极客时间《产品二姐》AI SaaS 课程看到 Harness，可以直接看下面的 [快速本地启动](#快速本地启动)。这个仓库面向所有 AI SaaS builder 开放，可自托管，也可用于商业产品。
+如果你是从极客时间《产品二姐》AI SaaS 课程看到 Harness，可以先[运行本地体验](#先运行起来)。这个仓库面向所有 AI SaaS builder 开放，可自托管，也可用于商业产品。
 
 [![Next.js](https://img.shields.io/badge/Next.js-15-black)](https://nextjs.org)
 [![React](https://img.shields.io/badge/React-19-61dafb)](https://react.dev)
@@ -34,7 +52,11 @@ Velobase Harness 是一个开源 AI SaaS boilerplate / 应用框架，适合把 
 | 正在把 AI 功能接入现有产品的团队 | [阅读框架指南](./FRAMEWORK_GUIDE.zh-CN.md)                  | 模块、服务、事件、队列和第三方集成的生产级边界                    |
 | 想少管服务器、尽快上线的人       | [使用 Velobase Launchpad](https://velobase.cloud/launchpad) | 帮你准备项目、云资源和给 AI IDE 使用的开发 Prompt                 |
 
-## 快速本地启动
+<a id="快速本地启动"></a>
+
+## 完整示例的开发环境
+
+下面启动包含商业与 AI 功能的完整开发工程。首次了解 Harness，请先使用上方的一命令体验入口。
 
 前置要求：Node.js、pnpm、Docker Desktop 和 Docker Compose。
 

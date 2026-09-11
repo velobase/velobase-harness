@@ -1,16 +1,7 @@
-import { db } from '@/server/db'
-
+import {
+  productCatalog,
+  productOperation,
+} from "@/modules/products/server/service";
 export async function adminDeleteProduct(productId: string) {
-  // Soft delete: set deletedAt timestamp
-  const product = await db.product.update({
-    where: { id: productId },
-    data: {
-      deletedAt: new Date(),
-      status: 'INACTIVE',
-      isAvailable: false,
-    },
-  })
-
-  return product
+  return productOperation(() => productCatalog.archive(productId));
 }
-

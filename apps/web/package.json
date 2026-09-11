@@ -11,6 +11,13 @@
   },
   "dependencies": {
     "@velobase/api-client": "workspace:*",
-    "@velobase/contracts": "workspace:*"
+    "@velobase/contracts": "workspace:*",
+    "@velobase/module-runtime": "workspace:*",
+    "@velobase/example-composition": "workspace:*",
+    "@velobase/image-generation": "workspace:*",
+    "@velobase/image-generation-wavespeed": "workspace:*",
+    "@velobase/image-generation-modelrunner": "workspace:*",
+    "@velobase/ai-chat": "workspace:*",
+    "@velobase/ai-chat-openrouter": "workspace:*"
   }
 }

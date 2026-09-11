@@ -1,4 +1,5 @@
 import { db } from "@/server/db";
+import { paymentRecords } from "@/modules/payments/server/service";
 import { ENABLE_PAYMENT_GATEWAY_PREFERENCE_AUTO_SYNC } from "../config";
 import { getProvider } from "../providers/registry";
 import type { Payment, Prisma } from "@prisma/client";
@@ -8,8 +9,8 @@ import {
   asyncSendPaymentNotification,
 } from "@/lib/lark";
 import type { PaymentWebhookResult } from "../providers/types";
-import { grant } from "@/server/billing/services/grant";
-import { createSubscriptionCycle } from "@/server/membership/services/create-subscription-cycle";
+import { normalizeStripePaidSubscriptionInvoice } from "@velobase/subscriptions-stripe";
+import { fulfillStripeSubscriptionRenewal } from "@/modules/subscriptions/server/renewal";
 import { NEW_USER_UNLOCK_OFFER } from "@/server/offers/constants";
 import { consumeNewUserUnlockOffer } from "@/server/offers/services/consume-new-user-unlock-offer";
 import type { NormalizedSubscriptionWebhookData } from "../providers/types";
@@ -22,12 +23,12 @@ import {
 
 /**
  * 用于标记“我们希望 Stripe 重放”的错误：
- * - 仅当履约/发放权益这类逻辑失败时抛出该错误；
+ * - 状态持久化冲突、数据库故障或履约/发放权益失败时抛出该错误；
  * - 其它错误（解析失败/无法映射到 payment 等）应尽量吞掉并返回 2xx，避免 Stripe 无限重试。
  */
 export class WebhookFulfillmentError extends Error {
   constructor(cause: unknown) {
-    super("Webhook fulfillment failed", { cause });
+    super("Webhook processing failed", { cause });
     this.name = "WebhookFulfillmentError";
   }
 }
@@ -56,17 +57,17 @@ export async function handlePaymentWebhook(providerName: string, req: Request) {
 
   let payment: Payment | null = null;
   if (subId) {
-    payment = await db.payment.findFirst({ where: { gatewaySubscriptionId: subId } });
+    payment = await db.payment.findFirst({ where: { gatewaySubscriptionId: subId, paymentGateway: { equals: providerName, mode: "insensitive" } } });
   }
   if (!payment && txnId) {
-    payment = await db.payment.findFirst({ where: { gatewayTransactionId: txnId } });
+    payment = await db.payment.findFirst({ where: { gatewayTransactionId: txnId, paymentGateway: { equals: providerName, mode: "insensitive" } } });
   }
   // Fallback: use metadata.paymentId/orderId from checkout.session
   if (!payment && raw?.metadata?.paymentId) {
     payment = await db.payment.findUnique({ where: { id: raw.metadata.paymentId } });
   }
   if (!payment && raw?.metadata?.orderId) {
-    payment = await db.payment.findFirst({ where: { orderId: raw.metadata.orderId }, orderBy: { createdAt: "desc" } });
+    payment = await db.payment.findFirst({ where: { orderId: raw.metadata.orderId, paymentGateway: { equals: providerName, mode: "insensitive" } }, orderBy: { createdAt: "desc" } });
   }
 
   // Stripe fallback:
@@ -83,7 +84,7 @@ export async function handlePaymentWebhook(providerName: string, req: Request) {
         payment = await db.payment.findUnique({ where: { id: meta.paymentId } });
       }
       if (!payment && meta?.orderId) {
-        payment = await db.payment.findFirst({ where: { orderId: meta.orderId }, orderBy: { createdAt: "desc" } });
+        payment = await db.payment.findFirst({ where: { orderId: meta.orderId, paymentGateway: "STRIPE" }, orderBy: { createdAt: "desc" } });
       }
       logger.info(
         { provider: providerName, txnId, found: !!payment, sessionId: s?.id, metadata: meta },
@@ -193,39 +194,25 @@ export async function handlePaymentWebhook(providerName: string, req: Request) {
   );
 
   const status = result.getStatus();
-
-  // 记录更新前的状态，用于后续幂等判断
-  const previousStatus = payment.status;
-
-  // 防止 Stripe 重放/乱序导致“已成功的支付”被失败事件打回：
-  // - 我们仅处理 `payment_intent.*` / `checkout.session.completed` 这类“过程事件”，不包含退款/拒付等逆向事件。
-  // - 因此一旦 Payment 已经 SUCCEEDED，则不允许被 FAILED 覆盖。
-  if (previousStatus === "SUCCEEDED" && status === "FAILED") {
-    logger.warn(
-      {
-        provider: providerName,
-        paymentId: payment.id,
-        orderId: payment.orderId,
-        previousStatus,
-        incomingStatus: status,
-        gatewayTransactionId: txnId ?? payment.gatewayTransactionId ?? undefined,
-        gatewaySubscriptionId: subId ?? payment.gatewaySubscriptionId ?? undefined,
-      },
-      "Skip downgrading SUCCEEDED payment to FAILED (out-of-order/replayed webhook)"
-    );
+  if (payment.paymentGateway.toUpperCase() !== providerName.toUpperCase()) {
+    logger.warn({ provider: providerName, paymentId: payment.id }, "Ignore payment evidence from a different provider");
+    return { status: "ignored" };
+  }
+  let recorded: Awaited<ReturnType<typeof paymentRecords.recordVerifiedState>>;
+  try {
+    recorded = await paymentRecords.recordVerifiedState({ paymentId: payment.id, gateway: providerName, status,
+      gatewayTransactionId: txnId, gatewaySubscriptionId: subId, rawData: result.getRawData(),
+    });
+  } catch (error) {
+    // Persistence conflicts/outages must be replayed just like failed fulfillment; do not acknowledge lost state.
+    throw new WebhookFulfillmentError(error);
+  }
+  const previousStatus = recorded.previousStatus;
+  payment = recorded.payment;
+  if (!recorded.applied) {
+    logger.info({ provider: providerName, paymentId: payment.id, previousStatus, incomingStatus: status }, "Ignore an out-of-order payment status");
     return result.getData();
   }
-
-  // 更新支付状态并补齐缺失的 gateway IDs
-  await db.payment.update({
-    where: { id: payment.id },
-    data: {
-      status,
-      gatewayTransactionId: payment.gatewayTransactionId ?? (txnId ?? undefined),
-      gatewaySubscriptionId: payment.gatewaySubscriptionId ?? (subId ?? undefined),
-      gatewayResponse: result.getRawData() as Prisma.JsonObject,
-    },
-  });
 
   // 支付失败则将同订单下未过期的 PENDING 置为 FAILED，并在订单仍 PENDING 时置为 CANCELLED
   if (status === "FAILED" && payment.orderId) {
@@ -684,232 +671,27 @@ export async function handlePaymentWebhook(providerName: string, req: Request) {
 }
 
 // Stripe 订阅续费（invoice.payment_succeeded -> subscription_period > 1）
-export async function handleStripeSubscriptionRenewal(
-  result: PaymentWebhookResult
-) {
-  const gatewaySubId = result.getGatewaySubscriptionId();
-  const txnId = result.getGatewayTransactionId();
-  if (!gatewaySubId) {
-    logger.error(
-      {},
-      "Stripe subscription renewal webhook missing gateway subscription id"
-    );
-    // Payload 本身缺字段，重放也不会变好：直接 2xx 吞掉，避免 Stripe 无限重试
-    return result.getData();
-  }
-
-  if (!txnId) {
-    logger.error(
-      {},
-      "Stripe subscription renewal webhook missing gateway transaction id"
-    );
-    // Payload 本身缺字段，重放也不会变好：直接 2xx 吞掉，避免 Stripe 无限重试
-    return result.getData();
-  }
-
-  const subscription = await db.userSubscription.findFirst({
-    where: { gatewaySubscriptionId: gatewaySubId },
-    include: {
-      cycles: {
-        where: { status: "ACTIVE" },
-        orderBy: { sequenceNumber: "desc" },
-        take: 1,
-      },
-    },
-  });
-
-  if (!subscription) {
-    logger.error(
-      { gatewaySubscriptionId: gatewaySubId },
-      "UserSubscription not found for Stripe renewal"
-    );
-    // 找不到订阅通常是数据不一致或竞态；重放未必能修复，避免无限重试
-    return result.getData();
-  }
-
-  // Note: Stripe cashflow is recorded exclusively on charge.succeeded (see handlePaymentWebhook).
-
-  const activeCycle = subscription.cycles[0] ?? null;
-
-  // 从 planSnapshot 中解析订阅计划信息（与首期履约逻辑保持一致）
-  const snapshot = subscription.planSnapshot as unknown as {
-    productSubscription?: {
-      plan?: {
-        interval?: string;
-        intervalCount?: number;
-        creditsPerPeriod?: number;
-        creditsPerMonth?: number;
-      };
-    };
-  };
-
-  const plan = snapshot.productSubscription?.plan;
-  if (!plan) {
-    logger.warn(
-      { subscriptionId: subscription.id },
-      "Subscription plan snapshot missing, skip renewal fulfillment"
-    );
-    return result.getData();
-  }
-
-  const outerBizId = `subscription_renewal_${subscription.id}_${txnId}`;
-
-  const rawInterval = (plan.interval ?? "").toString().toLowerCase();
-  const interval =
-    rawInterval === "week" || rawInterval === "month" || rawInterval === "year"
-      ? rawInterval
-      : "";
-  const intervalCount =
-    typeof plan.intervalCount === "number" && plan.intervalCount > 0
-      ? plan.intervalCount
-      : 1;
-
-  const now = new Date();
-
-  // 默认：新周期从上一个 ACTIVE 周期的 expiresAt 开始
-  // Early-convert 场景（提前结束试用并扣款）：
-  // - 当前 ACTIVE 周期为 TRIAL
-  // - 且当前时间仍早于 TRIAL 的 expiresAt
-  // 此时应视为“立即转正”，新周期应从 now 开始，而不是原本的 trial 结束时间。
-  let periodStart = activeCycle?.expiresAt ?? now;
-  if (activeCycle?.type === "TRIAL" && activeCycle.expiresAt > now) {
-    periodStart = now;
-  }
-  const periodEnd = new Date(periodStart);
-  if (interval === "week") {
-    periodEnd.setDate(periodEnd.getDate() + 7 * intervalCount);
-  } else if (interval === "month") {
-    periodEnd.setMonth(periodEnd.getMonth() + intervalCount);
-  } else if (interval === "year") {
-    periodEnd.setFullYear(periodEnd.getFullYear() + intervalCount);
-  } else {
-    logger.warn(
-      {
-        subscriptionId: subscription.id,
-        interval: plan.interval,
-      },
-      "Unsupported subscription interval in snapshot, skip renewal extension"
-    );
-    return result.getData();
-  }
-
-  const creditsPerPeriod =
-    (typeof plan.creditsPerPeriod === "number" && plan.creditsPerPeriod > 0)
-      ? plan.creditsPerPeriod
-      : (typeof plan.creditsPerMonth === "number" && plan.creditsPerMonth > 0)
-        ? plan.creditsPerMonth
-        : 0;
-
-  // 续费属于“发放权益/积分”的履约逻辑：如果 DB/发放失败，希望 Stripe 重放
-  let newCycleSequenceNumber: number | undefined;
+export async function handleStripeSubscriptionRenewal(result: PaymentWebhookResult) {
+  let fulfilled: Awaited<ReturnType<typeof fulfillStripeSubscriptionRenewal>>;
   try {
-    // 幂等：先尝试创建周期，uniqueKey 已存在则说明本次续费已处理过
-    const renewalUniqueKey = `sub_renewal_${subscription.id}_${txnId}`;
-    const newCycle = await createSubscriptionCycle({
-      subscriptionId: subscription.id,
-      paymentId: undefined,
-      uniqueKey: renewalUniqueKey,
-      type: "REGULAR",
-      startsAt: periodStart,
-      expiresAt: periodEnd,
-    });
-
-    const isReplay = newCycle.createdAt.getTime() < Date.now() - 5000;
-    if (isReplay) {
-      logger.info(
-        { subscriptionId: subscription.id, txnId, cycleId: newCycle.id },
-        "Subscription renewal already processed (cycle exists), skipping"
-      );
-      return result.getData();
-    }
-
-    newCycleSequenceNumber = newCycle.sequenceNumber;
-
-    // 新周期创建成功后，关闭旧的 ACTIVE 周期
-    if (activeCycle && activeCycle.id !== newCycle.id) {
-      await db.userSubscriptionCycle.update({
-        where: { id: activeCycle.id },
-        data: { status: "CLOSED" },
-      });
-    }
-
-    // 续费成功时，恢复订阅为 ACTIVE 并清除取消标记
-    await db.userSubscription.update({
-      where: { id: subscription.id },
-      data: {
-        status: "ACTIVE",
-        cancelAtPeriodEnd: false,
-        canceledAt: null,
-        endedAt: null,
-      },
-    });
-
-    if (creditsPerPeriod > 0) {
-      // 续费首月积分的有效期：从本期周期开始时间起 1 个月
-      const firstMonthCreditExpiresAt = new Date(periodStart);
-      firstMonthCreditExpiresAt.setMonth(firstMonthCreditExpiresAt.getMonth() + 1);
-
-      await grant({
-        userId: subscription.userId,
-        source: "membership",
-        amount: creditsPerPeriod,
-        outerBizId,
-        businessType: "SUBSCRIPTION",
-        referenceId: subscription.id,
-        description: "Subscription Credits (renewal first month)",
-        startsAt: periodStart,
-        expiresAt: firstMonthCreditExpiresAt,
-      });
-
-      // 记录积分发放锚点，供后续按月发放逻辑使用
-      await db.userSubscriptionCycle.update({
-        where: { id: newCycle.id },
-        data: {
-          lastCreditGrantAnchor: periodStart,
-        },
-      });
-
-      // 标记 Trial → 订阅转化（如果用户之前使用过 Pro Trial）
-      await db.userStats.updateMany({
-        where: {
-          userId: subscription.userId,
-          hasUsedProTrial: true,
-          proTrialConverted: false,
-        },
-        data: {
-          proTrialConverted: true,
-        },
-      });
-    }
-
-    // Affiliate earning is now handled by the event bus (subscription:renewed)
-    await appEvents.emit("subscription:renewed", {
-      subscriptionId: subscription.id,
-      userId: subscription.userId,
-      cycleNumber: newCycleSequenceNumber,
-      amountCents: result.getAmount() ?? 0,
-      currency: result.getCurrency() ?? "usd",
-      periodStart,
-      periodEnd,
-    });
+    const invoice = normalizeStripePaidSubscriptionInvoice(result.getRawData());
+    if (result.getStatus() !== "SUCCEEDED" || invoice.invoiceId !== result.getGatewayTransactionId() || invoice.gatewaySubscriptionId !== result.getGatewaySubscriptionId())
+      throw new Error("Subscription invoice identity does not match verified payment evidence");
+    fulfilled = await fulfillStripeSubscriptionRenewal(invoice);
   } catch (error) {
-    logger.error(
-      { error, subscriptionId: subscription.id, gatewaySubscriptionId: gatewaySubId, transactionId: txnId },
-      "Stripe renewal fulfillment failed"
-    );
+    // A missing enrollment can be a Checkout/webhook race. Retain the provider retry instead of acknowledging lost delivery.
+    logger.error({ error, transactionId: result.getGatewayTransactionId() }, "Stripe renewal fulfillment failed");
     throw new WebhookFulfillmentError(error);
   }
-
-  logger.info(
-    {
-      subscriptionId: subscription.id,
-      gatewaySubscriptionId: gatewaySubId,
-      periodStart,
-      periodEnd,
-      creditsPerPeriod,
-    },
-    "Stripe subscription renewal processed"
-  );
+  const { subscription, period, record } = fulfilled;
+  const txnId = result.getGatewayTransactionId()!;
+  const newCycleSequenceNumber = period.cycleNumber;
+  const periodStart = new Date(period.startsAt);
+  const periodEnd = new Date(period.expiresAt);
+  const creditsPerPeriod = record.plan.effects.reduce((sum, effect) => {
+    const payload = effect.payload;
+    return sum + (payload && typeof payload === "object" && !Array.isArray(payload) && typeof payload.amount === "number" ? payload.amount : 0);
+  }, 0);
 
   // Lark: 订阅续费/提前转正（invoice.payment_succeeded）通知
   try {
@@ -1042,7 +824,7 @@ export async function handleSubscriptionWebhook(providerName: string, req: Reque
 
       if (gatewaySubId) {
         const subscription = await db.userSubscription.findFirst({
-          where: { gatewaySubscriptionId: gatewaySubId },
+          where: { gatewaySubscriptionId: gatewaySubId, gateway: { equals: "STRIPE", mode: "insensitive" }, deletedAt: null },
           include: {
             cycles: {
               where: { status: "ACTIVE" },
@@ -1054,8 +836,11 @@ export async function handleSubscriptionWebhook(providerName: string, req: Reque
 
         const activeCycle = subscription?.cycles[0] ?? null;
 
-        // 仅当当前仍处于 TRIAL 周期时，才将该事件视为“提前转正”的首个正式周期
-        if (subscription && activeCycle?.type === "TRIAL") {
+        // A retry must resume its existing period even after the first attempt already closed the trial.
+        const acceptedCycle = subscription && maybePaymentResult.getGatewayTransactionId()
+          ? await db.userSubscriptionCycle.findUnique({ where: { uniqueKey: `sub_renewal_${subscription.id}_${maybePaymentResult.getGatewayTransactionId()}` } })
+          : null;
+        if (subscription && (activeCycle?.type === "TRIAL" || acceptedCycle)) {
           logger.info(
             {
               provider: providerName,
@@ -1111,7 +896,7 @@ export async function handleSubscriptionWebhook(providerName: string, req: Reque
         const gatewaySubId = maybePayment.getGatewaySubscriptionId();
         if (gatewaySubId) {
           const subscription = await db.userSubscription.findFirst({
-            where: { gatewaySubscriptionId: gatewaySubId },
+            where: { gatewaySubscriptionId: gatewaySubId, gateway: { equals: "STRIPE", mode: "insensitive" }, deletedAt: null },
           });
           const userId = subscription?.userId;
 
@@ -1178,7 +963,7 @@ export async function handleSubscriptionWebhook(providerName: string, req: Reque
   const subId = result.getGatewaySubscriptionId();
   const payment = subId
     ? await db.payment.findFirst({
-        where: { gatewaySubscriptionId: subId },
+        where: { gatewaySubscriptionId: subId, paymentGateway: { equals: providerName, mode: "insensitive" } },
       })
     : null;
 
@@ -1193,17 +978,16 @@ export async function handleSubscriptionWebhook(providerName: string, req: Reque
       "Processing subscription webhook (payment mutation)"
     );
 
-    await db.payment.update({
-      where: { id: payment.id },
-      data: {
-        status: result.getStatus(),
-        gatewayResponse: result.getRawData() as Prisma.JsonObject,
-      },
-    });
+    let applied = false;
+    if (payment.paymentGateway.toUpperCase() === providerName.toUpperCase()) {
+      try {
+        applied = (await paymentRecords.recordVerifiedState({ paymentId: payment.id, gateway: providerName, status: result.getStatus(), rawData: result.getRawData() })).applied;
+      } catch (error) { throw new WebhookFulfillmentError(error); }
+    }
 
     // Stripe: invoice.payment_succeeded for subscription initial charge (subscriptionPeriod=1)
     // Best-effort backfill Payment.gatewayTransactionId (cashflow is recorded on charge.succeeded).
-    if (providerName.toUpperCase() === "STRIPE" && result.getStatus() === "SUCCEEDED") {
+    if (applied && providerName.toUpperCase() === "STRIPE" && result.getStatus() === "SUCCEEDED") {
       try {
         const maybePaymentResult = result as unknown as PaymentWebhookResult;
         const raw = maybePaymentResult.getRawData() as
@@ -1354,4 +1138,3 @@ export async function handleSubscriptionWebhook(providerName: string, req: Reque
 
   return result.getData();
 }
-

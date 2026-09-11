@@ -1,0 +1,18 @@
+{
+  "name": "@velobase/mailbox",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "imap": "^0.8.19",
+    "mailparser": "^3.9.20",
+    "@velobase/email-transport": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/imap": "^0.8.43",
+    "@types/mailparser": "^3.4.6"
+  }
+}

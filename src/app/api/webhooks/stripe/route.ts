@@ -7,8 +7,7 @@ import {
 } from "@/server/order/services/handle-webhooks";
 import { db } from "@/server/db";
 import type Stripe from "stripe";
-import { getStripeClient } from "@/server/order/providers/stripe";
-import { getStripeWebhookSecret } from "@/server/shared/env";
+import { verifyStripeWebhook } from "@/server/order/services/stripe/verify-webhook";
 
 export async function POST(req: Request) {
   if (!MODULES.integrations.payment.stripe.enabled) {
@@ -37,12 +36,7 @@ export async function POST(req: Request) {
   }
 
   try {
-    const stripe = getStripeClient();
-    event = stripe.webhooks.constructEvent(
-      rawBody,
-      signature,
-      getStripeWebhookSecret(),
-    );
+    event = await verifyStripeWebhook(rawBody, signature);
 
     // Create webhook log entry
     const log = await db.paymentWebhookLog.upsert({

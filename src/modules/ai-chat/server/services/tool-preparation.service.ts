@@ -1,3 +1,4 @@
+import type { ToolSet } from "@velobase/ai-chat";
 import { toolRegistry, registerBuiltinTools } from "@/server/api/tools";
 import { filterUnsupportedToolCalls } from "../lib/message-utils";
 import type { ChatUIMessage } from "../../types/message";
@@ -12,36 +13,9 @@ const logger = createLogger("tool-preparation-service");
 export function prepareTools(
   agentTools: string[],
   context: ToolContext,
-): Record<string, unknown> {
+): ToolSet {
   registerBuiltinTools();
-  const tools: Record<string, unknown> = {};
-
-  for (const toolName of agentTools) {
-    const toolFactory = toolRegistry.get(toolName);
-    if (!toolFactory) {
-      logger.warn({ toolName, availableTools: toolRegistry.list().map(t => t.name) }, "Tool not found in registry");
-      continue;
-    }
-    if (toolFactory) {
-      const toolInstances: unknown = toolFactory(context);
-
-      if (
-        typeof toolInstances === "object" &&
-        toolInstances !== null &&
-        !Array.isArray(toolInstances)
-      ) {
-        Object.assign(tools, toolInstances as Record<string, unknown>);
-        logger.info(
-          { toolName, toolKeys: Object.keys(toolInstances as Record<string, unknown>) },
-          "Tools loaded"
-        );
-      } else {
-        logger.warn({ toolName }, "Tool factory did not return a valid ToolSet object");
-      }
-    }
-  }
-
-  return tools;
+  return toolRegistry.prepare(agentTools, context);
 }
 
 /**
@@ -56,10 +30,13 @@ export function filterMessagesForAgent(
 
   logger.info(
     { conversationId, activeTools: activeToolNames },
-    "Filtering messages for current agent"
+    "Filtering messages for current agent",
   );
 
-  const filteredMessages = filterUnsupportedToolCalls(messages, activeToolNames) as ChatUIMessage[];
+  const filteredMessages = filterUnsupportedToolCalls(
+    messages,
+    activeToolNames,
+  );
 
   logger.info(
     {
@@ -67,9 +44,8 @@ export function filterMessagesForAgent(
       originalMessageCount: messages.length,
       filteredMessageCount: filteredMessages.length,
     },
-    "Message filtering completed"
+    "Message filtering completed",
   );
 
   return filteredMessages;
 }
-

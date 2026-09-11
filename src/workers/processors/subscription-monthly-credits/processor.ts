@@ -6,7 +6,7 @@
 import type { Job } from "bullmq";
 import { createLogger } from "@/lib/logger";
 import { db } from "@/server/db";
-import { grant } from "@/server/billing/services/grant";
+import { settleGrant as grant } from "@/server/billing/services/grant";
 import type { SubscriptionMonthlyCreditsJobData } from "../../queues/subscription-monthly-credits.queue";
 
 const logger = createLogger("subscription-monthly-credits");

@@ -1,4 +1,4 @@
-"use client"
+"use client";
 
 import {
   Sheet,
@@ -6,102 +6,150 @@ import {
   SheetDescription,
   SheetHeader,
   SheetTitle,
-} from "@/components/ui/sheet"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Badge } from "@/components/ui/badge"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import { useLocale, useTranslations } from "next-intl"
-import { formatPrice } from "./product-price-cell"
-import type { RouterOutputs } from "@/trpc/react"
+} from "@/components/ui/sheet";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { useLocale, useTranslations } from "next-intl";
+import { formatPrice } from "./product-price-cell";
+import type { RouterOutputs } from "@/trpc/react";
+import { CatalogEditor } from "@/modules/products/components/catalog-editor";
 
 // Product type returned by the API
-type Product = RouterOutputs["admin"]["listProducts"]["items"][number]
+type Product = RouterOutputs["admin"]["listProducts"]["items"][number];
 
 interface ProductDetailSheetProps {
-  product: Product | null
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  onUpdate?: () => void
+  product: Product | null;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onUpdate?: () => void;
 }
 
 export function ProductDetailSheet({
   product,
   open,
   onOpenChange,
-  onUpdate: _onUpdate,
+  onUpdate,
 }: ProductDetailSheetProps) {
-  const t = useTranslations("admin.productManagement")
-  const locale = useLocale()
-  if (!product) return null
+  const t = useTranslations("admin.productManagement");
+  const catalog = useTranslations("productCatalog");
+  const locale = useLocale();
+  if (!product) return null;
+  const productTypeLabels: Record<string, string> = {
+    SUBSCRIPTION: t("subscription"),
+    CREDITS_PACKAGE: t("creditsPackage"),
+    ONE_TIME_ENTITLEMENT: t("oneTimeEntitlement"),
+  };
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-[800px] sm:max-w-[800px] p-0 flex flex-col">
-        <div className="p-6 border-b">
+      <SheetContent className="admin-theme admin-module-dialog flex w-full flex-col p-0 sm:max-w-[800px]">
+        <div className="border-b p-6 pr-12">
           <SheetHeader>
-            <div className="flex items-start justify-between">
-              <div>
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div className="min-w-0">
                 <SheetTitle className="text-xl">{product.name}</SheetTitle>
-                <SheetDescription className="mt-1 font-mono text-xs">
+                <SheetDescription className="mt-1 break-all font-mono text-xs">
                   ID: {product.id}
                 </SheetDescription>
               </div>
               <div className="flex items-center gap-2">
-                 <Badge variant={product.status === "ACTIVE" ? "default" : "secondary"}>
-                  {product.status}
+                <Badge
+                  variant={
+                    product.status === "ACTIVE" ? "secondary" : "outline"
+                  }
+                >
+                  {product.status === "ACTIVE" ? t("active") : product.status === "INACTIVE" ? t("inactive") : product.status}
                 </Badge>
                 {product.isAvailable ? (
-                  <Badge variant="outline" className="text-green-600 border-green-200 bg-green-50">{t("published")}</Badge>
+                  <Badge
+                    variant="outline"
+                  >
+                    {t("published")}
+                  </Badge>
                 ) : (
-                  <Badge variant="outline" className="text-muted-foreground">{t("unpublished")}</Badge>
+                  <Badge variant="outline" className="text-muted-foreground">
+                    {t("unpublished")}
+                  </Badge>
                 )}
               </div>
             </div>
           </SheetHeader>
         </div>
 
-        <Tabs defaultValue="basic" className="flex-1 flex flex-col overflow-hidden">
-          <div className="px-6 pt-2">
-            <TabsList className="w-full justify-start">
+        <Tabs
+          defaultValue="basic"
+          className="flex flex-1 flex-col overflow-hidden"
+        >
+          <div className="overflow-x-auto px-6 pt-2">
+            <TabsList className="w-max min-w-full justify-start">
               <TabsTrigger value="basic">{t("basicInfo")}</TabsTrigger>
               <TabsTrigger value="pricing">{t("pricing")}</TabsTrigger>
-              <TabsTrigger value="subscription" disabled={product.type !== "SUBSCRIPTION"}>
-                {t("subscriptionTab")}
+              <TabsTrigger value="edit">{catalog("edit")}</TabsTrigger>
+              {product.type === "SUBSCRIPTION" && (
+                <TabsTrigger value="subscription">{t("subscriptionTab")}</TabsTrigger>
+              )}
+              <TabsTrigger value="metadata">
+                {t("metadata")}
               </TabsTrigger>
-              <TabsTrigger value="metadata">{t("metadataAirwallex")}</TabsTrigger>
             </TabsList>
           </div>
 
           <ScrollArea className="flex-1">
-            <div className="p-6 space-y-6">
-              <TabsContent value="basic" className="space-y-6 m-0">
+            <div className="space-y-6 p-6">
+              <TabsContent value="edit" className="m-0">
+                <CatalogEditor
+                  key={`${product.id}:${new Date(product.updatedAt).toISOString()}`}
+                  product={product}
+                  onSaved={() => {
+                    onUpdate?.();
+                    onOpenChange(false);
+                  }}
+                />
+              </TabsContent>
+              <TabsContent value="basic" className="m-0 space-y-6">
                 <Section title={t("basicInfo")}>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <DetailItem label={t("productName")} value={product.name} />
-                    <DetailItem label={t("productType")} value={product.type} />
-                    <DetailItem label={t("sortOrder")} value={product.sortOrder} />
-                    <DetailItem label={t("createdAt")} value={new Date(product.createdAt).toLocaleString(locale)} />
+                    <DetailItem label={t("productType")} value={productTypeLabels[product.type] ?? product.type} />
+                    <DetailItem
+                      label={t("sortOrder")}
+                      value={product.sortOrder}
+                    />
+                    <DetailItem
+                      label={t("createdAt")}
+                      value={new Date(product.createdAt).toLocaleString(locale)}
+                    />
                   </div>
                 </Section>
 
-                <Section title={t("trial")}>
-                  <div className="grid grid-cols-2 gap-4">
+                <Section title={t("trial")} hidden={product.type !== "SUBSCRIPTION"}>
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <DetailItem
                       label={t("trialEnabled")}
                       value={product.hasTrial ? t("yes") : t("no")}
                     />
                     {product.hasTrial && (
                       <>
-                        <DetailItem label={t("trialDays")} value={product.trialDays || "-"} />
-                        <DetailItem label={t("trialBonusCredits")} value={product.trialCreditsAmount || "-"} />
+                        <DetailItem
+                          label={t("trialDays")}
+                          value={product.trialDays || "-"}
+                        />
+                        <DetailItem
+                          label={t("trialBonusCredits")}
+                          value={product.trialCreditsAmount || "-"}
+                        />
                       </>
                     )}
                   </div>
                 </Section>
 
-                 <Section title={t("creditsPackage")} hidden={!product.creditsPackage}>
-                  <div className="grid grid-cols-2 gap-4">
-                     <DetailItem
+                <Section
+                  title={t("creditsPackage")}
+                  hidden={!product.creditsPackage}
+                >
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <DetailItem
                       label={t("creditsIncluded")}
                       value={product.creditsPackage?.creditsAmount}
                     />
@@ -109,40 +157,64 @@ export function ProductDetailSheet({
                 </Section>
               </TabsContent>
 
-              <TabsContent value="pricing" className="space-y-6 m-0">
+              <TabsContent value="pricing" className="m-0 space-y-6">
                 <Section title={t("defaultPrice")}>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <DetailItem
                       label={t("currentPrice")}
-                      value={formatPrice(product.price, product.currency, locale)}
-                      className="text-lg font-medium text-primary"
+                      value={formatPrice(product.price, "USD", locale)}
+                      className="whitespace-nowrap text-lg font-medium tabular-nums"
                     />
                     <DetailItem
                       label={t("originalPriceStrike")}
-                      value={product.originalPrice > 0 ? formatPrice(product.originalPrice, product.currency, locale) : "-"}
-                      className="text-muted-foreground line-through"
+                      value={
+                        product.originalPrice > product.price
+                          ? formatPrice(product.originalPrice, "USD", locale)
+                          : "-"
+                      }
+                      className={product.originalPrice > product.price ? "whitespace-nowrap text-muted-foreground line-through tabular-nums" : "text-muted-foreground"}
                     />
                   </div>
                 </Section>
 
                 <Section title={t("multiCurrencyPricing")}>
                   {product.prices && product.prices.length > 0 ? (
-                    <div className="border rounded-md overflow-hidden">
+                    <div className="admin-table-surface">
                       <table className="w-full text-sm">
                         <thead className="bg-muted/50">
                           <tr>
-                            <th className="px-4 py-2 text-left font-medium text-muted-foreground">{t("currency")}</th>
-                            <th className="px-4 py-2 text-left font-medium text-muted-foreground">{t("currentPrice")}</th>
-                            <th className="px-4 py-2 text-left font-medium text-muted-foreground">{t("originalPrice")}</th>
+                            <th className="text-muted-foreground px-4 py-2 text-left font-medium">
+                              {t("currency")}
+                            </th>
+                            <th className="text-muted-foreground px-4 py-2 text-left font-medium">
+                              {t("currentPrice")}
+                            </th>
+                            <th className="text-muted-foreground px-4 py-2 text-left font-medium">
+                              {t("originalPrice")}
+                            </th>
                           </tr>
                         </thead>
                         <tbody className="divide-y">
                           {product.prices.map((price) => (
                             <tr key={price.currency}>
-                              <td className="px-4 py-2 font-medium">{price.currency}</td>
-                              <td className="px-4 py-2">{formatPrice(price.amount, price.currency, locale)}</td>
-                              <td className="px-4 py-2 text-muted-foreground">
-                                {price.originalAmount > 0 ? formatPrice(price.originalAmount, price.currency, locale) : "-"}
+                              <td className="px-4 py-2 font-medium">
+                                {price.currency}
+                              </td>
+                              <td className="whitespace-nowrap px-4 py-2 tabular-nums">
+                                {formatPrice(
+                                  price.amount,
+                                  price.currency,
+                                  locale,
+                                )}
+                              </td>
+                              <td className="whitespace-nowrap text-muted-foreground px-4 py-2 tabular-nums">
+                                {price.originalAmount > price.amount
+                                  ? formatPrice(
+                                      price.originalAmount,
+                                      price.currency,
+                                      locale,
+                                    )
+                                  : "-"}
                               </td>
                             </tr>
                           ))}
@@ -150,33 +222,43 @@ export function ProductDetailSheet({
                       </table>
                     </div>
                   ) : (
-                    <div className="text-sm text-muted-foreground py-4 text-center border rounded-md border-dashed">
+                    <div className="text-muted-foreground rounded-md border border-dashed py-4 text-center text-sm">
                       {t("noLocalizedPricingMsg")}
                     </div>
                   )}
                 </Section>
               </TabsContent>
 
-              <TabsContent value="subscription" className="space-y-6 m-0">
-                 <Section title={t("subscriptionPlan")}>
-                  <div className="grid grid-cols-2 gap-4">
-                    <DetailItem label="Plan ID" value={product.productSubscription?.planId} />
-                    <DetailItem label={t("interval")} value={product.productSubscription?.plan.interval} />
-                    <DetailItem label={t("intervalCount")} value={product.productSubscription?.plan.intervalCount} />
-                    <DetailItem label={t("perPeriodCredits")} value={product.productSubscription?.plan.creditsPerPeriod} />
+              <TabsContent value="subscription" className="m-0 space-y-6">
+                <Section title={t("subscriptionPlan")}>
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <DetailItem
+                      label={t("planId")}
+                      value={product.productSubscription?.planId}
+                    />
+                    <DetailItem
+                      label={t("interval")}
+                      value={product.productSubscription?.plan.interval
+                        ? t.has(`intervals.${product.productSubscription.plan.interval.toLowerCase()}`)
+                          ? t(`intervals.${product.productSubscription.plan.interval.toLowerCase()}`)
+                          : product.productSubscription.plan.interval
+                        : "-"}
+                    />
+                    <DetailItem
+                      label={t("intervalCount")}
+                      value={product.productSubscription?.plan.intervalCount}
+                    />
+                    <DetailItem
+                      label={t("perPeriodCredits")}
+                      value={product.productSubscription?.plan.creditsPerPeriod}
+                    />
                   </div>
                 </Section>
               </TabsContent>
 
-              <TabsContent value="metadata" className="space-y-6 m-0">
-                <Section title="Metadata">
-                  <pre className="bg-muted p-4 rounded-md text-xs font-mono overflow-auto max-h-[300px]">
-                    {JSON.stringify(product.metadata, null, 2)}
-                  </pre>
-                </Section>
-
+              <TabsContent value="metadata" className="m-0 space-y-6">
                 <Section title={t("fullMetadata")}>
-                  <pre className="bg-muted p-4 rounded-md text-xs font-mono overflow-auto max-h-[300px]">
+                  <pre className="bg-muted max-h-[300px] overflow-auto rounded-md p-4 font-mono text-xs">
                     {JSON.stringify(product.metadata, null, 2)}
                   </pre>
                 </Section>
@@ -186,26 +268,40 @@ export function ProductDetailSheet({
         </Tabs>
       </SheetContent>
     </Sheet>
-  )
+  );
 }
 
-function Section({ title, children, hidden }: { title: string; children: React.ReactNode, hidden?: boolean }) {
-  if (hidden) return null
+function Section({
+  title,
+  children,
+  hidden,
+}: {
+  title: string;
+  children: React.ReactNode;
+  hidden?: boolean;
+}) {
+  if (hidden) return null;
   return (
     <div className="space-y-3">
       <h4 className="text-sm font-semibold tracking-tight">{title}</h4>
-      <div className="bg-card rounded-lg border p-4 shadow-sm">
-        {children}
-      </div>
+      <div className="border-b border-border pb-5">{children}</div>
     </div>
-  )
+  );
 }
 
-function DetailItem({ label, value, className }: { label: string; value: React.ReactNode; className?: string }) {
+function DetailItem({
+  label,
+  value,
+  className,
+}: {
+  label: string;
+  value: React.ReactNode;
+  className?: string;
+}) {
   return (
-    <div className="space-y-1">
-      <div className="text-xs text-muted-foreground">{label}</div>
-      <div className={`text-sm ${className}`}>{value}</div>
+    <div className="min-w-0 space-y-1">
+      <div className="text-muted-foreground text-xs">{label}</div>
+      <div className={`break-words text-sm ${className ?? ""}`}>{value ?? "-"}</div>
     </div>
-  )
+  );
 }

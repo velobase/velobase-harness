@@ -1,25 +1,10 @@
-import { getStripe } from "./client";
+import { stripeOneOffProvider } from "./one-off";
 import type Stripe from "stripe";
 
+/** Uses the selected adapter and the validated server configuration. */
 export async function verifyStripeWebhook(
   body: string,
-  signature: string
+  signature: string,
 ): Promise<Stripe.Event> {
-  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
-  if (!webhookSecret) {
-    throw new Error("STRIPE_WEBHOOK_SECRET is not set");
-  }
-
-  try {
-    const event = getStripe().webhooks.constructEvent(
-      body,
-      signature,
-      webhookSecret
-    );
-    return event;
-  } catch (error) {
-    console.error("Webhook verification failed:", error);
-    throw new Error("Invalid webhook signature");
-  }
+  return stripeOneOffProvider.verifyWebhook(body, signature);
 }
-

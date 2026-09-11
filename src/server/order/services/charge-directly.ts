@@ -1,4 +1,5 @@
 import { db } from "@/server/db";
+import { paymentRecords } from "@/modules/payments/server/service";
 import { getStripeClient } from "../providers/stripe";
 import { logger } from "@/server/shared/telemetry/logger";
 import { processFulfillmentByPayment } from "@/server/fulfillment/manager";
@@ -41,11 +42,11 @@ export interface ChargeDirectlyResult {
 
 /**
  * 直接扣款（不跳转 Stripe Checkout）
- * 
+ *
  * 适用于：用户已有保存的卡，单次购买积分包等场景
  */
 export async function chargeDirectly(
-  params: ChargeDirectlyParams
+  params: ChargeDirectlyParams,
 ): Promise<ChargeDirectlyResult> {
   const { userId, product, paymentMethodId } = params;
   // Hard guarantee: do not throw from this function.
@@ -127,31 +128,17 @@ export async function chargeDirectly(
         // Mark ASAP to avoid accidental checkout fallback + double charge on unexpected downstream errors.
         stripeChargeSucceeded = true;
 
-        // 扣款成功：先落 Stripe transaction id（保持 payment 为 PENDING），
-        // 若后续履约/状态更新抛错，success page 可通过 confirmPayment 兜底完成，避免二次扣款。
-        await db.payment.update({
-          where: { id: payment.id },
-          data: {
-            gatewayTransactionId: paymentIntent.id,
-            gatewayResponse: JSON.parse(
-              JSON.stringify(paymentIntent)
-            ) as Prisma.JsonObject,
-          },
+        // Persist the captured payment before fulfillment. Confirmation resumes unfinished fulfillment.
+        const recorded = await paymentRecords.recordVerifiedState({
+          paymentId: payment.id,
+          gateway: "STRIPE",
+          status: "SUCCEEDED",
+          gatewayTransactionId: paymentIntent.id,
+          rawData: JSON.parse(JSON.stringify(paymentIntent)),
         });
-
-        // 履约
-        const freshPayment = await db.payment.findUnique({
-          where: { id: payment.id },
-        });
-        if (freshPayment) {
-          await processFulfillmentByPayment(freshPayment);
-        }
-
-        // 履约完成后再标记成功（避免“支付成功但未履约”的 SUCCEEDED 卡死状态）
-        await db.payment.update({
-          where: { id: payment.id },
-          data: { status: "SUCCEEDED" },
-        });
+        if (!recorded.applied)
+          return { success: true, orderId: order.id, paymentId: payment.id };
+        await processFulfillmentByPayment(recorded.payment);
         await db.order.update({
           where: { id: order.id },
           data: { status: "FULFILLED" },
@@ -161,25 +148,25 @@ export async function chargeDirectly(
           data: { hasPurchased: true },
         });
 
-      await appEvents.emit("payment:succeeded", {
-        paymentId: payment.id,
-        orderId: order.id,
-        userId,
-        gateway: "stripe",
-        amountCents: product.price,
-        currency: product.currency,
-        productType: product.type,
-      });
-
-      logger.info(
-        {
-          orderId: order.id,
+        await appEvents.emit("payment:succeeded", {
           paymentId: payment.id,
-          paymentIntentId: paymentIntent.id,
-          amount: product.price,
-        },
-        "Direct charge succeeded"
-      );
+          orderId: order.id,
+          userId,
+          gateway: "stripe",
+          amountCents: product.price,
+          currency: product.currency,
+          productType: product.type,
+        });
+
+        logger.info(
+          {
+            orderId: order.id,
+            paymentId: payment.id,
+            paymentIntentId: paymentIntent.id,
+            amount: product.price,
+          },
+          "Direct charge succeeded",
+        );
 
         return {
           success: true,
@@ -226,11 +213,11 @@ export async function chargeDirectly(
     } catch (error) {
       logger.error(
         { error, orderId: order.id, paymentId: payment.id },
-        "Direct charge failed"
+        "Direct charge failed",
       );
 
       // Stripe 已扣款成功但后续逻辑失败：不要把 payment/order 标记为失败，也不要让上层 checkout 回退再次扣款。
-      // 保持 payment 为 PENDING + 已写入 gatewayTransactionId，交由 success page 的 confirmPayment 兜底完成履约/结算。
+      // 保留已捕获状态与 gatewayTransactionId，交由 success page 的 confirmPayment 继续履约。
       if (stripeChargeSucceeded && orderId && paymentId) {
         if (paymentIntentId) {
           await db.payment
@@ -252,35 +239,46 @@ export async function chargeDirectly(
         data: { status: "CANCELLED" },
       });
 
-    const errorMessage =
-      error instanceof Error ? error.message : "Unknown error";
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error";
 
-    // NOTE:
-    // - Card declines / insufficient funds / requires_payment_method are expected and will fall back to hosted checkout.
-    //   Do NOT send "payment failed" notifications (noise).
-    // - Only notify on unexpected, non-card errors (e.g. provider outage).
-    const errObj = error as { message?: unknown; code?: unknown; decline_code?: unknown; type?: unknown };
-    const isCardError =
-      (typeof errObj?.type === "string" && errObj.type === "card_error") ||
-      (typeof errObj?.code === "string" && errObj.code === "card_declined") ||
-      typeof errObj?.decline_code === "string";
+      // NOTE:
+      // - Card declines / insufficient funds / requires_payment_method are expected and will fall back to hosted checkout.
+      //   Do NOT send "payment failed" notifications (noise).
+      // - Only notify on unexpected, non-card errors (e.g. provider outage).
+      const errObj = error as {
+        message?: unknown;
+        code?: unknown;
+        decline_code?: unknown;
+        type?: unknown;
+      };
+      const isCardError =
+        (typeof errObj?.type === "string" && errObj.type === "card_error") ||
+        (typeof errObj?.code === "string" && errObj.code === "card_declined") ||
+        typeof errObj?.decline_code === "string";
 
-    if (!isCardError) {
-      void appEvents.emit("payment:failed", {
-        paymentId: payment.id,
-        orderId: order.id,
-        userId,
-        gateway: "stripe",
-        failureReason: (() => {
-          const lines: string[] = [];
-          if (typeof errObj?.message === "string") lines.push(`- message: ${errObj.message}`);
-          if (typeof errObj?.code === "string") lines.push(`- code: ${errObj.code}`);
-          if (typeof errObj?.decline_code === "string") lines.push(`- decline_code: ${errObj.decline_code}`);
-          if (typeof errObj?.type === "string") lines.push(`- type: ${errObj.type}`);
-          return lines.length ? `Stripe direct charge failed\n${lines.join("\n")}` : errorMessage;
-        })(),
-      });
-    }
+      if (!isCardError) {
+        void appEvents.emit("payment:failed", {
+          paymentId: payment.id,
+          orderId: order.id,
+          userId,
+          gateway: "stripe",
+          failureReason: (() => {
+            const lines: string[] = [];
+            if (typeof errObj?.message === "string")
+              lines.push(`- message: ${errObj.message}`);
+            if (typeof errObj?.code === "string")
+              lines.push(`- code: ${errObj.code}`);
+            if (typeof errObj?.decline_code === "string")
+              lines.push(`- decline_code: ${errObj.decline_code}`);
+            if (typeof errObj?.type === "string")
+              lines.push(`- type: ${errObj.type}`);
+            return lines.length
+              ? `Stripe direct charge failed\n${lines.join("\n")}`
+              : errorMessage;
+          })(),
+        });
+      }
 
       return {
         success: false,
@@ -290,7 +288,7 @@ export async function chargeDirectly(
   } catch (error) {
     logger.error(
       { error, userId, productId: product?.id, orderId, paymentId },
-      "Direct charge: unexpected error (swallowed)"
+      "Direct charge: unexpected error (swallowed)",
     );
 
     // If Stripe already charged successfully, DO NOT fallback to Checkout (avoid double charge).
@@ -301,16 +299,23 @@ export async function chargeDirectly(
     // Best-effort: if we created rows, mark them as failed/cancelled to avoid dangling PENDING.
     if (paymentId) {
       await db.payment
-        .updateMany({ where: { id: paymentId, userId, status: "PENDING" }, data: { status: "FAILED" } })
+        .updateMany({
+          where: { id: paymentId, userId, status: "PENDING" },
+          data: { status: "FAILED" },
+        })
         .catch(() => undefined);
     }
     if (orderId) {
       await db.order
-        .updateMany({ where: { id: orderId, userId, status: "PENDING" }, data: { status: "CANCELLED" } })
+        .updateMany({
+          where: { id: orderId, userId, status: "PENDING" },
+          data: { status: "CANCELLED" },
+        })
         .catch(() => undefined);
     }
 
-    const errorMessage = error instanceof Error ? error.message : "Unknown error";
+    const errorMessage =
+      error instanceof Error ? error.message : "Unknown error";
     return {
       success: false,
       orderId,
@@ -319,4 +324,3 @@ export async function chargeDirectly(
     };
   }
 }
-

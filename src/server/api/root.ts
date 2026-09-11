@@ -1,3 +1,7 @@
+import { outreachRouter } from "@/modules/outreach/server/router";
+import { emailManagementRouter } from "@/modules/email-management/server/router";
+import { sharingAdminRouter } from "@/server/features/sharing";
+import { featuresRouter } from "@/server/features/router";
 import { storageRouter } from "@/server/api/routers/storage";
 import { productRouter } from "@/server/product/routers";
 import { billingRouter } from "@/server/billing/routers";
@@ -20,15 +24,18 @@ import { telegramRouter } from "@/server/telegram/router";
 import { createCallerFactory, createTRPCRouter } from "@/server/api/trpc";
 
 /**
- * All routers are imported statically for full type safety. The module
- * config system (src/config/modules.ts) controls runtime behaviour via
- * middleware guards and webhook route guards — disabled modules' procedures
- * still exist in the type system but will fail at runtime if called when
- * the module is off. This is the intended tradeoff: type-safe DX over
- * dead-code elimination.
+ * Complete-example compatibility composition. Its static router types include the
+ * legacy business surface. Deployment-membership and operation guards deny omitted
+ * or disabled capabilities before procedure execution; history/settlement policies
+ * are explicit. Small hosts own separate routes and dependency closures instead of
+ * importing this router. See docs/en/modules/composition.md.
  */
 export const appRouter = createTRPCRouter({
-  // Core — always present
+  outreach: outreachRouter,
+  emailManagement: emailManagementRouter,
+  features: featuresRouter,
+  sharingAdmin: sharingAdminRouter,
+  // Complete example business and framework routers
   admin: adminRouter,
   storage: storageRouter,
   product: productRouter,

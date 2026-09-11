@@ -1,0 +1,16 @@
+{
+  "name": "@velobase/subscriptions-stripe",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./checkout": "./src/checkout.ts",
+    "./billing": "./src/billing.ts"
+  },
+  "dependencies": {
+    "@velobase/subscriptions": "workspace:*",
+    "stripe": "19.1.0",
+    "zod": "3"
+  }
+}

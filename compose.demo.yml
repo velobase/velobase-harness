@@ -1,0 +1,58 @@
+name: harness-demo
+
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: harness_demo
+      POSTGRES_PASSWORD: harness_demo
+      POSTGRES_DB: harness_preview
+    volumes:
+      - preview_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U harness_demo -d harness_preview"]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+
+  redis:
+    image: redis:7
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.demo
+    init: true
+    cpus: 4
+    mem_limit: 8g
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      NODE_ENV: development
+      NEXT_TELEMETRY_DISABLED: "1"
+      NODE_OPTIONS: --max-old-space-size=6144
+      DATABASE_URL: postgresql://harness_demo:harness_demo@postgres:5432/harness_preview
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      AUTH_URL: http://localhost:3003
+      APP_URL: http://localhost:3003
+      NEXT_PUBLIC_LOCAL_DEMO: "on"
+      ADMIN_EMAIL: demo@harness.local
+      PORT: "3003"
+      SERVICE_MODE: web,worker
+    ports:
+      - "127.0.0.1:3003:3003"
+    volumes:
+      - demo_state:/var/lib/harness-demo
+
+volumes:
+  preview_data:
+  demo_state:

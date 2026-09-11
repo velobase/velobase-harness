@@ -1,0 +1,14 @@
+{
+  "name": "@velobase/subscriptions",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./checkout": "./src/checkout.ts",
+    "./delivery": "./src/delivery.ts"
+  },
+  "dependencies": {
+    "zod": "3"
+  }
+}

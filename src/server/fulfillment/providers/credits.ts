@@ -1,5 +1,5 @@
 import type { Fulfiller, FulfillmentContext } from '../types'
-import { grant } from '@/server/billing/services/grant'
+import { settleGrant as grant } from '@/server/billing/services/grant'
 import { getProduct } from '@/server/product/services/get'
 
 export const creditsFulfiller: Fulfiller = {

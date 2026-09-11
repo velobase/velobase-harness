@@ -1,0 +1,12 @@
+{
+  "name": "@velobase/image-generation-wavespeed",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@velobase/image-generation": "workspace:*"
+  }
+}

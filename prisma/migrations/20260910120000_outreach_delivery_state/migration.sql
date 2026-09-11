@@ -1,0 +1,2 @@
+ALTER TYPE "TouchScheduleStatus" ADD VALUE 'UNKNOWN';
+ALTER TYPE "TouchRecordStatus" ADD VALUE 'UNKNOWN';

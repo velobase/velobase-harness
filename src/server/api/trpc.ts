@@ -1,3 +1,11 @@
+import {
+  requireFeature,
+  requireIncludedFeature,
+} from "@/server/features/state";
+import {
+  featureForProcedure,
+  includedFeatureForProcedure,
+} from "@/server/features/procedure-policy";
 /**
  * YOU PROBABLY DON'T NEED TO EDIT THIS FILE, UNLESS:
  * 1. You want to modify request context (see Part 1).
@@ -14,11 +22,15 @@ import { ZodError } from "zod";
 import { auth } from "@/server/auth";
 import { db } from "@/server/db";
 import { createLogger } from "@/lib/logger";
-import { getUserRateLimiter, getRetryAfterSeconds, formatRateLimitMessage } from "@/server/ratelimit";
+import {
+  getUserRateLimiter,
+  getRetryAfterSeconds,
+  formatRateLimitMessage,
+} from "@/server/ratelimit";
 import { getSubscriptionStatus } from "@/server/membership/services/get-subscription-status";
 import { getClientIpFromHeaders } from "@/server/lib/get-client-ip";
 
-const logger = createLogger('trpc');
+const logger = createLogger("trpc");
 
 /**
  * 1. CONTEXT
@@ -93,6 +105,10 @@ export const createTRPCRouter = t.router;
  * network latency that would occur in production but not in local development.
  */
 const timingMiddleware = t.middleware(async ({ next, path }) => {
+  const included = includedFeatureForProcedure(path);
+  if (included) requireIncludedFeature(included);
+  const feature = featureForProcedure(path);
+  if (feature) await requireFeature(feature);
   const start = Date.now();
 
   if (t._config.isDev) {
@@ -104,7 +120,7 @@ const timingMiddleware = t.middleware(async ({ next, path }) => {
   const result = await next();
 
   const end = Date.now();
-  logger.debug({ path, duration: end - start }, 'TRPC procedure executed');
+  logger.debug({ path, duration: end - start }, "TRPC procedure executed");
 
   return result;
 });
@@ -148,9 +164,9 @@ export const protectedProcedure = t.procedure
     }
 
     if (authzUser.isBlocked) {
-      throw new TRPCError({ 
-        code: "FORBIDDEN", 
-        message: "Your account has been suspended. Please contact support." 
+      throw new TRPCError({
+        code: "FORBIDDEN",
+        message: "Your account has been suspended. Please contact support.",
       });
     }
 
@@ -176,7 +192,10 @@ export const protectedProcedure = t.procedure
  */
 export const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
   if (!ctx.session.user.isAdmin) {
-    throw new TRPCError({ code: "FORBIDDEN", message: "Admin access required" });
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message: "Admin access required",
+    });
   }
   return next();
 });
@@ -195,35 +214,44 @@ export const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
  *   .input(z.object({ ... }))
  *   .query(async ({ ctx, input }) => { ... });
  */
-export const rateLimitedProcedure = protectedProcedure.use(async ({ ctx, next }) => {
-  try {
-    // Get user's subscription tier
-    const subStatus = await getSubscriptionStatus({ userId: ctx.session.user.id }).catch(() => ({ 
-      status: 'NONE' as const 
-    }));
-    const tier = subStatus.status === 'NONE' ? 'FREE' : 'PLUS';
-    
-    // Apply rate limit based on tier
-    const limiter = getUserRateLimiter(tier);
-    await limiter.consume(ctx.session.user.id);
-    
-    return next();
-  } catch (rejection) {
-    const retryAfter = getRetryAfterSeconds(rejection);
-    const subStatus = await getSubscriptionStatus({ userId: ctx.session.user.id }).catch(() => ({ 
-      status: 'NONE' as const 
-    }));
-    const tier = subStatus.status === 'NONE' ? 'FREE' : 'PLUS';
-    
-    logger.warn({ 
-      userId: ctx.session.user.id, 
-      tier, 
-      retryAfter 
-    }, 'Rate limit exceeded');
-    
-    throw new TRPCError({ 
-      code: "TOO_MANY_REQUESTS", 
-      message: formatRateLimitMessage(tier, retryAfter),
-    });
-  }
-});
+export const rateLimitedProcedure = protectedProcedure.use(
+  async ({ ctx, next }) => {
+    try {
+      // Get user's subscription tier
+      const subStatus = await getSubscriptionStatus({
+        userId: ctx.session.user.id,
+      }).catch(() => ({
+        status: "NONE" as const,
+      }));
+      const tier = subStatus.status === "NONE" ? "FREE" : "PLUS";
+
+      // Apply rate limit based on tier
+      const limiter = getUserRateLimiter(tier);
+      await limiter.consume(ctx.session.user.id);
+
+      return next();
+    } catch (rejection) {
+      const retryAfter = getRetryAfterSeconds(rejection);
+      const subStatus = await getSubscriptionStatus({
+        userId: ctx.session.user.id,
+      }).catch(() => ({
+        status: "NONE" as const,
+      }));
+      const tier = subStatus.status === "NONE" ? "FREE" : "PLUS";
+
+      logger.warn(
+        {
+          userId: ctx.session.user.id,
+          tier,
+          retryAfter,
+        },
+        "Rate limit exceeded",
+      );
+
+      throw new TRPCError({
+        code: "TOO_MANY_REQUESTS",
+        message: formatRateLimitMessage(tier, retryAfter),
+      });
+    }
+  },
+);

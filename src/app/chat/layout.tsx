@@ -1,12 +1,11 @@
-"use client";
-
-// Register custom tool renderers (must be client-side)
-import "@/modules/ai-chat/setup-renderers";
-
-export default function ChatLayout({
+import { notFound } from "next/navigation";
+import { isFeatureEnabled } from "@/server/features/state";
+import { ChatRenderers } from "@/modules/ai-chat/components/chat/chat-renderers";
+export default async function ChatLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  return <>{children}</>;
+  if (!(await isFeatureEnabled("ai-chat"))) notFound();
+  return <ChatRenderers>{children}</ChatRenderers>;
 }

@@ -1,13 +1,18 @@
+import {
+  conversationSharing,
+  sharingOperation,
+} from "@/modules/sharing/server/service";
 import { z } from "zod";
-import { createTRPCRouter, protectedProcedure, publicProcedure } from "@/server/api/trpc";
+import {
+  createTRPCRouter,
+  protectedProcedure,
+  publicProcedure,
+} from "@/server/api/trpc";
 import { TRPCError } from "@trpc/server";
 import { Prisma } from "@prisma/client";
 
 // Import services from ai-chat module
-import { 
-  buildUIProjection,
-  loadUIInteractions,
-} from "@/modules/ai-chat";
+import { buildUIProjection, loadUIInteractions } from "@/modules/ai-chat";
 
 export const conversationRouter = createTRPCRouter({
   // List conversations (can filter by projectId)
@@ -18,7 +23,7 @@ export const conversationRouter = createTRPCRouter({
         limit: z.number().min(1).max(100).default(50),
         // archived filter: undefined = all, true = only archived, false = only active
         archived: z.boolean().optional(),
-      })
+      }),
     )
     .query(async ({ ctx, input }) => {
       // Build where clause
@@ -66,7 +71,7 @@ export const conversationRouter = createTRPCRouter({
     .input(
       z.object({
         conversationId: z.string(),
-      })
+      }),
     )
     .query(async ({ ctx, input }) => {
       const session = ctx.session;
@@ -99,8 +104,9 @@ export const conversationRouter = createTRPCRouter({
 
       // Verify access permissions
       const conversationIsGuest = conversation.isGuest ?? false;
-      const conversationIsShared = conversation.isShared ?? false;
-      
+      const conversationIsShared =
+        await conversationSharing.isPublic(conversation);
+
       if (isGuest) {
         // Guest can access: guest conversations OR shared conversations
         if (!conversationIsGuest && !conversationIsShared) {
@@ -114,7 +120,7 @@ export const conversationRouter = createTRPCRouter({
         // - Their own conversations
         // - Shared conversations (from others)
         const isOwner = conversation.userId === session.user.id;
-        
+
         if (!isOwner && !conversationIsShared) {
           throw new TRPCError({
             code: "UNAUTHORIZED",
@@ -127,7 +133,7 @@ export const conversationRouter = createTRPCRouter({
       // Pass activeInteractionId to build the correct branch/path
       const messages = buildUIProjection(
         conversation.interactions,
-        conversation.activeInteractionId
+        conversation.activeInteractionId,
       );
 
       return {
@@ -137,15 +143,17 @@ export const conversationRouter = createTRPCRouter({
         createdAt: conversation.createdAt,
         updatedAt: conversation.updatedAt,
         activeInteractionId: conversation.activeInteractionId,
-        isShared: conversation.isShared ?? false,
+        isShared: conversationIsShared,
         sharedAt: conversation.sharedAt ?? null,
         isGuest: conversation.isGuest ?? false,
         userId: conversation.userId,
-        owner: conversation.user ? {
-          id: conversation.user.id,
-          name: conversation.user.name,
-          image: conversation.user.image,
-        } : null,
+        owner: conversation.user
+          ? {
+              id: conversation.user.id,
+              name: conversation.user.name,
+              image: conversation.user.image,
+            }
+          : null,
         messages,
       };
     }),
@@ -157,7 +165,7 @@ export const conversationRouter = createTRPCRouter({
         title: z.string().optional(),
         metadata: z.record(z.unknown()).optional(),
         projectId: z.string().optional(),
-      })
+      }),
     )
     .mutation(async ({ ctx, input }) => {
       return ctx.db.conversation.create({
@@ -166,10 +174,9 @@ export const conversationRouter = createTRPCRouter({
           isGuest: false,
           title: input.title,
           projectId: input.projectId,
-          metadata:
-            input.metadata
-              ? (input.metadata as unknown as Prisma.InputJsonValue)
-              : Prisma.JsonNull,
+          metadata: input.metadata
+            ? (input.metadata as unknown as Prisma.InputJsonValue)
+            : Prisma.JsonNull,
         },
       });
     }),
@@ -179,7 +186,7 @@ export const conversationRouter = createTRPCRouter({
     .input(
       z.object({
         title: z.string().optional(),
-      })
+      }),
     )
     .mutation(async ({ ctx }) => {
       return ctx.db.conversation.create({
@@ -196,7 +203,7 @@ export const conversationRouter = createTRPCRouter({
     .input(
       z.object({
         conversationId: z.string(),
-      })
+      }),
     )
     .mutation(async ({ ctx, input }) => {
       await ctx.db.conversation.delete({
@@ -214,7 +221,7 @@ export const conversationRouter = createTRPCRouter({
       z.object({
         conversationId: z.string(),
         title: z.string(),
-      })
+      }),
     )
     .mutation(async ({ ctx, input }) => {
       const conversation = await ctx.db.conversation.update({
@@ -234,7 +241,7 @@ export const conversationRouter = createTRPCRouter({
     .input(
       z.object({
         conversationId: z.string(),
-      })
+      }),
     )
     .mutation(async ({ ctx, input }) => {
       await ctx.db.conversation.update({
@@ -254,7 +261,7 @@ export const conversationRouter = createTRPCRouter({
     .input(
       z.object({
         conversationId: z.string(),
-      })
+      }),
     )
     .mutation(async ({ ctx, input }) => {
       await ctx.db.conversation.update({
@@ -268,7 +275,7 @@ export const conversationRouter = createTRPCRouter({
       });
       return { success: true };
     }),
-    
+
   // Get messages for a conversation
   /**
    * @deprecated Use `conversation.get` which returns conversation info with messages.
@@ -278,7 +285,7 @@ export const conversationRouter = createTRPCRouter({
     .input(
       z.object({
         conversationId: z.string(),
-      })
+      }),
     )
     .query(async ({ ctx, input }) => {
       // Verify conversation ownership
@@ -305,19 +312,15 @@ export const conversationRouter = createTRPCRouter({
     .input(
       z.object({
         conversationId: z.string(),
-      })
+      }),
     )
     .mutation(async ({ ctx, input }) => {
-      await ctx.db.conversation.update({
-        where: {
-          id: input.conversationId,
-          userId: ctx.session.user.id, // Only owner can share
-        },
-        data: {
-          isShared: true,
-          sharedAt: new Date(),
-        },
-      });
+      await sharingOperation(() =>
+        conversationSharing.publish(
+          { id: input.conversationId },
+          ctx.session.user.id,
+        ),
+      );
       return { success: true };
     }),
 
@@ -326,19 +329,15 @@ export const conversationRouter = createTRPCRouter({
     .input(
       z.object({
         conversationId: z.string(),
-      })
+      }),
     )
     .mutation(async ({ ctx, input }) => {
-      await ctx.db.conversation.update({
-        where: {
-          id: input.conversationId,
-          userId: ctx.session.user.id, // Only owner can unshare
-        },
-        data: {
-          isShared: false,
-          sharedAt: null,
-        },
-      });
+      await sharingOperation(() =>
+        conversationSharing.revoke(
+          { id: input.conversationId },
+          ctx.session.user.id,
+        ),
+      );
       return { success: true };
     }),
 
@@ -347,13 +346,13 @@ export const conversationRouter = createTRPCRouter({
     .input(
       z.object({
         conversationId: z.string(),
-      })
+      }),
     )
     .mutation(async ({ ctx, input }) => {
       // 1. Get original conversation (must be shared)
       const original = await ctx.db.conversation.findUnique({
         where: { id: input.conversationId },
-        include: { 
+        include: {
           interactions: {
             include: {
               userAgent: {
@@ -376,7 +375,7 @@ export const conversationRouter = createTRPCRouter({
         });
       }
 
-      const originalIsShared = original.isShared ?? false;
+      const originalIsShared = await conversationSharing.isPublic(original);
       if (!originalIsShared) {
         throw new TRPCError({
           code: "FORBIDDEN",
@@ -433,7 +432,9 @@ export const conversationRouter = createTRPCRouter({
       const forked = await ctx.db.conversation.create({
         data: {
           userId: ctx.session.user.id,
-          title: original.title ? `${original.title} (forked)` : "Forked conversation",
+          title: original.title
+            ? `${original.title} (forked)`
+            : "Forked conversation",
           isGuest: false,
           isShared: false,
           metadata: original.metadata as Prisma.InputJsonValue,
@@ -454,8 +455,8 @@ export const conversationRouter = createTRPCRouter({
         })),
       });
 
-      return { 
-        success: true, 
+      return {
+        success: true,
         conversationId: forked.id,
         conversation: forked,
       };

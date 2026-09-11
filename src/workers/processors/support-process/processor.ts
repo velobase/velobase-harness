@@ -1,3 +1,4 @@
+import { isFeatureEnabled } from "@/server/features/state";
 /**
  * Support Process Processor
  *
@@ -31,7 +32,11 @@ const logger = createLogger("support-process");
 export async function processSupportProcessJob(
   job: Job<SupportProcessJobData>,
 ): Promise<void> {
-  if (job.data.type !== "process-ticket") return;
+  if (
+    job.data.type !== "process-ticket" ||
+    !(await isFeatureEnabled("ai-support"))
+  )
+    return;
 
   const { ticketId } = job.data;
 
@@ -55,7 +60,7 @@ export async function processSupportProcessJob(
       return;
     }
 
-    if (ticket.status !== "OPEN") {
+    if (ticket.status !== "OPEN" || ticket.assignedTo === "AGENT") {
       logger.info(
         { ticketId, status: ticket.status },
         "Ticket not in OPEN status, skipping",

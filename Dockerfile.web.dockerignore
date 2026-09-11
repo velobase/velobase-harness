@@ -1,0 +1,35 @@
+# The production Web image consumes the prebuilt standalone output.
+# Other Dockerfiles use .dockerignore, which excludes local Next.js output.
+node_modules
+apps/**/node_modules
+packages/**/node_modules
+services/**/node_modules
+.pnpm-store
+.harness-local
+apps/*/dist
+apps/*/out
+apps/mobile/.expo
+apps/mobile/android
+apps/mobile/ios
+.git
+.next/cache
+apps/**/.next
+.env*
+**/.env*
+README.md
+.vscode
+.idea
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.DS_Store
+coverage
+.turbo
+dist
+build
+*.tsbuildinfo
+.eslintcache
+prisma/*.db
+prisma/*.db-journal

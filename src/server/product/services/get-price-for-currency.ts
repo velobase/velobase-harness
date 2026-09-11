@@ -1,4 +1,5 @@
 import { db } from "@/server/db";
+import { selectProductPrice, type ProductCurrency } from "@velobase/products";
 
 /**
  * Supported currencies for multi-currency pricing
@@ -8,9 +9,15 @@ import { db } from "@/server/db";
  * - CHF: Switzerland
  * - AUD: Australia
  */
-export type SupportedCurrency = "USD" | "EUR" | "GBP" | "CHF" | "AUD";
+export type SupportedCurrency = ProductCurrency;
 
-export const SUPPORTED_CURRENCIES: SupportedCurrency[] = ["USD", "EUR", "GBP", "CHF", "AUD"];
+export const SUPPORTED_CURRENCIES: SupportedCurrency[] = [
+  "USD",
+  "EUR",
+  "GBP",
+  "CHF",
+  "AUD",
+];
 
 /**
  * Country code to currency mapping
@@ -19,13 +26,13 @@ export const SUPPORTED_CURRENCIES: SupportedCurrency[] = ["USD", "EUR", "GBP", "
 const COUNTRY_TO_CURRENCY: Record<string, SupportedCurrency> = {
   // United Kingdom
   GB: "GBP",
-  
+
   // Switzerland
   CH: "CHF",
 
   // Australia
   AU: "AUD",
-  
+
   // Eurozone countries (incl. Croatia)
   AT: "EUR", // Austria
   BE: "EUR", // Belgium
@@ -56,7 +63,7 @@ const COUNTRY_TO_CURRENCY: Record<string, SupportedCurrency> = {
   SK: "EUR", // Slovakia
   SI: "EUR", // Slovenia
   ES: "EUR", // Spain
-  
+
   // Other EU/EEA countries: default to EUR pricing when routing to Airwallex
   BG: "EUR", // Bulgaria (non-euro; default to EUR pricing)
 };
@@ -65,7 +72,9 @@ const COUNTRY_TO_CURRENCY: Record<string, SupportedCurrency> = {
  * Get the preferred currency for a country code
  * Falls back to USD if country is not mapped
  */
-export function getCurrencyForCountry(countryCode: string | null | undefined): SupportedCurrency {
+export function getCurrencyForCountry(
+  countryCode: string | null | undefined,
+): SupportedCurrency {
   if (!countryCode) return "USD";
   const currency = COUNTRY_TO_CURRENCY[countryCode.toUpperCase()];
   return currency ?? "USD";
@@ -73,78 +82,45 @@ export function getCurrencyForCountry(countryCode: string | null | undefined): S
 
 export interface ProductPriceResult {
   currency: SupportedCurrency;
-  amount: number;          // Price in smallest unit (cents/pence)
-  originalAmount: number;  // Original price for discount display
-  isLocalPrice: boolean;   // true if using localized price, false if fallback to USD
+  amount: number; // Price in smallest unit (cents/pence)
+  originalAmount: number; // Original price for discount display
+  isLocalPrice: boolean; // true if using localized price, false if fallback to USD
 }
 
 /**
  * Get product price for a specific currency
- * 
+ *
  * @param productId - Product ID
  * @param currency - Target currency (EUR, GBP, CHF, or USD)
  * @returns Price info with currency, amount, and whether it's localized
- * 
+ *
  * If no localized price exists for the currency, falls back to USD (Product.price)
  */
 export async function getProductPriceForCurrency(
   productId: string,
-  currency: SupportedCurrency
+  currency: SupportedCurrency,
 ): Promise<ProductPriceResult> {
-  // USD always uses the default Product.price
-  if (currency === "USD") {
-    const product = await db.product.findUnique({
-      where: { id: productId },
-      select: { price: true, originalPrice: true },
-    });
-    
-    if (!product) {
-      throw new Error(`Product not found: ${productId}`);
-    }
-    
-    return {
-      currency: "USD",
-      amount: product.price,
-      originalAmount: product.originalPrice,
-      isLocalPrice: true,
-    };
-  }
-
-  // Try to find localized price
-  const localPrice = await db.productPrice.findUnique({
-    where: {
-      productId_currency: {
-        productId,
-        currency,
+  const product = await db.product.findUnique({
+    where: { id: productId },
+    select: {
+      price: true,
+      originalPrice: true,
+      prices: {
+        where: { currency },
+        select: { amount: true, originalAmount: true },
       },
     },
   });
-
-  if (localPrice) {
-    return {
-      currency,
-      amount: localPrice.amount,
-      originalAmount: localPrice.originalAmount,
-      isLocalPrice: true,
-    };
-  }
-
-  // Fallback to USD
-  const product = await db.product.findUnique({
-    where: { id: productId },
-    select: { price: true, originalPrice: true },
-  });
-
-  if (!product) {
-    throw new Error(`Product not found: ${productId}`);
-  }
-
-  return {
-    currency: "USD",
-    amount: product.price,
-    originalAmount: product.originalPrice,
-    isLocalPrice: false,
-  };
+  if (!product) throw new Error(`Product not found: ${productId}`);
+  return selectProductPrice(
+    {
+      currency: "USD",
+      amount: product.price,
+      originalAmount: product.originalPrice,
+    },
+    product.prices.map((price) => ({ ...price, currency })),
+    currency,
+  );
 }
 
 /**
@@ -153,7 +129,7 @@ export async function getProductPriceForCurrency(
  */
 export async function getProductPriceForCountry(
   productId: string,
-  countryCode: string | null | undefined
+  countryCode: string | null | undefined,
 ): Promise<ProductPriceResult> {
   const currency = getCurrencyForCountry(countryCode);
   return getProductPriceForCurrency(productId, currency);
@@ -164,7 +140,11 @@ export async function getProductPriceForCountry(
  */
 export async function getAllProductPrices(productId: string): Promise<{
   usd: { amount: number; originalAmount: number };
-  localized: Array<{ currency: string; amount: number; originalAmount: number }>;
+  localized: Array<{
+    currency: string;
+    amount: number;
+    originalAmount: number;
+  }>;
 }> {
   const [product, localizedPrices] = await Promise.all([
     db.product.findUnique({
@@ -189,5 +169,3 @@ export async function getAllProductPrices(productId: string): Promise<{
     localized: localizedPrices,
   };
 }
-
-

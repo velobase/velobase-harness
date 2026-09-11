@@ -1,4 +1,5 @@
 import { db } from "@/server/db";
+import { paymentRecords } from "@/modules/payments/server/service";
 import { processFulfillmentByPayment } from "@/server/fulfillment/manager";
 import { logger } from "@/server/shared/telemetry/logger";
 import { getProvider } from "../providers/registry";
@@ -48,15 +49,23 @@ export async function confirmPaymentById(
     throw new Error("Order not found for payment");
 
   const orderId = payment.orderId;
+  if (payment.status === "REFUNDED")
+    return { status: "FAILED", paymentId, orderId };
 
   // If order already fulfilled, we're done (idempotent)
-  if (payment.order.status === "FULFILLED" && payment.status === "SUCCEEDED") {
+  if (
+    payment.order.status === "FULFILLED" &&
+    (payment.status === "SUCCEEDED" || payment.status === "SUCCESS")
+  ) {
     return { status: "SUCCEEDED", paymentId, orderId };
   }
 
   // If DB already marks payment succeeded but order isn't fulfilled (e.g. subscription webhook updated payment first),
   // trigger fulfillment idempotently.
-  if (payment.status === "SUCCEEDED" && payment.order.status !== "FULFILLED") {
+  if (
+    (payment.status === "SUCCEEDED" || payment.status === "SUCCESS") &&
+    payment.order.status !== "FULFILLED"
+  ) {
     logger.warn(
       { paymentId, orderId },
       "Payment already SUCCEEDED but order not FULFILLED, triggering fulfillment",
@@ -147,14 +156,20 @@ export async function confirmPaymentById(
   }
 
   // Mark payment succeeded and fulfill
-  await db.payment.update({
-    where: { id: paymentId },
-    data: { status: "SUCCEEDED" },
-  });
-  await processFulfillmentByPayment({
-    ...payment,
+  const recorded = await paymentRecords.recordVerifiedState({
+    paymentId,
+    gateway,
     status: "SUCCEEDED",
-  } as typeof payment);
+    gatewayTransactionId: nextGatewayTransactionId,
+    gatewaySubscriptionId: nextGatewaySubscriptionId,
+  });
+  if (!recorded.applied)
+    return {
+      status: recorded.payment.status === "REFUNDED" ? "FAILED" : "PENDING",
+      paymentId,
+      orderId,
+    };
+  await processFulfillmentByPayment(recorded.payment);
   await db.order.update({
     where: { id: orderId },
     data: { status: "FULFILLED" },

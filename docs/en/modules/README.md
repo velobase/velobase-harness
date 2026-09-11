@@ -4,12 +4,18 @@
 
 Product modules live under `src/modules/<name>/`. They are the right place for product-specific behavior, reusable UI, product services, and module-local docs.
 
+## Optional capabilities
+
+- [Start Harness](./getting-started.md)
+- [Business and technical capability catalog](./catalog.md)
+- [Add and operate a module](./composition.md)
+
 ## Modules
 
-| Module | Purpose |
-| --- | --- |
-| [AI Chat](./ai-chat/README.md) | Streaming chat, agent configuration, tool execution, and chat UI foundations |
-| [Example module](../../../src/modules/example/README.md) | Reference layout for adding product-specific modules |
+| Module                                                   | Purpose                                                                      |
+| -------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| [AI Chat](./ai-chat/README.md)                           | Streaming chat, agent configuration, tool execution, and chat UI foundations |
+| [Example module](../../../src/modules/example/README.md) | Reference layout for adding product-specific modules                         |
 
 ## Rules
 

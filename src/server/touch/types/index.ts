@@ -1,6 +1,7 @@
 export type TouchChannel = "EMAIL" | "SMS" | "PUSH";
 
 export type TouchScheduleStatus =
+  | "UNKNOWN"
   | "PENDING"
   | "PROCESSING"
   | "SENT"
@@ -9,6 +10,7 @@ export type TouchScheduleStatus =
   | "FAILED";
 
 export type TouchRecordStatus =
+  | "UNKNOWN"
   | "SENT"
   | "DELIVERED"
   | "DELIVERY_DELAYED"
@@ -18,6 +20,4 @@ export type TouchRecordStatus =
   | "CLICKED"
   | "FAILED";
 
-export type TouchReferenceType = "SUBSCRIPTION_CYCLE";
-
-
+export type TouchReferenceType = "SUBSCRIPTION_CYCLE" | "OUTREACH";

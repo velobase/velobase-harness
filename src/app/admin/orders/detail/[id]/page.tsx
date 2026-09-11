@@ -17,28 +17,16 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { cn } from "@/lib/utils";
 import { useFormatter, useTranslations } from "next-intl";
-
-const statusColors: Record<string, string> = {
-  PENDING:
-    "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300",
-  COMPLETED:
-    "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300",
-  CANCELLED: "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300",
-  EXPIRED: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300",
-};
-
-const paymentStatusColors: Record<string, string> = {
-  PENDING:
-    "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300",
-  SUCCESS: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300",
-  FAILED: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300",
-  CANCELLED: "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300",
-};
+import { statusConfig, paymentStatusConfig, typeKeys } from "@/components/admin/orders/utils";
 
 export default function OrderDetailPage() {
   const t = useTranslations("admin.orders");
+  const productTypeLabels: Record<string, string> = {
+    SUBSCRIPTION: t("productTypes.subscription"),
+    CREDITS_PACKAGE: t("productTypes.creditsPackage"),
+    ONE_TIME_ENTITLEMENT: t("productTypes.entitlement"),
+  };
   const format = useFormatter();
   const params = useParams();
   const id = params.id as string;
@@ -68,7 +56,7 @@ export default function OrderDetailPage() {
 
   if (isLoading) {
     return (
-      <div className="mx-auto max-w-5xl space-y-6 p-6">
+      <div className="admin-module-page space-y-6">
         <div className="flex items-center gap-4">
           <Skeleton className="h-10 w-10" />
           <div className="space-y-2">
@@ -86,14 +74,14 @@ export default function OrderDetailPage() {
 
   if (!order) {
     return (
-      <div className="mx-auto max-w-5xl space-y-6 p-6">
+      <div className="admin-module-page space-y-6">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" asChild>
-            <Link href="/admin/orders">
+            <Link href="/admin/orders" aria-label={t("backToOrders")}>
               <ArrowLeft className="h-4 w-4" />
             </Link>
           </Button>
-          <h1 className="text-2xl font-bold text-red-500">
+          <h1 className="text-2xl font-bold text-destructive">
             {t("detail.notFound")}
           </h1>
         </div>
@@ -102,45 +90,34 @@ export default function OrderDetailPage() {
   }
 
   return (
-    <div className="mx-auto max-w-6xl space-y-6 p-6">
+    <div className="admin-module-page space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
+        <div className="flex min-w-0 items-center gap-4">
           <Button variant="outline" size="icon" asChild>
-            <Link href="/admin/orders">
+            <Link href="/admin/orders" aria-label={t("backToOrders")}>
               <ArrowLeft className="h-4 w-4" />
             </Link>
           </Button>
-          <div>
-            <h1 className="flex items-center gap-2 text-2xl font-bold">
+          <div className="min-w-0">
+            <h1 className="flex flex-wrap items-center gap-2 text-lg font-semibold">
               {t("detail.title")}
               <Badge
-                className={cn(
-                  "text-xs",
-                  statusColors[order.status] ?? "bg-gray-100",
-                )}
+                variant={statusConfig[order.status]?.variant ?? "outline"}
               >
-                {order.status}
+                {statusConfig[order.status] ? t(statusConfig[order.status]!.labelKey) : order.status}
               </Badge>
             </h1>
-            <p className="text-muted-foreground font-mono text-sm">
+            <p className="mt-1 break-all text-muted-foreground font-mono text-xs">
               {order.id}
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" asChild>
-            <Link href={`/admin/users/${order.userId}`}>
-              <User className="mr-2 h-4 w-4" />
-              {t("detail.viewUser")}
-            </Link>
-          </Button>
-        </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
         {/* Main Info */}
-        <div className="space-y-6 md:col-span-2">
+        <div className="min-w-0 space-y-6 xl:col-span-2">
           {/* Order Info */}
           <Card>
             <CardHeader>
@@ -149,12 +126,12 @@ export default function OrderDetailPage() {
                 {t("detail.orderInformation")}
               </CardTitle>
             </CardHeader>
-            <CardContent className="grid grid-cols-2 gap-4">
+            <CardContent className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div>
                 <p className="text-muted-foreground text-sm">
                   {t("detail.amount")}
                 </p>
-                <p className="text-lg font-bold">
+                <p className="whitespace-nowrap text-xl font-medium tabular-nums">
                   {formatPrice(order.amount, order.currency)}
                 </p>
               </div>
@@ -162,7 +139,7 @@ export default function OrderDetailPage() {
                 <p className="text-muted-foreground text-sm">
                   {t("detail.type")}
                 </p>
-                <Badge variant="outline">{order.type}</Badge>
+                <p className="text-sm">{typeKeys[order.type] ? t(typeKeys[order.type]!) : order.type}</p>
               </div>
               <div>
                 <p className="text-muted-foreground text-sm">
@@ -194,7 +171,7 @@ export default function OrderDetailPage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
                   <p className="text-muted-foreground text-sm">
                     {t("detail.productName")}
@@ -205,27 +182,27 @@ export default function OrderDetailPage() {
                   <p className="text-muted-foreground text-sm">
                     {t("detail.productType")}
                   </p>
-                  <Badge variant="secondary">{order.product.type}</Badge>
+                  <p className="text-sm">{productTypeLabels[order.product.type] ?? order.product.type}</p>
                 </div>
                 <div>
                   <p className="text-muted-foreground text-sm">
                     {t("detail.productId")}
                   </p>
-                  <p className="font-mono text-xs">{order.productId}</p>
+                  <p className="break-all font-mono text-xs">{order.productId}</p>
                 </div>
               </div>
 
               {order.productSnapshot && (
-                <div className="mt-4">
-                  <p className="mb-2 text-sm font-medium">
+                <details className="border-t pt-4">
+                  <summary className="cursor-pointer text-sm text-muted-foreground hover:text-foreground">
                     {t("detail.snapshotAtPurchase")}
-                  </p>
-                  <div className="bg-muted overflow-x-auto rounded-md p-3">
+                  </summary>
+                  <div className="mt-3 max-h-72 overflow-auto rounded-md bg-muted p-3">
                     <pre className="text-xs">
                       {JSON.stringify(order.productSnapshot, null, 2)}
                     </pre>
                   </div>
-                </div>
+                </details>
               )}
             </CardContent>
           </Card>
@@ -244,33 +221,29 @@ export default function OrderDetailPage() {
                   {t("detail.noPayments")}
                 </p>
               ) : (
-                <div className="space-y-4">
+                <div className="divide-y divide-border">
                   {order.payments.map((payment) => (
                     <div
                       key={payment.id}
-                      className="space-y-2 rounded-lg border p-4"
+                      className="space-y-3 py-4 first:pt-0 last:pb-0"
                     >
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <span className="text-muted-foreground font-mono text-xs">
+                      <div className="flex flex-wrap items-center justify-between gap-3">
+                        <div className="flex min-w-0 flex-wrap items-center gap-2">
+                          <span className="break-all text-muted-foreground font-mono text-xs">
                             {payment.id}
                           </span>
                           <Badge
-                            className={cn(
-                              "text-xs",
-                              paymentStatusColors[payment.status] ??
-                                "bg-gray-100",
-                            )}
+                            variant={paymentStatusConfig[payment.status]?.variant ?? "outline"}
                           >
-                            {payment.status}
+                            {paymentStatusConfig[payment.status] ? t(paymentStatusConfig[payment.status]!.labelKey) : payment.status}
                           </Badge>
                         </div>
-                        <span className="font-bold">
+                        <span className="whitespace-nowrap font-medium tabular-nums">
                           {formatPrice(payment.amount, payment.currency)}
                         </span>
                       </div>
 
-                      <div className="grid grid-cols-2 gap-2 text-sm">
+                      <div className="grid grid-cols-1 gap-2 break-words text-sm sm:grid-cols-2">
                         <div>
                           <span className="text-muted-foreground">
                             {t("detail.gateway")}
@@ -284,21 +257,21 @@ export default function OrderDetailPage() {
                           {formatDate(payment.createdAt)}
                         </div>
                         {payment.gatewayTransactionId && (
-                          <div className="col-span-2">
+                          <div className="sm:col-span-2">
                             <span className="text-muted-foreground">
                               {t("detail.transactionId")}
                             </span>{" "}
-                            <span className="ml-1 font-mono">
+                            <span className="ml-1 break-all font-mono text-xs">
                               {payment.gatewayTransactionId}
                             </span>
                           </div>
                         )}
                         {payment.gatewaySubscriptionId && (
-                          <div className="col-span-2">
+                          <div className="sm:col-span-2">
                             <span className="text-muted-foreground">
                               {t("detail.subscriptionId")}
                             </span>{" "}
-                            <span className="ml-1 font-mono">
+                            <span className="ml-1 break-all font-mono text-xs">
                               {payment.gatewaySubscriptionId}
                             </span>
                           </div>
@@ -400,8 +373,8 @@ export default function OrderDetailPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex items-start gap-3">
-                <div className="mt-1 rounded-full bg-green-100 p-1 dark:bg-green-900">
-                  <Calendar className="h-3 w-3 text-green-600 dark:text-green-400" />
+                <div className="mt-1 rounded-full bg-muted p-1">
+                  <Calendar className="h-3 w-3 text-muted-foreground" />
                 </div>
                 <div>
                   <p className="text-sm font-medium">{t("detail.created")}</p>
@@ -411,8 +384,8 @@ export default function OrderDetailPage() {
                 </div>
               </div>
               <div className="flex items-start gap-3">
-                <div className="mt-1 rounded-full bg-blue-100 p-1 dark:bg-blue-900">
-                  <Calendar className="h-3 w-3 text-blue-600 dark:text-blue-400" />
+                <div className="mt-1 rounded-full bg-muted p-1">
+                  <Calendar className="h-3 w-3 text-muted-foreground" />
                 </div>
                 <div>
                   <p className="text-sm font-medium">

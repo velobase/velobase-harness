@@ -74,21 +74,16 @@ export default function AffiliateCommissionsPage() {
     id: string,
     newStatus: "VOIDED" | "AVAILABLE" | "PENDING",
   ) => {
-    if (confirm(t("confirmStatus", { status: newStatus }))) {
+    if (confirm(t("confirmStatus", { status: t(`statuses.${newStatus.toLowerCase()}`) }))) {
       updateStatusMutation.mutate({ id, status: newStatus });
     }
   };
 
   return (
-    <div className="container max-w-7xl py-8">
-      <div className="mb-6 flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">{t("title")}</h1>
-          <p className="text-muted-foreground">{t("subtitle")}</p>
-        </div>
-      </div>
+    <div className="admin-module-page space-y-4">
+      <h1 className="sr-only">{t("title")}</h1>
 
-      <div className="mb-6 flex gap-4">
+      <div className="admin-module-toolbar justify-start">
         <div className="relative max-w-sm flex-1">
           <Search className="text-muted-foreground absolute top-2.5 left-2.5 h-4 w-4" />
           <Input
@@ -99,10 +94,10 @@ export default function AffiliateCommissionsPage() {
           />
         </div>
         <Select value={status} onValueChange={setStatus}>
-          <SelectTrigger className="w-[180px]">
+          <SelectTrigger className="w-[180px]" aria-label={t("status")}>
             <SelectValue placeholder={t("status")} />
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent className="admin-theme admin-popup">
             <SelectItem value="all">{t("allStatuses")}</SelectItem>
             <SelectItem value="PENDING">{t("statuses.pending")}</SelectItem>
             <SelectItem value="AVAILABLE">{t("statuses.available")}</SelectItem>
@@ -111,7 +106,7 @@ export default function AffiliateCommissionsPage() {
         </Select>
       </div>
 
-      <div className="rounded-md border">
+      <div className="admin-table-surface">
         <Table>
           <TableHeader>
             <TableRow>
@@ -178,8 +173,10 @@ export default function AffiliateCommissionsPage() {
                   </TableCell>
                   <TableCell>
                     <div className="flex flex-col text-xs">
-                      <span className="font-mono uppercase">
-                        {item.sourceType.replace("_", " ")}
+                      <span>
+                        {t.has(`sources.${item.sourceType.toLowerCase()}`)
+                          ? t(`sources.${item.sourceType.toLowerCase()}`)
+                          : item.sourceType.replaceAll("_", " ")}
                       </span>
                       <span
                         className="text-muted-foreground max-w-[120px] truncate font-mono"
@@ -190,8 +187,8 @@ export default function AffiliateCommissionsPage() {
                     </div>
                   </TableCell>
                   <TableCell>
-                    <div className="font-mono">
-                      <span className="font-bold text-green-600">
+                    <div className="whitespace-nowrap tabular-nums">
+                      <span className="font-medium text-foreground">
                         +
                         {format.number(item.commissionCents / 100, {
                           style: "currency",
@@ -217,14 +214,14 @@ export default function AffiliateCommissionsPage() {
                   <TableCell>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" className="h-8 w-8 p-0">
+                        <Button variant="ghost" size="icon" className="h-8 w-8" aria-label={t("actionsFor", { email: item.affiliateUser.email || item.affiliateUserId })} disabled={updateStatusMutation.isPending}>
                           <MoreHorizontal className="h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
+                      <DropdownMenuContent align="end" className="admin-theme admin-popup">
                         {item.state !== "VOIDED" && (
                           <DropdownMenuItem
-                            className="text-red-600"
+                            variant="destructive"
                             onClick={() =>
                               handleUpdateStatus(item.id, "VOIDED")
                             }
@@ -302,29 +299,29 @@ function StatusBadge({
   const format = useFormatter();
   const config = {
     PENDING: {
-      color: "bg-amber-100 text-amber-800 border-amber-200",
+      variant: "outline" as const,
       icon: Clock,
     },
     AVAILABLE: {
-      color: "bg-green-100 text-green-800 border-green-200",
+      variant: "secondary" as const,
       icon: CheckCircle2,
     },
     VOIDED: {
-      color: "bg-red-100 text-red-800 border-red-200",
+      variant: "destructive" as const,
       icon: AlertCircle,
     },
-  }[status] || { color: "bg-gray-100 text-gray-800", icon: AlertCircle };
+  }[status] || { variant: "outline" as const, icon: AlertCircle };
 
   const Icon = config.icon;
 
   return (
     <div className="flex flex-col items-start gap-1">
-      <Badge variant="outline" className={`${config.color} gap-1 pr-2`}>
+      <Badge variant={config.variant} className="gap-1 pr-2">
         <Icon className="h-3 w-3" />
-        {status}
+        {t.has(`statuses.${status.toLowerCase()}`) ? t(`statuses.${status.toLowerCase()}`) : status}
       </Badge>
       {status === "PENDING" && (
-        <span className="text-muted-foreground text-[10px]">
+        <span className="whitespace-nowrap text-muted-foreground text-xs">
           {t("unlocks", {
             date: format.dateTime(new Date(availableAt), {
               month: "short",

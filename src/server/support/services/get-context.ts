@@ -74,6 +74,9 @@ export async function getUserContext(userId: string): Promise<UserContext | null
       where: {
         subscriptionId: subscription.id,
         status: "ACTIVE",
+        deletedAt: null,
+        startsAt: { lte: new Date() },
+        expiresAt: { gt: new Date() },
       },
       orderBy: { startsAt: "desc" },
     });
@@ -159,4 +162,3 @@ export function formatContextForPrompt(context: UserContext | null): string {
 
   return lines.join("\n");
 }
-

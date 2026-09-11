@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import {
   Drawer,
@@ -12,7 +13,6 @@ import {
   DrawerTitle,
 } from "@/components/ui/drawer";
 import { Input } from "@/components/ui/input";
-import { Loader2, Minus, Plus, Coins } from "lucide-react";
 import { toast } from "sonner";
 import { api } from "@/trpc/react";
 
@@ -23,7 +23,6 @@ interface ExchangeDrawerProps {
   exchangeUnitCents: number;
   exchangeUnitCredits: number;
 }
-
 export function ExchangeDrawer({
   open,
   onOpenChange,
@@ -31,150 +30,98 @@ export function ExchangeDrawer({
   exchangeUnitCents,
   exchangeUnitCredits,
 }: ExchangeDrawerProps) {
+  const t = useTranslations("affiliateExchange");
   const utils = api.useUtils();
   const [units, setUnits] = useState(1);
-
+  const attempt = useRef<{ requestId: string; units: number } | null>(null);
+  const pending = api.affiliate.pendingExchange.useQuery(undefined, {
+    enabled: open,
+    refetchOnMount: "always",
+  });
+  const request = pending.data ?? attempt.current;
+  const selectedUnits = request?.units ?? units;
   const maxUnits = Math.floor(availableCents / exchangeUnitCents);
-  const totalCents = units * exchangeUnitCents;
-  const totalCredits = units * exchangeUnitCredits;
-
-  const exchangeMutation = api.affiliate.exchangeCredits.useMutation({
-    onSuccess: (data) => {
-      toast.success(`${data.creditsGranted.toLocaleString()} credits added!`);
-      onOpenChange(false);
+  const mutation = api.affiliate.exchangeCredits.useMutation({
+    onSuccess: () => {
+      attempt.current = null;
       setUnits(1);
+      toast.success(t("success"));
+      onOpenChange(false);
+      void utils.affiliate.pendingExchange.invalidate();
       void utils.affiliate.getStatus.invalidate();
       void utils.account.getBillingStatus.invalidate();
     },
-    onError: (err) => {
-      toast.error(err.message || "Exchange failed");
+    onError: (error) => {
+      toast.error(error.message);
+      void utils.affiliate.pendingExchange.invalidate();
+      void utils.affiliate.getStatus.invalidate();
     },
   });
-
-  const handleConfirm = () => {
-    exchangeMutation.mutate({ units });
-  };
-
-  const handleOpenChange = (newOpen: boolean) => {
-    if (!newOpen) {
-      setUnits(1);
-    }
-    onOpenChange(newOpen);
-  };
-
-  const increment = () => setUnits((u) => Math.min(u + 1, maxUnits));
-  const decrement = () => setUnits((u) => Math.max(u - 1, 1));
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value;
-    if (val === "") {
-      setUnits(1);
-      return;
-    }
-    const num = parseInt(val, 10);
-    if (!isNaN(num)) {
-      setUnits(Math.min(Math.max(1, num), maxUnits || 1));
-    }
-  };
-
+  function confirm() {
+    const next = request ?? { requestId: crypto.randomUUID(), units };
+    attempt.current = next;
+    mutation.mutate(next);
+  }
   return (
-    <Drawer open={open} onOpenChange={handleOpenChange}>
+    <Drawer open={open} onOpenChange={onOpenChange}>
       <DrawerContent>
         <DrawerHeader>
-          <DrawerTitle className="flex items-center gap-2">
-            <Coins className="w-5 h-5 text-yellow-500" />
-            Exchange for Credits
-          </DrawerTitle>
-          <DrawerDescription>
-            Convert your earnings to video generation credits
-          </DrawerDescription>
+          <DrawerTitle>{t("title")}</DrawerTitle>
+          <DrawerDescription>{t("description")}</DrawerDescription>
         </DrawerHeader>
-        <div className="px-4 pb-2 space-y-4">
-          {/* Unit selector */}
-          <div className="flex items-center justify-center gap-4">
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={decrement}
-              disabled={units <= 1}
-              className="h-10 w-10 rounded-full"
-            >
-              <Minus className="w-4 h-4" />
-            </Button>
-            <div className="text-center">
-              <Input
-                type="number"
-                min={1}
-                max={maxUnits || 1}
-                value={units}
-                onChange={handleInputChange}
-                className="w-24 h-12 text-3xl font-bold text-center border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-              />
-              <div className="text-xs text-muted-foreground mt-1">
-                max: {maxUnits}
-              </div>
-            </div>
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={increment}
-              disabled={units >= maxUnits}
-              className="h-10 w-10 rounded-full"
-            >
-              <Plus className="w-4 h-4" />
-            </Button>
-          </div>
-
-          {/* Exchange summary */}
-          <div className="bg-muted/50 rounded-lg p-4 space-y-2">
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">You spend</span>
-              <span className="font-semibold text-red-500">
-                -${(totalCents / 100).toFixed(2)}
-              </span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">You get</span>
-              <span className="font-semibold text-green-500">
-                +{totalCredits.toLocaleString()} credits
-              </span>
-            </div>
-            <div className="border-t pt-2 mt-2">
-              <div className="flex justify-between text-xs text-muted-foreground">
-                <span>Rate</span>
-                <span>
-                  ${(exchangeUnitCents / 100).toFixed(0)} = {exchangeUnitCredits.toLocaleString()} credits
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {maxUnits === 0 && (
-            <p className="text-xs text-amber-500 text-center">
-              You need at least ${(exchangeUnitCents / 100).toFixed(0)} to exchange
-            </p>
-          )}
+        <div className="space-y-4 px-4">
+          {request && <p className="text-sm text-amber-600">{t("pending")}</p>}
+          <label className="block space-y-2">
+            <span>{t("units")}</span>
+            <Input
+              type="number"
+              min={1}
+              max={Math.min(1000, maxUnits || 1)}
+              value={selectedUnits}
+              disabled={Boolean(request) || mutation.isPending}
+              onChange={(event) =>
+                setUnits(
+                  Math.max(
+                    1,
+                    Math.min(
+                      1000,
+                      maxUnits || 1,
+                      Math.floor(Number(event.target.value)) || 1,
+                    ),
+                  ),
+                )
+              }
+            />
+          </label>
+          <p>
+            {t("summary", {
+              amount: ((selectedUnits * exchangeUnitCents) / 100).toFixed(2),
+              credits: selectedUnits * exchangeUnitCredits,
+            })}
+          </p>
+          {!request && maxUnits < 1 && <p>{t("insufficient")}</p>}
         </div>
         <DrawerFooter>
           <Button
-            onClick={handleConfirm}
-            disabled={exchangeMutation.isPending || maxUnits === 0}
+            onClick={confirm}
+            disabled={
+              mutation.isPending ||
+              pending.isFetching ||
+              pending.isError ||
+              (!request && maxUnits < 1)
+            }
           >
-            {exchangeMutation.isPending ? (
-              <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Exchanging...
-              </>
-            ) : (
-              `Get ${totalCredits.toLocaleString()} Credits`
-            )}
+            {mutation.isPending
+              ? t("processing")
+              : request
+                ? t("resume")
+                : t("confirm")}
           </Button>
           <DrawerClose asChild>
-            <Button variant="outline">Cancel</Button>
+            <Button variant="outline">{t("close")}</Button>
           </DrawerClose>
         </DrawerFooter>
       </DrawerContent>
     </Drawer>
   );
 }
-

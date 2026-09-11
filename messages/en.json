@@ -43,6 +43,8 @@
     "refundPolicy": "Refund Policy"
   },
   "auth": {
+    "localDemo": "Explore as local administrator",
+    "localDemoNotice": "Local experience on this machine. No account setup needed.",
     "welcomeTitle": "Welcome to AI SaaS",
     "welcomeSubtitle": "Sign in to start building with AI SaaS",
     "continueWith": "Continue with {provider}",
@@ -347,7 +349,7 @@
       "subtitle": "Monitor and manage all affiliate earnings.",
       "searchPlaceholder": "Search email, ID...",
       "status": "Status",
-      "allStatuses": "All Status",
+      "allStatuses": "All statuses",
       "date": "Date",
       "referrer": "Referrer",
       "referredUser": "Referred User",
@@ -368,6 +370,10 @@
         "pending": "Pending",
         "available": "Available",
         "voided": "Voided"
+      },
+      "actionsFor": "Commission actions for {email}",
+      "sources": {
+        "order_payment": "Order payment"
       }
     },
     "affiliatePayouts": {
@@ -379,7 +385,7 @@
       "type": "Type",
       "status": "Status",
       "allTypes": "All Types",
-      "allStatuses": "All Status",
+      "allStatuses": "All statuses",
       "date": "Date",
       "created": "Created",
       "user": "User",
@@ -427,7 +433,8 @@
         "completed": "Completed",
         "rejected": "Rejected",
         "failed": "Failed"
-      }
+      },
+      "actionsFor": "Payout actions for {email}"
     },
     "creditsManagement": {
       "title": "Credits Management",
@@ -480,12 +487,18 @@
       "time": "Time",
       "operation": "Operation",
       "loading": "Loading...",
-      "loadMore": "Load More"
+      "loadMore": "Load More",
+      "operations": {
+        "grant": "Grant",
+        "consume": "Consumption",
+        "freeze": "Freeze",
+        "unfreeze": "Unfreeze"
+      }
     },
     "userManagement": {
-      "title": "User Management",
+      "title": "Users",
       "subtitleTotal": "{count, plural, one {# user} other {# users}}",
-      "subtitleEmpty": "Manage your users",
+      "subtitleEmpty": "Manage accounts, access and user activity.",
       "searchPlaceholder": "Search by name, email, ID...",
       "filters": "Filters",
       "clearAll": "Clear all",
@@ -607,7 +620,18 @@
         "bounced": "Bounced",
         "notBounced": "Not Bounced",
         "complained": "Complained",
-        "noComplaints": "No Complaints"
+        "noComplaints": "No Complaints",
+        "subscriptionStatuses": {
+          "undefined": "Not set",
+          "incomplete": "Incomplete",
+          "incomplete_expired": "Incomplete · expired",
+          "trialing": "Trial",
+          "active": "Active",
+          "past_due": "Past due",
+          "unpaid": "Unpaid",
+          "paused": "Paused",
+          "canceled": "Canceled"
+        }
       },
       "related": {
         "title": "Related Users (Same Device)",
@@ -618,7 +642,12 @@
         "primary": "Primary",
         "joined": "Joined",
         "view": "View"
-      }
+      },
+      "firstPage": "First page",
+      "previousPage": "Previous page",
+      "nextPage": "Next page",
+      "lastPage": "Last page",
+      "backToUsers": "Back to users"
     },
     "orders": {
       "title": "Orders",
@@ -699,7 +728,10 @@
         "timeline": "Timeline",
         "created": "Created",
         "lastUpdated": "Last Updated"
-      }
+      },
+      "expandPayments": "Show payments",
+      "collapsePayments": "Hide payments",
+      "backToOrders": "Back to orders"
     },
     "credits": "Credits",
     "products": "Products",
@@ -708,13 +740,23 @@
       "subtitleTotal": "{count, plural, one {# promo code} other {# promo codes}}",
       "subtitleEmpty": "Manage promo codes",
       "searchPlaceholder": "Search promo codes...",
-      "create": "New",
+      "create": "Create draft",
       "all": "All",
+      "allStatuses": "All statuses",
+      "allRewards": "All rewards",
+      "statusFor": "Status for {code}",
+      "actionsFor": "Actions for {code}",
+      "viewRedemptions": "View redemptions",
+      "viewRedemptionsFor": "View redemptions for {code}",
+      "viewNotes": "View notes",
+      "delete": "Delete promo code",
+      "previousPage": "Previous page",
+      "nextPage": "Next page",
       "code": "Code",
       "type": "Type",
-      "grant": "Grant",
+      "grant": "Reward",
       "status": "Status",
-      "usage": "Usage/Limit",
+      "usage": "Used / Limit",
       "expiresAt": "Expires At",
       "notes": "Notes",
       "actions": "Actions",
@@ -730,7 +772,7 @@
       "createSuccess": "Promo code created",
       "deleteSuccess": "Promo code deleted",
       "statusUpdated": "Status updated",
-      "createTitle": "New Promo Code",
+      "createTitle": "Create promo campaign draft",
       "grantTypeLabel": "Grant Type",
       "creditsAmountLabel": "Credits Amount",
       "usageLimitLabel": "Total Usage (0 = unlimited)",
@@ -743,19 +785,23 @@
         "active": "Active",
         "inactive": "Inactive",
         "expired": "Expired",
-        "undefined": "Undefined"
+        "undefined": "Undefined",
+        "draft": "Draft"
       },
       "grantTypes": {
         "credits": "Credits",
         "product": "Product",
         "undefined": "Undefined"
-      }
+      },
+      "draftHelp": "A new campaign starts as a draft. Review the reward and dates, then set its status to Active to publish. The global feature must also be enabled.",
+      "productId": "Reward product ID",
+      "startsAt": "Starts at"
     },
     "overview": "Overview",
     "nav": {
       "admin": "Admin",
       "console": "Console",
-      "backToApp": "← Back to App",
+      "backToApp": "Back to app",
       "dashboard": "Dashboard",
       "usersContent": "Users & Content",
       "commerce": "Commerce",
@@ -764,7 +810,7 @@
       "marketing": "Marketing",
       "overviewItem": "Overview",
       "usersItem": "Users",
-      "dialogs": "Dialogs",
+      "dialogs": "UI preview",
       "productsItem": "Products",
       "ordersItem": "Orders",
       "creditsItem": "Credits",
@@ -773,7 +819,16 @@
       "payouts": "Payouts",
       "scenes": "Scenes",
       "schedules": "Schedules",
-      "waitlist": "Waitlist"
+      "waitlist": "Waitlist",
+      "settings": "Settings",
+      "features": "Modules",
+      "connections": "Connections",
+      "emailGroup": "Email",
+      "inbox": "Inbox",
+      "sharing": "Sharing",
+      "activities": "Activities",
+      "workspace": "Workspace",
+      "growth": "Growth"
     },
     "touches": {
       "title": "Touch Management",
@@ -815,10 +870,10 @@
       "sceneChannelStatus": "Scene / Channel / Status",
       "scheduledNext": "Scheduled / Next Attempt",
       "attemptCount": "Attempt Count",
-      "records": "records (last 50)",
-      "attempt": "attempt",
-      "time": "time",
-      "subjectError": "subject/error",
+      "records": "Delivery records (latest 50)",
+      "attempt": "Attempt",
+      "time": "Time",
+      "subjectError": "Subject / error",
       "noRecords": "No records",
       "previewText": "Preview email text",
       "viewHtml": "View HTML (raw)",
@@ -829,7 +884,8 @@
         "sent": "Sent",
         "cancelled": "Cancelled",
         "superseded": "Superseded",
-        "failed": "Failed"
+        "failed": "Failed",
+        "unknown": "Unknown outcome"
       },
       "scenes": {
         "sub_renewal_reminder_d1": "Renewal Reminder (D-1)"
@@ -844,7 +900,10 @@
         "today": "Today",
         "tomorrow": "Tomorrow",
         "daysLater": "{count, plural, one {in # day} other {in # days}}"
-      }
+      },
+      "reference": "Related record",
+      "dedupeKey": "Deduplication key",
+      "payload": "Request data"
     },
     "scenes": {
       "title": "Touch Scenes",
@@ -955,7 +1014,9 @@
         "scheduled": "Scheduled",
         "event": "Event",
         "manual": "Manual"
-      }
+      },
+      "backToScenes": "Back to scenes",
+      "loadFailed": "Could not load template"
     },
     "dialogPreview": {
       "title": "Dialog Components",
@@ -1027,17 +1088,69 @@
       "defaultPrice": "Default Price (USD)",
       "currentPrice": "Current Price",
       "originalPriceStrike": "Original Price (strikethrough)",
-      "multiCurrencyPricing": "Multi-currency Pricing (ProductPrice)",
+      "multiCurrencyPricing": "Multi-currency pricing",
       "currency": "Currency",
       "originalPrice": "Original Price",
-      "noLocalizedPricingMsg": "No localized prices configured; the default USD price will be used for automatic conversion",
+      "noLocalizedPricingMsg": "No localized prices configured; the base price is shown in USD.",
       "subscriptionPlan": "Subscription Plan",
       "interval": "Interval",
       "intervalCount": "Interval Count",
       "perPeriodCredits": "Per-period Credits (monthly free allowance)",
       "save": "Save",
-      "fullMetadata": "Full Metadata"
+      "fullMetadata": "Full Metadata",
+      "metadata": "Metadata",
+      "planId": "Plan ID",
+      "intervals": {
+        "day": "Day",
+        "week": "Week",
+        "month": "Month",
+        "year": "Year"
+      }
+    },
+    "shell": {
+      "brand": "Harness",
+      "administration": "Administration",
+      "administrator": "Administrator",
+      "accountMenu": "Open account menu",
+      "profile": "My profile",
+      "signOut": "Sign out",
+      "signingOut": "Signing out…",
+      "logoutError": "Could not sign out. Please try again.",
+      "appearance": "Appearance",
+      "themes": {
+        "light": "Light",
+        "dark": "Dark",
+        "system": "System"
+      },
+      "language": "Language",
+      "changeLanguage": "Change language",
+      "languages": {
+        "en": "English",
+        "zh": "中文"
+      },
+      "toggleNavigation": "Toggle navigation",
+      "closeNavigation": "Close navigation",
+      "breadcrumb": "Current location",
+      "details": "Details",
+      "skipToContent": "Skip to content"
     }
+  },
+  "productCatalog": {
+    "enableToPublish": "Enable Products in Features before publishing a product.",
+    "edit": "Edit product",
+    "editHelp": "Update product details and authored prices. Existing orders keep the amounts recorded when they were placed.",
+    "name": "Product name",
+    "description": "Description",
+    "price": "Price",
+    "originalPrice": "Original price (optional)",
+    "sortOrder": "Display order",
+    "localPrices": "Prices in other currencies",
+    "fallback": "Leave an alternate price blank to use the USD base price. Its currency remains USD.",
+    "save": "Save changes",
+    "saving": "Saving…",
+    "invalid": "Check required fields and prices. Use non-negative prices with at most two decimal places.",
+    "conflict": "This product was changed by someone else. Close the details and reload the product before editing again.",
+    "failed": "Could not save. Reload the product before trying again."
   },
   "product": {
     "platformHealth": {
@@ -1048,5 +1161,204 @@
       "error": "Unable to connect. Check your server and try again.",
       "refresh": "Refresh"
     }
+  },
+  "modules": {
+    "title": "Features",
+    "intro": "This deployment includes the capabilities below. Enable them after configuring their required connections.",
+    "loading": "Loading…",
+    "loadFailed": "Unable to load. Please retry.",
+    "saveFailed": "Could not save",
+    "capability": "Capability",
+    "status": "Status",
+    "dependencies": "Required capabilities",
+    "actions": "Actions",
+    "none": "None",
+    "disable": "Disable",
+    "enable": "Enable",
+    "configure": "Configure",
+    "manage": "Manage",
+    "absentHelp": "Ask a developer to add this module to the application composition and deploy it.",
+    "disableHelp": "Disabling a capability stops new business operations and hides its user entry points. Data is retained. Dependent capabilities become unavailable. Refunds, cancellation and existing obligations remain accessible. Re-enabling sharing makes previously shared links public again unless they were revoked.",
+    "connections": "Service connections",
+    "connectionsHelp": "Connections provide technical services to features. Changing a connection does not enable a business capability.",
+    "overview": "Overview",
+    "overviewHelp": "Open an enabled capability, or configure features and service connections.",
+    "sharingHelp": "The sharing switch controls all public links. Revoke an individual link to keep it private after sharing is enabled again.",
+    "empty": "No records yet.",
+    "untitled": "Untitled",
+    "revoke": "Revoke link",
+    "firstPage": "First page",
+    "nextPage": "Next page",
+    "names": {
+      "users": "Users",
+      "products": "Products and pricing",
+      "payments": "Orders and payments",
+      "subscriptions": "Subscriptions",
+      "credits": "Credits",
+      "promo-codes": "Promo code campaigns",
+      "newcomer-offers": "Newcomer offers",
+      "daily-bonus": "Daily rewards",
+      "sharing": "Content sharing",
+      "email-management": "Email management",
+      "ai-support": "AI support",
+      "touch": "Outreach",
+      "affiliate": "Affiliates",
+      "attribution": "Attribution",
+      "ai-chat": "AI chat",
+      "image-generation": "Image generation",
+      "projects": "Projects"
+    },
+    "descriptions": {
+      "users": "Manage accounts and access.",
+      "products": "Maintain products and prices.",
+      "payments": "Accept new payments; existing settlements and refunds continue when disabled.",
+      "subscriptions": "Sell recurring subscriptions; existing customer obligations remain accessible.",
+      "credits": "Manage credit balances and usage.",
+      "promo-codes": "Create, publish and redeem reward codes.",
+      "newcomer-offers": "Offer eligible newcomers limited-time prices.",
+      "daily-bonus": "Grant daily sign-in rewards.",
+      "sharing": "Publish conversations, view shared links and revoke access.",
+      "email-management": "Receive email, manage tickets and reply manually.",
+      "ai-support": "Add model-assisted responses to email management.",
+      "touch": "Maintain templates, schedules and delivery records.",
+      "affiliate": "Manage referral commissions and payouts.",
+      "attribution": "Collect attribution and conversion events.",
+      "ai-chat": "Run conversations and manage agents.",
+      "image-generation": "Generate images and manage tasks.",
+      "projects": "Organize documents and repositories."
+    },
+    "mailbox": {
+      "title": "Support mailbox",
+      "intro": "Configure IMAP and SMTP for receiving and replying. No AI provider is required. New mail is imported from the first synchronization onward.",
+      "loading": "Loading mailbox…",
+      "loadFailed": "Unable to load mailbox configuration.",
+      "address": "Mailbox address",
+      "password": "Mailbox password / app password",
+      "imapHost": "IMAP host",
+      "imapPort": "IMAP port",
+      "smtpHost": "SMTP host",
+      "smtpPort": "SMTP port",
+      "from": "Sender display name / address",
+      "passwordHelp": "Leave password blank to keep the current credential. Saved credentials are encrypted on the server.",
+      "saving": "Saving…",
+      "save": "Save connection",
+      "failed": "Connection could not be saved. Check the required fields.",
+      "saved": "Saved. Enable Email management in Features to start operating the inbox.",
+      "check": "Check connection",
+      "checking": "Checking…",
+      "connected": "IMAP and SMTP connections succeeded.",
+      "connectionFailed": "Connection failed. Check the host, TLS port and credentials."
+    },
+    "states": {
+      "absent": "Not included",
+      "unconfigured": "Needs configuration",
+      "disabled": "Disabled",
+      "blocked": "Dependency unavailable",
+      "enabled": "Enabled"
+    },
+    "participation": "Campaign participation"
+  },
+  "mailManagement": {
+    "title": "Inbox",
+    "intro": "Receive customer email, follow the timeline and reply manually.",
+    "configure": "Mailbox settings",
+    "sync": "Receive mail",
+    "syncing": "Receiving…",
+    "disabled": "Email management is disabled. History remains available.",
+    "features": "Open features",
+    "failed": "The operation could not be completed. Retry or check the mailbox settings.",
+    "synced": "Received {count} messages.",
+    "filter": "Status",
+    "loading": "Loading…",
+    "empty": "No mail in this view. Receive mail after enabling the mailbox.",
+    "untitled": "No subject",
+    "firstPage": "First page",
+    "nextPage": "Next page",
+    "select": "Select a ticket to read and reply.",
+    "notFound": "Ticket not found.",
+    "reopen": "Reopen",
+    "resolve": "Resolve",
+    "latest": "Latest messages",
+    "older": "Older messages",
+    "unknownHelp": "The connection ended or persistence failed after sending began. Check the mailbox Sent folder or delivery logs before sending again.",
+    "reply": "Reply to customer",
+    "sending": "Sending…",
+    "send": "Send reply",
+    "statuses": {
+      "OPEN": "Open",
+      "NEEDS_APPROVAL": "Needs approval",
+      "WAITING": "Waiting",
+      "SOLVED": "Solved",
+      "ALL": "All"
+    },
+    "actors": {
+      "USER": "Customer",
+      "AI": "AI",
+      "AGENT": "Agent",
+      "SYSTEM": "System"
+    },
+    "deliveries": {
+      "PENDING": "Pending delivery",
+      "SENDING": "Sending",
+      "SENT": "Sent",
+      "UNKNOWN": "Delivery outcome unknown",
+      "CANCELED": "Canceled"
+    },
+    "cancelPending": "Cancel pending reply"
+  },
+  "outreach": {
+    "title": "Email outreach",
+    "intro": "Manage scenes and templates, then schedule a message for a selected account.",
+    "legacyHistory": "All delivery history",
+    "features": "Features",
+    "editScenes": "Edit existing scenes",
+    "disabled": "Outreach is disabled. Drafts and history remain available.",
+    "failed": "The operation failed",
+    "scenes": "Scenes",
+    "chooseScene": "Choose a scene",
+    "sceneKey": "Scene key",
+    "name": "Name",
+    "active": "Allow deliveries for this scene",
+    "saveScene": "Save scene",
+    "templates": "Templates",
+    "subject": "Subject",
+    "text": "Message text",
+    "saveTemplate": "Save template",
+    "schedule": "Schedule message",
+    "snapshotHelp": "The selected recipient and rendered content are saved with the delivery. Later template edits do not change pending messages.",
+    "searchUser": "Find an account by email",
+    "recipient": "Recipient",
+    "when": "Send at (your local time)",
+    "deliveries": "Delivery history",
+    "unknownHelp": "An unknown outcome may already have reached the mail server. Check before scheduling another message; it is not resent automatically.",
+    "process": "Process due messages",
+    "empty": "No deliveries yet",
+    "content": "Saved message",
+    "cancel": "Cancel",
+    "next": "Next page",
+    "first": "First page",
+    "variables": "Template variables (JSON)",
+    "invalidVariables": "Enter a JSON object whose values are strings.",
+    "statuses": {
+      "PENDING": "Pending",
+      "PROCESSING": "Sending",
+      "SENT": "Sent",
+      "CANCELLED": "Canceled",
+      "UNKNOWN": "Unknown outcome"
+    }
+  },
+  "affiliateExchange": {
+    "title": "Exchange earnings for credits",
+    "description": "Spend your available affiliate earnings.",
+    "units": "Units",
+    "summary": "${amount} USD for {credits} credits",
+    "pending": "An exchange is awaiting confirmation. Continue the same request to finish it. Its balance is already reserved.",
+    "resume": "Continue exchange",
+    "confirm": "Exchange",
+    "close": "Close",
+    "processing": "Processing…",
+    "success": "Credits added",
+    "insufficient": "No available balance for a new exchange.",
+    "affiliateDisabled": "New referrals and commissions are paused. Existing balances, payout requests and history remain available."
   }
 }

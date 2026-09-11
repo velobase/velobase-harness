@@ -1,0 +1,15 @@
+{
+  "name": "@velobase/ai-support-openrouter",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@velobase/ai-support": "workspace:*",
+    "@openrouter/ai-sdk-provider": "1.4.1",
+    "ai": "^5.0.68",
+    "zod": "3"
+  }
+}

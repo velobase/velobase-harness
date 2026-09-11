@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -48,7 +47,6 @@ export function UserRelatedUsersCard({
           <LinkIcon className="h-4 w-4" />
           {t("related.title")}
         </CardTitle>
-        <CardDescription>{t("related.description")}</CardDescription>
       </CardHeader>
       <CardContent>
         {isLoading ? (

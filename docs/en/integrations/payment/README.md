@@ -2,6 +2,10 @@
 
 Payment covers products, orders, subscriptions, credits, payment webhooks, and entitlement delivery.
 
+For code-level selection, see the [payments business package](../../../../packages/payments/README.md). Its record lifecycle and provider contracts have no SDK or subscription dependencies. Select the [Stripe technical adapter](../../../../packages/payments-stripe/README.md) separately for one-off hosted checkout and verified evidence. The complete example binds them to its existing tables and retains subscription/cashflow policies; the optional [Core composition](../../../../packages/payments-core/README.md) provides its own checkout persistence, connection versions and customer/Admin pages.
+
+For subscription record and cancellation composition, see the [subscription business service](../../../../packages/subscriptions/README.md) and its separately selected [Stripe lifecycle adapter](../../../../packages/subscriptions-stripe/README.md). Recurring Checkout remains in the complete example. Initial and invoice fulfillment now use the reusable subscription delivery protocol with a host-selected credit consumer and additive receipt tables; apply the subscription delivery migration before deploying.
+
 Supported providers:
 
 - Stripe for card payments and subscriptions.

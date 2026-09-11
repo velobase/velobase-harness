@@ -1,5 +1,5 @@
 import { randomUUID } from "crypto";
-import { MODULES } from "@/config/modules";
+import { isFeatureEnabled } from "@/server/features/state";
 import { db } from "@/server/db";
 import { logger } from "@/lib/logger";
 import {
@@ -62,7 +62,7 @@ function computeBackoffDelayMs(attempt: number): number {
 export async function processDueTouchSchedules(params?: {
   batchSize?: number;
 }) {
-  if (!MODULES.features.touch.enabled) {
+  if (!(await isFeatureEnabled("touch"))) {
     logger.info("Touch feature disabled, skipping due schedule processing");
     return { ok: true, processed: 0 };
   }
@@ -75,6 +75,7 @@ export async function processDueTouchSchedules(params?: {
   // Fetch a candidate batch first; then claim one-by-one with optimistic update.
   const candidates = await db.touchSchedule.findMany({
     where: {
+      referenceType: { not: "OUTREACH" },
       status: { in: ["PENDING", "PROCESSING"] },
       nextAttemptAt: { lte: now },
       OR: [{ lockedAt: null }, { lockedAt: { lt: lockExpiredBefore } }],
@@ -90,6 +91,7 @@ export async function processDueTouchSchedules(params?: {
   let processed = 0;
 
   for (const c of candidates) {
+    if (!(await isFeatureEnabled("touch"))) break;
     const claim = await db.touchSchedule.updateMany({
       where: {
         id: c.id,

@@ -88,23 +88,12 @@ export function OrdersTable({ userId }: OrdersTableProps) {
   }
 
   return (
-    <div className="space-y-4 max-w-[1400px] mx-auto">
+    <div className="admin-module-page space-y-4">
       {/* Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">
-            {userId ? t("userOrdersTitle") : t("title")}
-          </h1>
-          <p className="text-muted-foreground">
-            {userId && (
-              <Link href={`/admin/users/${userId}`} className="text-primary hover:underline mr-2">
-                {t("backToUser")}
-              </Link>
-            )}
-            {total > 0 ? t("subtitleTotal", { count: total }) : t("subtitleEmpty")}
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
+      <div className="admin-module-toolbar">
+        <h1 className="sr-only">{userId ? t("userOrdersTitle") : t("title")}</h1>
+        {userId && <Link href={`/admin/users/${userId}`} className="text-xs text-muted-foreground hover:text-foreground">{t("backToUser")}</Link>}
+        <div className="admin-module-tools">
           <div className="relative flex-1 sm:w-72">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
@@ -119,11 +108,14 @@ export function OrdersTable({ userId }: OrdersTableProps) {
           </div>
           <Button
             variant={showFilters ? "secondary" : "outline"}
-            size="icon"
+            size="sm"
+            aria-label={t("filters")}
+            aria-expanded={showFilters}
             onClick={() => setShowFilters(!showFilters)}
             className={cn(hasActiveFilters && "border-primary text-primary")}
           >
             <Filter className="h-4 w-4" />
+            {t("filters")}
           </Button>
         </div>
       </div>
@@ -139,7 +131,7 @@ export function OrdersTable({ userId }: OrdersTableProps) {
       )}
 
       {/* Table */}
-      <div className="border rounded-md bg-card">
+      <div className="admin-table-surface">
         <Table>
           <TableHeader>
             <TableRow>
@@ -197,7 +189,7 @@ export function OrdersTable({ userId }: OrdersTableProps) {
             <SelectTrigger className="h-8 w-[70px]">
               <SelectValue />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="admin-theme admin-popup">
               <SelectItem value="10">10</SelectItem>
               <SelectItem value="20">20</SelectItem>
               <SelectItem value="50">50</SelectItem>

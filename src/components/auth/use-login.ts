@@ -204,6 +204,11 @@ export function useLogin() {
     setEmailCode("");
   };
 
+  const handleLocalDemoLogin = () => {
+    ensureDeviceKey();
+    void signIn("local-demo", { callbackUrl: "/admin" });
+  };
+
   const handleBack = () => {
     setView("main");
     setError(null);
@@ -521,6 +526,8 @@ export function useLogin() {
     // Handlers
     handleModalClose,
     handleOAuthLogin,
+    handleLocalDemoLogin,
+    localDemoEnabled: env.NEXT_PUBLIC_LOCAL_DEMO === "on",
     handleEmailMethodSelect,
     handleBack,
     handleBackToEmail,

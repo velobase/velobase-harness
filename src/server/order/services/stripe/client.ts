@@ -12,10 +12,11 @@
  * - Secret key is resolved through the validated env helper, not raw
  *   process.env, so Zod validation is always respected.
  */
-import Stripe from "stripe";
+import type Stripe from "stripe";
+import { createStripeClient } from "@velobase/payments-stripe";
 import { getStripeSecretKey } from "@/server/shared/env";
 
-export const STRIPE_API_VERSION = "2025-09-30.clover" as const;
+export { STRIPE_API_VERSION } from "@velobase/payments-stripe";
 
 let _stripe: Stripe | null = null;
 
@@ -25,13 +26,10 @@ export function getStripe(): Stripe {
     if (!key) {
       throw new Error(
         "STRIPE_SECRET_KEY is not configured. " +
-        "Set it in your environment or .env file before calling Stripe APIs.",
+          "Set it in your environment or .env file before calling Stripe APIs.",
       );
     }
-    _stripe = new Stripe(key, {
-      apiVersion: STRIPE_API_VERSION,
-      typescript: true,
-    });
+    _stripe = createStripeClient(key);
   }
   return _stripe;
 }

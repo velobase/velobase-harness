@@ -1,6 +1,11 @@
+import { createCampaignInput, updateCampaignInput } from "@velobase/activities";
+import {
+  createPromoDraft,
+  updatePromoActivity,
+} from "@/modules/activities/server/promo-admin";
 import { z } from "zod";
 import { adminProcedure } from "@/server/api/trpc";
-import type { Prisma, PromoCodeType, PromoCodeStatus, PromoGrantType } from "@prisma/client";
+import type { Prisma, PromoCodeStatus, PromoGrantType } from "@prisma/client";
 
 export const listPromoCodes = adminProcedure
   .input(
@@ -8,9 +13,11 @@ export const listPromoCodes = adminProcedure
       page: z.number().min(1).default(1),
       pageSize: z.number().min(1).max(100).default(20),
       search: z.string().optional(),
-      status: z.enum(["all", "ACTIVE", "DISABLED", "EXPIRED"]).default("all"),
+      status: z
+        .enum(["all", "DRAFT", "ACTIVE", "DISABLED", "EXPIRED"])
+        .default("all"),
       grantType: z.enum(["all", "CREDIT", "PRODUCT"]).default("all"),
-    })
+    }),
   )
   .query(async ({ ctx, input }) => {
     const { page, pageSize, search, status, grantType } = input;
@@ -56,68 +63,12 @@ export const listPromoCodes = adminProcedure
   });
 
 export const createPromoCode = adminProcedure
-  .input(
-    z.object({
-      code: z.string().min(1).max(50),
-      codeType: z.enum(["UNDEFINED", "KOL_INTERNAL", "USER_PROMOTION"]).default("USER_PROMOTION"),
-      grantType: z.enum(["CREDIT", "PRODUCT"]),
-      creditsAmount: z.number().int().min(0).default(0),
-      productId: z.string().optional(),
-      usageLimit: z.number().int().min(0).default(0),
-      perUserLimit: z.number().int().min(0).default(1),
-      startsAt: z.string().optional(),
-      expiresAt: z.string().optional(),
-      notes: z.string().optional(),
-    })
-  )
-  .mutation(async ({ ctx, input }) => {
-    const code = input.code.trim().toUpperCase();
-
-    const existing = await ctx.db.promoCode.findFirst({ where: { code } });
-    if (existing) {
-      throw new Error("Code already exists");
-    }
-
-    return ctx.db.promoCode.create({
-      data: {
-        code,
-        codeType: input.codeType as PromoCodeType,
-        grantType: input.grantType as PromoGrantType,
-        creditsAmount: input.creditsAmount,
-        productId: input.productId || null,
-        usageLimit: input.usageLimit,
-        perUserLimit: input.perUserLimit,
-        startsAt: input.startsAt ? new Date(input.startsAt) : null,
-        expiresAt: input.expiresAt ? new Date(input.expiresAt) : null,
-        notes: input.notes || null,
-        status: "ACTIVE",
-      },
-    });
-  });
+  .input(createCampaignInput)
+  .mutation(({ input }) => createPromoDraft(input));
 
 export const updatePromoCode = adminProcedure
-  .input(
-    z.object({
-      id: z.string(),
-      status: z.enum(["ACTIVE", "DISABLED", "EXPIRED"]).optional(),
-      creditsAmount: z.number().int().min(0).optional(),
-      usageLimit: z.number().int().min(0).optional(),
-      perUserLimit: z.number().int().min(0).optional(),
-      expiresAt: z.string().nullable().optional(),
-      notes: z.string().optional(),
-    })
-  )
-  .mutation(async ({ ctx, input }) => {
-    const { id, expiresAt, ...data } = input;
-    return ctx.db.promoCode.update({
-      where: { id },
-      data: {
-        ...data,
-        status: data.status as PromoCodeStatus | undefined,
-        expiresAt: expiresAt === null ? null : expiresAt ? new Date(expiresAt) : undefined,
-      },
-    });
-  });
+  .input(updateCampaignInput)
+  .mutation(({ input }) => updatePromoActivity(input));
 
 export const deletePromoCode = adminProcedure
   .input(z.object({ id: z.string() }))
@@ -129,3 +80,37 @@ export const deletePromoCode = adminProcedure
     return { success: true };
   });
 
+export const listPromoRedemptions = adminProcedure
+  .input(
+    z.object({
+      promoCodeId: z.string(),
+      cursor: z.string().optional(),
+      limit: z.number().int().min(1).max(100).default(20),
+    }),
+  )
+  .query(async ({ ctx, input }) => {
+    const rows = await ctx.db.promoCodeRedemption.findMany({
+      where: { promoCodeId: input.promoCodeId },
+      orderBy: [{ redeemedAt: "desc" }, { id: "desc" }],
+      take: input.limit + 1,
+      select: {
+        id: true,
+        userId: true,
+        creditsGranted: true,
+        redeemedAt: true,
+      },
+      ...(input.cursor ? { cursor: { id: input.cursor }, skip: 1 } : {}),
+    });
+    const users = await ctx.db.user.findMany({
+      where: { id: { in: rows.map((row) => row.userId) } },
+      select: { id: true, email: true },
+    });
+    const emails = new Map(users.map((user) => [user.id, user.email]));
+    const items = rows
+      .slice(0, input.limit)
+      .map((row) => ({ ...row, email: emails.get(row.userId) ?? null }));
+    return {
+      items,
+      nextCursor: rows.length > input.limit ? items.at(-1)?.id : undefined,
+    };
+  });

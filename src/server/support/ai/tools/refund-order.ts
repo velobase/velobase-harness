@@ -7,7 +7,7 @@
 import { db } from "@/server/db";
 import { logger } from "@/lib/logger";
 import { getStripeClient } from "@/server/order/providers/stripe";
-import { voidAffiliateEarningsForRefund } from "@/server/affiliate/services/ledger";
+import { appEvents } from "@/server/events/bus";
 
 export interface RefundOrderOptions {
   /** 指定退款的订单 ID，不传则退最近一笔成功的订单 */
@@ -145,15 +145,9 @@ export async function refundOrder(
       }
     });
 
-    // 5. 作废 affiliate 佣金（如果有）
-    try {
-      await voidAffiliateEarningsForRefund({
-        paymentId: payment.id,
-        idempotencyKey: `ai_refund:${payment.id}:${refund.id}`,
-      });
-    } catch (err) {
-      logger.warn({ err, paymentId: payment.id }, "Failed to void affiliate earnings (ignored)");
-    }
+    await appEvents.emit("payment:refunded", {
+      paymentId: payment.id, gateway: payment.paymentGateway, eventId: `refund:${refund.id}`,
+    });
 
     logger.info(
       {

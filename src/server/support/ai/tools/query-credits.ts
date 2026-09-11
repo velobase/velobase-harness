@@ -2,8 +2,7 @@
  * 查询 Credits 余额工具（via Velobase）
  */
 
-import { getVelobase } from "@/server/billing/velobase";
-import { isVelobaseError } from "@velobaseai/billing";
+import { getBalance } from "@/server/billing/services/get-balance";
 
 export interface CreditsInfo {
   available: number;
@@ -18,34 +17,13 @@ export interface CreditsInfo {
 }
 
 export async function queryCredits(userId: string): Promise<CreditsInfo> {
-  const vb = getVelobase();
-
-  try {
-    const customer = await vb.customers.get(userId);
-    const totals = Object.values(customer.wallets).reduce(
-      (acc, wallet) => ({
-        available: acc.available + wallet.available,
-        used: acc.used + wallet.used,
-        frozen: acc.frozen + wallet.frozen,
-        total: acc.total + wallet.total,
-      }),
-      { available: 0, used: 0, frozen: 0, total: 0 },
-    );
-
-    return {
-      ...totals,
-      accounts: Object.values(customer.wallets).flatMap((wallet) =>
-        wallet.sources.map((source) => ({
-          type: source.source,
-          available: source.available,
-          expiresAt: source.expiresAt ? new Date(source.expiresAt) : undefined,
-        })),
-      ),
-    };
-  } catch (err) {
-    if (isVelobaseError(err) && err.isType("not_found")) {
-      return { available: 0, used: 0, frozen: 0, total: 0, accounts: [] };
-    }
-    throw err;
-  }
+  const balance = await getBalance({ userId });
+  return {
+    ...balance.totalSummary,
+    accounts: balance.accounts.map((account) => ({
+      type: account.source,
+      available: account.available,
+      expiresAt: account.expiresAt ?? undefined,
+    })),
+  };
 }

@@ -43,14 +43,14 @@ export function CreditsTable({
 
   if (users.length === 0) {
     return (
-      <div className="text-muted-foreground rounded-lg border p-12 text-center">
+      <div className="admin-module-empty">
         <p>{t("noUsers")}</p>
       </div>
     );
   }
 
   return (
-    <div className="bg-card rounded-md border">
+    <div className="admin-table-surface">
       <Table>
         <TableHeader>
           <TableRow>

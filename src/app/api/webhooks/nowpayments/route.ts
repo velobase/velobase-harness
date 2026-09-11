@@ -1,6 +1,9 @@
 import { MODULES } from "@/config/modules";
 import { initOrderProviders } from "@/server/order/services/init-providers";
-import { handlePaymentWebhook } from "@/server/order/services/handle-webhooks";
+import {
+  handlePaymentWebhook,
+  WebhookFulfillmentError,
+} from "@/server/order/services/handle-webhooks";
 import { db } from "@/server/db";
 import { verifyNowPaymentsSignature } from "@/server/order/providers/nowpayments";
 import { env } from "@/server/shared/env";
@@ -14,7 +17,11 @@ function jsonResponse(body: unknown, status: number) {
 }
 
 function webhookField(value: unknown): string | undefined {
-  if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
+  if (
+    typeof value === "string" ||
+    typeof value === "number" ||
+    typeof value === "boolean"
+  ) {
     return String(value);
   }
   return undefined;
@@ -31,11 +38,19 @@ export async function POST(req: Request) {
   const signature = req.headers.get("x-nowpayments-sig");
 
   if (!env.NOWPAYMENTS_IPN_SECRET) {
-    return jsonResponse({ ok: false, error: "NowPayments webhook secret is not configured" }, 500);
+    return jsonResponse(
+      { ok: false, error: "NowPayments webhook secret is not configured" },
+      500,
+    );
   }
 
-  if (!verifyNowPaymentsSignature(rawBody, env.NOWPAYMENTS_IPN_SECRET, signature)) {
-    return jsonResponse({ ok: false, error: "Invalid NowPayments webhook signature" }, 401);
+  if (
+    !verifyNowPaymentsSignature(rawBody, env.NOWPAYMENTS_IPN_SECRET, signature)
+  ) {
+    return jsonResponse(
+      { ok: false, error: "Invalid NowPayments webhook signature" },
+      401,
+    );
   }
 
   let eventId: string | null = null;
@@ -44,11 +59,17 @@ export async function POST(req: Request) {
   try {
     const value = JSON.parse(rawBody) as unknown;
     if (!value || typeof value !== "object" || Array.isArray(value)) {
-      return jsonResponse({ ok: false, error: "Invalid NowPayments webhook payload" }, 400);
+      return jsonResponse(
+        { ok: false, error: "Invalid NowPayments webhook payload" },
+        400,
+      );
     }
     parsed = value as Prisma.JsonObject;
     const pid = webhookField(parsed.payment_id) ?? "unknown";
-    const st = typeof parsed.payment_status === "string" ? parsed.payment_status : "unknown";
+    const st =
+      typeof parsed.payment_status === "string"
+        ? parsed.payment_status
+        : "unknown";
     const ts = webhookField(parsed.updated_at) ?? "";
     const oid = webhookField(parsed.order_id) ?? "";
     eventId = [pid, st, ts || oid || "no_ts"].filter(Boolean).join("_");
@@ -68,7 +89,10 @@ export async function POST(req: Request) {
     });
     logId = log.id;
   } catch {
-    return jsonResponse({ ok: false, error: "Malformed NowPayments webhook payload" }, 400);
+    return jsonResponse(
+      { ok: false, error: "Malformed NowPayments webhook payload" },
+      400,
+    );
   }
 
   try {
@@ -82,7 +106,10 @@ export async function POST(req: Request) {
         (paymentResult as { status?: unknown }).status === "ignored";
       await db.paymentWebhookLog.update({
         where: { id: logId },
-        data: { status: isIgnored ? "IGNORED" : "PROCESSED", processedAt: new Date() },
+        data: {
+          status: isIgnored ? "IGNORED" : "PROCESSED",
+          processedAt: new Date(),
+        },
       });
     }
 
@@ -97,6 +124,9 @@ export async function POST(req: Request) {
       });
     }
 
-    return jsonResponse({ ok: false, error: message }, 400);
+    return jsonResponse(
+      { ok: false, error: message },
+      err instanceof WebhookFulfillmentError ? 500 : 400,
+    );
   }
 }

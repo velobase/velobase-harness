@@ -6,6 +6,8 @@ import { cookies, headers } from "next/headers";
 
 import { env } from "@/env";
 import { db } from "@/server/db";
+import { appEvents } from "@/server/events/bus";
+import { isFeatureEnabled } from "@/server/features/state";
 import { grant } from "@/server/billing/services/grant";
 import { logger } from "@/lib/logger";
 import {
@@ -30,6 +32,7 @@ import { SIGNUP_DISABLED } from "@/config/decommission";
 import { APP_NAME } from "@/config/brand";
 import { consumeEmailLoginCode } from "./email-code";
 import { ensureSignupEnabledOrExistingUser } from "./signup-policy";
+import { localDemoEnabled, localDemoEmail } from "./local-demo";
 
 const INVALID_CREDENTIALS_ERROR = "Invalid email or password";
 const DUMMY_PASSWORD_HASH =
@@ -103,6 +106,31 @@ export const authConfig = {
   // endpoint works correctly at https://<subdomain>.velobase.app
   trustHost: true,
   providers: [
+    ...(localDemoEnabled
+      ? [
+          CredentialsProvider({
+            id: "local-demo",
+            name: "Local demo",
+            credentials: {},
+            async authorize() {
+              const user = await db.user.findUnique({
+                where: { email: localDemoEmail },
+              });
+              if (!user || user.isBlocked) return null;
+              return {
+                id: user.id,
+                name: user.name,
+                email: user.email,
+                image: user.image,
+                isAdmin: user.isAdmin,
+                isBlocked: user.isBlocked,
+                isPrimaryDeviceAccount: user.isPrimaryDeviceAccount,
+                createdAt: user.createdAt,
+              };
+            },
+          }),
+        ]
+      : []),
     ...oauthProviders,
 
     /**
@@ -401,10 +429,11 @@ export const authConfig = {
   // - 生产 Full SSL / 直连 HTTPS: secure=true
   // 通过 COOKIE_SECURE env var 覆盖，或自动推断（非生产 = false）
   cookies: (() => {
-    const secure = env.COOKIE_SECURE ?? (env.NODE_ENV === "production");
+    const secure = env.COOKIE_SECURE ?? env.NODE_ENV === "production";
+    const prefix = localDemoEnabled ? "harness-preview" : "next-auth";
     return {
       sessionToken: {
-        name: `next-auth.session-token`,
+        name: `${prefix}.session-token`,
         options: {
           httpOnly: true,
           sameSite: "lax" as const,
@@ -413,7 +442,7 @@ export const authConfig = {
         },
       },
       callbackUrl: {
-        name: `next-auth.callback-url`,
+        name: `${prefix}.callback-url`,
         options: {
           httpOnly: true,
           sameSite: "lax" as const,
@@ -422,7 +451,7 @@ export const authConfig = {
         },
       },
       csrfToken: {
-        name: `next-auth.csrf-token`,
+        name: `${prefix}.csrf-token`,
         options: {
           httpOnly: true,
           sameSite: "lax" as const,
@@ -431,7 +460,7 @@ export const authConfig = {
         },
       },
       pkceCodeVerifier: {
-        name: `next-auth.pkce.code_verifier`,
+        name: `${prefix}.pkce.code_verifier`,
         options: {
           httpOnly: true,
           sameSite: "lax" as const,
@@ -441,7 +470,7 @@ export const authConfig = {
         },
       },
       state: {
-        name: `next-auth.state`,
+        name: `${prefix}.state`,
         options: {
           httpOnly: true,
           sameSite: "lax" as const,
@@ -468,33 +497,10 @@ export const authConfig = {
         const cookieStore = await cookies();
         const utmSource = cookieStore.get("utm_source")?.value;
 
-        // Affiliate referral binding (write-once, permanent)
-        // - cookie set in middleware.ts: app_ref
-        // - only bind on new user
-        // - ignore invalid/self-ref
-        try {
-          const refCodeRaw = cookieStore.get("app_ref")?.value ?? null;
-          const refCode = refCodeRaw ? refCodeRaw.trim() : null;
-          if (refCode) {
-            const referrer = await db.user.findUnique({
-              where: { referralCode: refCode },
-              select: { id: true },
-            });
-
-            if (referrer?.id && referrer.id !== user.id) {
-              // Only set if not already set (idempotent)
-              await db.user.updateMany({
-                where: { id: user.id, referredById: null },
-                data: { referredById: referrer.id },
-              });
-            }
-          }
-        } catch (error) {
-          logger.warn(
-            { error, userId: user.id },
-            "Failed to bind referral for new user (ignored)",
-          );
-        }
+        await appEvents.emit("user:signup", {
+          userId: user.id,
+          referralCode: cookieStore.get("app_ref")?.value,
+        });
 
         // 设备检测必须在积分计算之前完成：确保 isPrimaryDeviceAccount 值正确（共享设备的第二个新账号应为 false）
         let isPrimaryDeviceAccount = true;
@@ -600,7 +606,7 @@ export const authConfig = {
             description = "Login Bonus: 299 Credits";
           }
 
-          if (amount > 0) {
+          if (amount > 0 && (await isFeatureEnabled("credits"))) {
             // 全额发放初始积分（Velobase 不支持 PENDING 状态，统一全额发放）
             await grant({
               userId: user.id,

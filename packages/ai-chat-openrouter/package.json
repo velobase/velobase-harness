@@ -1,0 +1,13 @@
+{
+  "name": "@velobase/ai-chat-openrouter",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@openrouter/ai-sdk-provider": "1.4.1",
+    "zod": "3"
+  }
+}

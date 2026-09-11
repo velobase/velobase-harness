@@ -1,3 +1,6 @@
+import { DelayedError } from "bullmq";
+import { isFeatureEnabled } from "@/server/features/state";
+import type { FeatureId } from "@velobase/module-runtime";
 /**
  * Worker Registry
  *
@@ -60,7 +63,22 @@ export class WorkerRegistry {
     this.contributionIds.add(contribution.id);
     this.register(
       contribution.queue as Queue<T>,
-      contribution.processor,
+      async (job, token) => {
+        const featureByPrefix: Record<string, FeatureId> = {
+          "google-ads": "attribution",
+          "conversion-alert": "attribution",
+          "support-automation.process": "ai-support",
+        };
+        const prefix = Object.keys(featureByPrefix).find((entry) =>
+          contribution.id.startsWith(entry),
+        );
+        const feature = prefix ? featureByPrefix[prefix] : undefined;
+        if (feature && !(await isFeatureEnabled(feature))) {
+          await job.moveToDelayed(Date.now() + 60_000, token);
+          throw new DelayedError();
+        }
+        await contribution.processor(job, token);
+      },
       contribution.options,
     );
 

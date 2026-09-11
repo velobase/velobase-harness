@@ -1,11 +1,9 @@
-/* eslint-disable @next/next/no-img-element */
 "use client";
 
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -44,7 +42,7 @@ export function UserInfoCards({ user }: UserInfoCardsProps) {
   const hasUtm = user.utmSource || user.utmMedium || user.utmCampaign;
 
   return (
-    <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+    <div className="users-info-sections">
       {/* Basic Info */}
       <Card>
         <CardHeader>
@@ -54,30 +52,18 @@ export function UserInfoCards({ user }: UserInfoCardsProps) {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          <div className="flex items-center gap-3">
-            {user.image ? (
-              <img src={user.image} alt="" className="h-12 w-12 rounded-full" />
-            ) : (
-              <div className="bg-muted flex h-12 w-12 items-center justify-center rounded-full">
-                <User className="text-muted-foreground h-6 w-6" />
+          <div className="grid grid-cols-2 gap-2 text-sm">
+            {user.canonicalEmail && user.canonicalEmail !== user.email && (
+              <div>
+                <p className="text-muted-foreground">
+                  {t("info.canonicalEmail")}
+                </p>
+                <p className="font-mono text-xs">{user.canonicalEmail}</p>
               </div>
             )}
             <div>
-              <p className="font-medium">{user.name || t("info.noName")}</p>
-              <p className="text-muted-foreground text-sm">{user.email}</p>
-            </div>
-          </div>
-          <Separator />
-          <div className="grid grid-cols-2 gap-2 text-sm">
-            <div>
-              <p className="text-muted-foreground">
-                {t("info.canonicalEmail")}
-              </p>
-              <p className="font-mono text-xs">{user.canonicalEmail || "-"}</p>
-            </div>
-            <div>
               <p className="text-muted-foreground">{t("info.userId")}</p>
-              <p className="truncate font-mono text-xs">{user.id}</p>
+              <p className="break-all font-mono text-xs">{user.id}</p>
             </div>
             <div>
               <p className="text-muted-foreground">{t("info.joined")}</p>
@@ -94,7 +80,6 @@ export function UserInfoCards({ user }: UserInfoCardsProps) {
             <Smartphone className="h-4 w-4" />
             {t("info.deviceSecurity")}
           </CardTitle>
-          <CardDescription>{t("info.antiAbuseTracking")}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="grid grid-cols-2 gap-2 text-sm">
@@ -108,14 +93,11 @@ export function UserInfoCards({ user }: UserInfoCardsProps) {
               </p>
               <p>
                 {user.isPrimaryDeviceAccount ? (
-                  <Badge variant="default">{t("yes")}</Badge>
+                  <span>{t("yes")}</span>
                 ) : (
-                  <Badge
-                    variant="outline"
-                    className="border-amber-500 text-amber-600"
-                  >
+                  <span className="text-muted-foreground">
                     {t("info.secondary")}
-                  </Badge>
+                  </span>
                 )}
               </p>
             </div>
@@ -134,7 +116,7 @@ export function UserInfoCards({ user }: UserInfoCardsProps) {
                   href={`https://dashboard.stripe.com/customers/${user.stripeCustomerId}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 font-mono text-xs text-blue-600 hover:underline"
+                  className="inline-flex items-center gap-1 break-all font-mono text-xs text-primary hover:underline"
                 >
                   {user.stripeCustomerId}
                   <ExternalLink className="h-3 w-3" />
@@ -152,7 +134,6 @@ export function UserInfoCards({ user }: UserInfoCardsProps) {
             <Globe className="h-4 w-4" />
             {t("info.utmAttribution")}
           </CardTitle>
-          <CardDescription>{t("info.utmDescription")}</CardDescription>
         </CardHeader>
         <CardContent>
           {hasUtm ? (
@@ -197,7 +178,7 @@ export function UserInfoCards({ user }: UserInfoCardsProps) {
         <CardContent>
           {user.subscription ? (
             <div className="space-y-3">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <p className="font-medium">
                     {user.subscription.planSnapshot.name ||
@@ -208,13 +189,11 @@ export function UserInfoCards({ user }: UserInfoCardsProps) {
                   </p>
                 </div>
                 <Badge
-                  variant={
-                    user.subscription.status === "ACTIVE"
-                      ? "default"
-                      : "secondary"
-                  }
+                  variant="secondary"
                 >
-                  {user.subscription.status}
+                  {t.has(`info.subscriptionStatuses.${user.subscription.status.toLowerCase()}`)
+                    ? t(`info.subscriptionStatuses.${user.subscription.status.toLowerCase()}`)
+                    : user.subscription.status}
                 </Badge>
               </div>
               {user.subscription.currentCycle && (
@@ -231,7 +210,6 @@ export function UserInfoCards({ user }: UserInfoCardsProps) {
               {user.subscription.cancelAtPeriodEnd && (
                 <Badge
                   variant="outline"
-                  className="border-amber-500 text-amber-600"
                 >
                   {t("info.cancelsAtPeriodEnd")}
                 </Badge>
@@ -252,12 +230,11 @@ export function UserInfoCards({ user }: UserInfoCardsProps) {
             <DollarSign className="h-4 w-4" />
             {t("info.userStats")}
           </CardTitle>
-          <CardDescription>{t("info.lifetimeValueUsage")}</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-3 gap-4 text-sm">
-            <div className="bg-muted/50 rounded-lg p-3 text-center">
-              <p className="text-2xl font-bold text-green-600">
+          <div className="users-metrics">
+            <div>
+              <p className="users-metric-value">
                 {format.number((user.stats?.totalPaidCents ?? 0) / 100, {
                   style: "currency",
                   currency: "USD",
@@ -267,16 +244,16 @@ export function UserInfoCards({ user }: UserInfoCardsProps) {
                 {t("info.totalPaidLtv")}
               </p>
             </div>
-            <div className="bg-muted/50 rounded-lg p-3 text-center">
-              <p className="text-2xl font-bold">
+            <div>
+              <p className="users-metric-value">
                 {format.number(user.stats?.ordersCount ?? 0)}
               </p>
               <p className="text-muted-foreground text-xs">
                 {t("info.orders")}
               </p>
             </div>
-            <div className="bg-muted/50 rounded-lg p-3 text-center">
-              <p className="text-2xl font-bold">
+            <div>
+              <p className="users-metric-value">
                 {format.number(user.stats?.hitPaywallCount ?? 0)}
               </p>
               <p className="text-muted-foreground text-xs">
@@ -289,11 +266,7 @@ export function UserInfoCards({ user }: UserInfoCardsProps) {
             <div>
               <p className="text-muted-foreground">{t("info.proTrialUsed")}</p>
               <p>
-                {user.stats?.hasUsedProTrial ? (
-                  <Badge>{t("yes")}</Badge>
-                ) : (
-                  <Badge variant="secondary">{t("no")}</Badge>
-                )}
+                {user.stats?.hasUsedProTrial ? t("yes") : t("no")}
               </p>
             </div>
             <div>
@@ -301,19 +274,7 @@ export function UserInfoCards({ user }: UserInfoCardsProps) {
                 {t("info.trialConverted")}
               </p>
               <p>
-                {user.stats?.proTrialConverted ? (
-                  <Badge variant="default">{t("yes")}</Badge>
-                ) : (
-                  <Badge variant="secondary">{t("no")}</Badge>
-                )}
-              </p>
-            </div>
-            <div>
-              <p className="text-muted-foreground">
-                {t("info.hitPaywallCount")}
-              </p>
-              <p className="font-medium">
-                {format.number(user.stats?.hitPaywallCount ?? 0)}
+                {user.stats?.proTrialConverted ? t("yes") : t("no")}
               </p>
             </div>
           </div>
@@ -327,7 +288,6 @@ export function UserInfoCards({ user }: UserInfoCardsProps) {
             <MousePointerClick className="h-4 w-4" />
             {t("info.adTracking")}
           </CardTitle>
-          <CardDescription>{t("info.adTrackingDescription")}</CardDescription>
         </CardHeader>
         <CardContent>
           {user.adClickId ? (

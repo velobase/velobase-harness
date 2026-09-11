@@ -1,13 +1,9 @@
-import Velobase from '@velobaseai/billing'
-import { env } from '@/env'
-
-let _instance: Velobase | null = null
-
-export function getVelobase(): Velobase {
-  if (!_instance) {
-    const apiKey = env.VELOBASE_API_KEY
-    if (!apiKey) throw new Error('VELOBASE_API_KEY is not configured')
-    _instance = new Velobase({ apiKey })
-  }
-  return _instance
+import { createVelobaseClient } from "@velobase/credits-velobase";
+import { env } from "@/env";
+let client: ReturnType<typeof createVelobaseClient> | undefined;
+/** Compatibility provider entry. Business code uses the credits service. */
+export function getVelobase() {
+  if (!env.VELOBASE_API_KEY)
+    throw new Error("VELOBASE_API_KEY is not configured");
+  return (client ??= createVelobaseClient(env.VELOBASE_API_KEY));
 }

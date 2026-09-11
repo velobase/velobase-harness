@@ -4,78 +4,26 @@ import type {
   ImageGenerationTaskStatus as PrismaImageGenerationTaskStatus,
 } from "@prisma/client";
 
+import type {
+  ImageGenerationCreateInput as CreateInput,
+  ImageGenerationEstimateInput as EstimateInput,
+  ImageGenerationTask as Task,
+  ImageGenerationAsset as Asset,
+  ImageGenerationOperation,
+  ImageGenerationStatus,
+} from "@velobase/image-generation/types";
+export type {
+  ImageGenerationOperation,
+  ImageGenerationStatus,
+  ImageGenerationOutputFormat,
+} from "@velobase/image-generation/types";
+export { TERMINAL_IMAGE_GENERATION_STATUSES } from "@velobase/image-generation/types";
 export type ImageGenerationProviderId = "wavespeed" | "modelrunner";
-
-export type ImageGenerationOperation =
-  | "text-to-image"
-  | "image-to-image"
-  | "edit-image";
-
-export type ImageGenerationStatus =
-  | "queued"
-  | "running"
-  | "succeeded"
-  | "failed"
-  | "canceled"
-  | "timed_out";
-
-export type ImageGenerationOutputFormat = "png" | "jpeg" | "webp";
-
-export interface ImageGenerationCreateInput {
-  provider: ImageGenerationProviderId;
-  model: string;
-  operation: ImageGenerationOperation;
-  prompt: string;
-  negativePrompt?: string;
-  aspectRatio?: string;
-  quality?: "low" | "medium" | "high";
-  resolution?: "1k" | "2k" | "4k";
-  outputFormat?: ImageGenerationOutputFormat;
-  imageUrls?: string[];
-  userId: string;
-  projectId?: string;
-  idempotencyKey?: string;
-  metadata?: Record<string, unknown>;
-  providerOptions?: Record<string, unknown>;
-}
-
-export type ImageGenerationEstimateInput = Omit<
-  ImageGenerationCreateInput,
-  "userId" | "projectId" | "idempotencyKey" | "metadata"
->;
-
-export interface ImageGenerationTask {
-  id: string;
-  provider: ImageGenerationProviderId;
-  providerTaskId?: string;
-  model: string;
-  operation: ImageGenerationOperation;
-  status: ImageGenerationStatus;
-  prompt: string;
-  costUsd?: number;
-  metadata?: unknown;
-  assets: ImageGenerationAsset[];
-  providerRaw?: unknown;
-  errorMessage?: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export type ImageGenerationAsset = {
-  id: string;
-  provider: ImageGenerationProviderId;
-  providerTaskId?: string;
-  model: string;
-  status: "succeeded" | "failed";
-  prompt: string;
-  sourceUrl?: string;
-  publicUrl?: string;
-  storageKey?: string;
-  contentType?: string;
-  byteLength?: number;
-  costUsd?: number;
-  providerRaw?: unknown;
-};
+export type ImageGenerationCreateInput = CreateInput<ImageGenerationProviderId>;
+export type ImageGenerationEstimateInput =
+  EstimateInput<ImageGenerationProviderId>;
+export type ImageGenerationTask = Task<ImageGenerationProviderId>;
+export type ImageGenerationAsset = Asset<ImageGenerationProviderId>;
 
 export const PROVIDER_TO_PRISMA = {
   wavespeed: "WAVESPEED",
@@ -134,11 +82,3 @@ export const PRISMA_TO_STATUS = {
   PrismaImageGenerationTaskStatus,
   ImageGenerationStatus
 >;
-
-export const TERMINAL_IMAGE_GENERATION_STATUSES =
-  new Set<ImageGenerationStatus>([
-    "succeeded",
-    "failed",
-    "canceled",
-    "timed_out",
-  ]);

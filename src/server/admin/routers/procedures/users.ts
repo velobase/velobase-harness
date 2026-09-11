@@ -123,7 +123,7 @@ export const getUser = adminProcedure
       },
       include: {
         cycles: {
-          where: { status: "ACTIVE", deletedAt: null },
+          where: { status: "ACTIVE", deletedAt: null, startsAt: { lte: new Date() }, expiresAt: { gt: new Date() } },
           orderBy: { sequenceNumber: "desc" },
           take: 1,
         },
@@ -273,4 +273,3 @@ export const deleteUser = adminProcedure
     });
     return { success: true };
   });
-

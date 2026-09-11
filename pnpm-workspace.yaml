@@ -3,6 +3,10 @@ packages:
   - "packages/*"
   - "services/*"
 
+# Keep optional SDK peers in the hosts that actually install them.
+resolvePeersFromWorkspaceRoot: false
+dedupePeerDependents: false
+
 onlyBuiltDependencies:
   - electron
   - sharp

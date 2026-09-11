@@ -1,7 +1,7 @@
 import { env } from "@/env";
 import { createLogger } from "@/lib/logger";
 import { db } from "@/server/db";
-import { createOpenRouter } from "@openrouter/ai-sdk-provider";
+import { createOpenRouterChatModel } from "@velobase/ai-chat-openrouter";
 import { generateText } from "ai";
 
 const logger = createLogger("title-generation");
@@ -21,14 +21,14 @@ export async function generateConversationTitle(
       return userMessage.slice(0, 30);
     }
 
-    // Create OpenRouter client
-    const openrouter = createOpenRouter({
-      apiKey: env.OPENROUTER_API_KEY,
-    });
-
     // Generate title using AI SDK
     const { text } = await generateText({
-      model: openrouter("openai/gpt-4o-mini"),
+      model: createOpenRouterChatModel({
+        apiKey: env.OPENROUTER_API_KEY,
+        model: "openai/gpt-4o-mini",
+      }),
+      maxRetries: 0,
+      abortSignal: AbortSignal.timeout(30_000),
       messages: [
         {
           role: "system",
@@ -84,4 +84,3 @@ export function extractTextFromMessage(message: {
 
   return textParts.join(" ").trim();
 }
-

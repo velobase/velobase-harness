@@ -1,3 +1,4 @@
+import { requireFeature } from "@/server/features/state";
 import { createOrder } from "./create-order";
 import { createPayment } from "./create-payment";
 import { getProduct } from "@/server/product/services/get";
@@ -206,6 +207,7 @@ export async function checkout({
   requestHeaders,
   clientIp,
 }: CheckoutParams): Promise<CheckoutResult | CheckoutConflictResult> {
+  await requireFeature("payments");
   // Ensure payment providers are registered before usage
   initOrderProviders();
   const product = await getProduct({
@@ -216,6 +218,17 @@ export async function checkout({
 
   const purchaseQuantity =
     typeof quantity === "number" && quantity >= 1 ? quantity : 1;
+
+  if (product.type === "CREDITS_PACKAGE") await requireFeature("credits");
+  if (product.type === "SUBSCRIPTION") {
+    await requireFeature("subscriptions");
+    const plan = product.productSubscription?.plan;
+    if (
+      (plan?.creditsPerPeriod ?? plan?.creditsPerMonth ?? 0) > 0 ||
+      (product.trialCreditsAmount ?? 0) > 0
+    )
+      await requireFeature("credits");
+  }
 
   // Resolve payment gateway
   const gateway = await resolvePaymentGateway({
@@ -236,6 +249,7 @@ export async function checkout({
   // =====================================================================
   let offerEndsAtIso: string | undefined;
   if (product.id === NEW_USER_UNLOCK_OFFER.discountedProductId) {
+    await requireFeature("newcomer-offers");
     // If user already has an active subscription, treat this as a business conflict (no exception)
     const subStatus = await getSubscriptionStatus({ userId }).catch(() => ({
       status: "NONE" as const,

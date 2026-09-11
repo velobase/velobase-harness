@@ -131,7 +131,7 @@ export default function SceneDetailPage() {
 
   if (isLoading) {
     return (
-      <div className="space-y-6 max-w-[1200px] mx-auto">
+      <div className="admin-module-page space-y-6">
         <Skeleton className="h-8 w-48" />
         <Skeleton className="h-32 w-full" />
         <Skeleton className="h-64 w-full" />
@@ -141,17 +141,17 @@ export default function SceneDetailPage() {
 
   if (!scene) {
     return (
-      <div className="space-y-6 max-w-[1200px] mx-auto">
+      <div className="admin-module-page space-y-6">
         <div className="text-center py-12 text-muted-foreground">{t("sceneNotExist")}</div>
       </div>
     )
   }
 
   return (
-    <div className="space-y-6 max-w-[1200px] mx-auto">
+    <div className="admin-module-page space-y-6">
       {/* Header */}
       <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" onClick={() => router.back()}>
+        <Button variant="ghost" size="icon" aria-label={t("backToScenes")} onClick={() => router.push("/admin/touches/scenes")}>
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <div className="flex-1">
@@ -189,7 +189,7 @@ export default function SceneDetailPage() {
           </Button>
         </div>
 
-        <div className="border rounded-md bg-card">
+        <div className="admin-table-surface">
           <Table>
             <TableHeader>
               <TableRow>
@@ -234,19 +234,19 @@ export default function SceneDetailPage() {
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-1">
-                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setPreviewId(template.id)}>
+                        <Button variant="ghost" size="icon" className="h-7 w-7" aria-label={t("previewTitle")} title={t("previewTitle")} onClick={() => setPreviewId(template.id)}>
                           <Eye className="h-3 w-3" />
                         </Button>
-                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setEditId(template.id)}>
+                        <Button variant="ghost" size="icon" className="h-7 w-7" aria-label={t("editTitle")} title={t("editTitle")} onClick={() => setEditId(template.id)}>
                           <Edit className="h-3 w-3" />
                         </Button>
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive">
+                            <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" aria-label={t("delete")} title={t("delete")}>
                               <Trash2 className="h-3 w-3" />
                             </Button>
                           </AlertDialogTrigger>
-                          <AlertDialogContent>
+                          <AlertDialogContent className="admin-theme admin-module-dialog">
                             <AlertDialogHeader>
                             <AlertDialogTitle>{t("deleteTitle")}</AlertDialogTitle>
                             <AlertDialogDescription>
@@ -348,12 +348,12 @@ function TemplateDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="admin-theme admin-module-dialog max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{mode === "create" ? t("createTitle") : t("editTitle")}</DialogTitle>
         </DialogHeader>
         <div className="space-y-4 py-4">
-          <div className="grid grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
             <div className="space-y-2">
               <Label>{t("language")}</Label>
               <Input value={locale} onChange={(e) => setLocale(e.target.value)} placeholder="en" />
@@ -474,7 +474,7 @@ function EditTemplateDialog({
 
   return (
     <Dialog open={true} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="admin-theme admin-module-dialog max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{t("editTitle")}</DialogTitle>
         </DialogHeader>
@@ -483,7 +483,7 @@ function EditTemplateDialog({
         ) : (
           <>
             <div className="space-y-4 py-4">
-              <div className="grid grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
                 <div className="space-y-2">
                   <Label>{t("language")}</Label>
                   <Input value={locale} onChange={(e) => setLocale(e.target.value)} placeholder="en" />
@@ -554,8 +554,8 @@ function PreviewTemplateDialog({
   onOpenChange: (open: boolean) => void
 }) {
   const t = useTranslations("admin.templates")
-  const { data: template } = api.admin.getTouchTemplate.useQuery({ id: templateId })
-  const [tab, setTab] = useState<"html" | "text">("html")
+  const { data: template, isLoading } = api.admin.getTouchTemplate.useQuery({ id: templateId })
+  const [tab, setTab] = useState<"html" | "text" | null>(null)
 
   const copyToClipboard = async (text: string, label: string) => {
     try {
@@ -568,23 +568,24 @@ function PreviewTemplateDialog({
 
   return (
     <Dialog open={true} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+      <DialogContent className="admin-theme admin-module-dialog max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle>{t("previewTitle")}</DialogTitle>
         </DialogHeader>
         {!template ? (
-          <div className="py-8 text-center text-muted-foreground">{t("loading")}</div>
+          <div className="py-8 text-center text-muted-foreground">{t(isLoading ? "loading" : "loadFailed")}</div>
         ) : (
           <div className="flex-1 overflow-hidden flex flex-col">
             <div className="mb-4 p-3 bg-muted rounded-md">
-              <div className="flex items-center justify-between">
-                <div>
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0 break-words">
                   <span className="text-sm text-muted-foreground">{t("subjectPreview")} </span>
                   <span className="font-medium">{template.subject || "-"}</span>
                 </div>
                 <Button
                   variant="ghost"
                   size="sm"
+                  className="shrink-0"
                   onClick={() => copyToClipboard(template.subject || "", t("subjectLabel"))}
                 >
                   <Copy className="h-3 w-3 mr-1" />
@@ -593,14 +594,15 @@ function PreviewTemplateDialog({
               </div>
             </div>
 
-            <Tabs value={tab} onValueChange={(v) => setTab(v as typeof tab)} className="flex-1 flex flex-col overflow-hidden">
+            <Tabs value={tab ?? (template.bodyHtml ? "html" : "text")} onValueChange={(v) => setTab(v as "html" | "text")} className="flex-1 flex flex-col overflow-hidden">
               <TabsList className="w-fit">
-                <TabsTrigger value="html">{t("htmlPreview")}</TabsTrigger>
-                <TabsTrigger value="text">{t("plainText")}</TabsTrigger>
+                <TabsTrigger value="html" disabled={!template.bodyHtml}>{t("htmlPreview")}</TabsTrigger>
+                <TabsTrigger value="text" disabled={!template.bodyText}>{t("plainText")}</TabsTrigger>
               </TabsList>
               <TabsContent value="html" className="flex-1 overflow-auto border rounded-md mt-2">
                 {template.bodyHtml ? (
                   <iframe
+                    title={t("previewTitle")}
                     srcDoc={template.bodyHtml}
                     className="w-full h-full min-h-[400px]"
                     sandbox="allow-same-origin"
@@ -621,4 +623,3 @@ function PreviewTemplateDialog({
     </Dialog>
   )
 }
-
