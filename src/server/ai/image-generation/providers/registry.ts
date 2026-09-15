@@ -5,43 +5,15 @@ import { AtlasCloudProvider } from "./atlascloud";
 import { ModelrunnerProvider } from "./modelrunner";
 import { WavespeedProvider } from "./wavespeed";
 
-class ImageGenerationProviderRegistry {
-  private providers = new Map<
-    ImageGenerationProviderId,
-    ImageGenerationProviderAdapter
-  >();
-
-  register(provider: ImageGenerationProviderAdapter): void {
-    this.providers.set(provider.id, provider);
-  }
-
-  get(provider: ImageGenerationProviderId): ImageGenerationProviderAdapter {
-    const adapter = this.providers.get(provider);
-    if (!adapter) {
-      throw new Error(
-        `Image generation provider is not configured: ${provider}`,
-      );
-    }
-    return adapter;
-  }
-
-  list(): ImageGenerationProviderAdapter[] {
-    return Array.from(this.providers.values());
-  }
-
-  has(provider: ImageGenerationProviderId): boolean {
-    return this.providers.has(provider);
-  }
-}
+import { ImageGenerationProviderRegistry } from "@velobase/image-generation/providers";
 
 export const imageGenerationProviderRegistry =
-  new ImageGenerationProviderRegistry();
+  new ImageGenerationProviderRegistry<ImageGenerationProviderId>();
 
 let defaultsRegistered = false;
 
 export function registerDefaultImageGenerationProviders(): void {
   if (defaultsRegistered) return;
-  defaultsRegistered = true;
 
   if (env.WAVESPEED_API_KEY) {
     imageGenerationProviderRegistry.register(new WavespeedProvider());
@@ -54,6 +26,8 @@ export function registerDefaultImageGenerationProviders(): void {
   if (env.ATLASCLOUD_API_KEY) {
     imageGenerationProviderRegistry.register(new AtlasCloudProvider());
   }
+
+  defaultsRegistered = true;
 }
 
 export function getImageGenerationProvider(

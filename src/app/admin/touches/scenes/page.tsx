@@ -148,20 +148,15 @@ export default function TouchScenesPage() {
   const total = data?.total ?? 0
 
   return (
-    <div className="space-y-4 max-w-[1200px] mx-auto">
+    <div className="admin-module-page space-y-4">
       {/* Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">{t("title")}</h1>
-          <p className="text-muted-foreground">
-            {total > 0 ? t("subtitleTotal", { count: total }) : t("subtitleEmpty")}
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
+      <div className="admin-module-toolbar">
+        <h1 className="sr-only">{t("title")}</h1>
+        <div className="admin-module-tools">
           <div className="relative flex-1 sm:w-64">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
-              placeholder={t("searchPlaceholder")}
+              aria-label={t("searchPlaceholder")} placeholder={t("searchPlaceholder")}
               value={search}
               onChange={(e) => {
                 setSearch(e.target.value)
@@ -174,7 +169,7 @@ export default function TouchScenesPage() {
             <SelectTrigger className="w-24">
               <SelectValue />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="admin-theme admin-popup">
               <SelectItem value="all">{t("all")}</SelectItem>
               <SelectItem value="EMAIL">{t("channels.EMAIL")}</SelectItem>
               <SelectItem value="SMS">{t("channels.SMS")}</SelectItem>
@@ -185,7 +180,7 @@ export default function TouchScenesPage() {
             <SelectTrigger className="w-24">
               <SelectValue />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="admin-theme admin-popup">
               <SelectItem value="all">{t("all")}</SelectItem>
               <SelectItem value="true">{t("active")}</SelectItem>
               <SelectItem value="false">{t("inactive")}</SelectItem>
@@ -199,7 +194,7 @@ export default function TouchScenesPage() {
       </div>
 
       {/* Table */}
-      <div className="border rounded-md bg-card">
+      <div className="admin-table-surface">
         <Table>
           <TableHeader>
             <TableRow>
@@ -364,7 +359,7 @@ function CreateSceneDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="admin-theme admin-module-dialog max-w-md">
         <DialogHeader>
           <DialogTitle>{t("createTitle")}</DialogTitle>
         </DialogHeader>
@@ -393,7 +388,7 @@ function CreateSceneDialog({
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="admin-theme admin-popup">
                   <SelectItem value="EMAIL">{t("channels.EMAIL")}</SelectItem>
                   <SelectItem value="SMS">{t("channels.SMS")}</SelectItem>
                   <SelectItem value="PUSH">{t("channels.PUSH")}</SelectItem>
@@ -406,7 +401,7 @@ function CreateSceneDialog({
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="admin-theme admin-popup">
                   <SelectItem value="SCHEDULED">{t("triggers.scheduled")}</SelectItem>
                   <SelectItem value="EVENT">{t("triggers.event")}</SelectItem>
                   <SelectItem value="MANUAL">{t("triggers.manual")}</SelectItem>
@@ -476,7 +471,7 @@ function EditSceneDialog({
 
   return (
     <Dialog open={true} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="admin-theme admin-module-dialog max-w-md">
         <DialogHeader>
           <DialogTitle>{t("editTitle", { key: sceneKey })}</DialogTitle>
         </DialogHeader>
@@ -500,7 +495,7 @@ function EditSceneDialog({
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="admin-theme admin-popup">
                       <SelectItem value="EMAIL">{t("channels.EMAIL")}</SelectItem>
                       <SelectItem value="SMS">{t("channels.SMS")}</SelectItem>
                       <SelectItem value="PUSH">{t("channels.PUSH")}</SelectItem>
@@ -513,7 +508,7 @@ function EditSceneDialog({
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="admin-theme admin-popup">
                       <SelectItem value="SCHEDULED">{t("triggers.scheduled")}</SelectItem>
                       <SelectItem value="EVENT">{t("triggers.event")}</SelectItem>
                       <SelectItem value="MANUAL">{t("triggers.manual")}</SelectItem>

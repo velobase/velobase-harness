@@ -1,6 +1,7 @@
 import type Stripe from "stripe";
 import { BaseWebhookResult, type PaymentProvider, type ProviderOrder, type ProviderPayment } from "./types";
-import { getStripeWebhookSecret } from "@/server/shared/env";
+import { normalizeStripeOneOffEvent, stripePaymentMetadata } from "@velobase/payments-stripe";
+import { stripeOneOffProvider } from "@/server/order/services/stripe/one-off";
 import { logger } from "@/server/shared/telemetry/logger";
 import {
   stripeCheckoutSessionSchema,
@@ -8,10 +9,7 @@ import {
   stripeSubscriptionSchema,
 } from "../schemas/webhook";
 import { db } from "@/server/db";
-import {
-  voidAffiliateEarningsForRefund,
-  voidAffiliateEarningsForStripeInvoiceRefund,
-} from "@/server/affiliate/services/ledger";
+import { appEvents } from "@/server/events/bus";
 import type { NormalizedSubscriptionWebhookData } from "./types";
 import { getStripe } from "@/server/order/services/stripe/client";
 
@@ -57,9 +55,7 @@ function extractSubscriptionIdFromInvoice(invoice: Stripe.Invoice): string | und
   return undefined;
 }
 
-/**
- * 处理 Stripe 退款/拒付事件，作废关联的 affiliate earning（幂等）
- */
+/** Publish domain reversals; installed business modules own their compensation. */
 async function handleStripeRefundOrDispute(params: {
   eventId: string;
   chargeId: string | null;
@@ -67,148 +63,22 @@ async function handleStripeRefundOrDispute(params: {
   invoiceId: string | null;
   reason: string;
 }): Promise<void> {
-  const { eventId, paymentIntentId, invoiceId, reason } = params;
-
-  // 1. 尝试作废 ORDER_PAYMENT 的 affiliate earning（通过 paymentIntentId 找 payment）
+  const { eventId, paymentIntentId, invoiceId } = params;
   if (paymentIntentId) {
-    try {
-      const payment = await db.payment.findFirst({
-        where: { gatewayTransactionId: paymentIntentId },
-        select: { id: true },
-      });
-      if (payment) {
-        await voidAffiliateEarningsForRefund({
-          paymentId: payment.id,
-          idempotencyKey: `stripe_${reason}:${eventId}:payment:${payment.id}`,
-        });
-        logger.info(
-          { paymentId: payment.id, paymentIntentId, reason },
-          "Voided affiliate earning for ORDER_PAYMENT refund/dispute"
-        );
-      }
-    } catch (error) {
-      logger.error(
-        { error, paymentIntentId, reason },
-        "Failed to void affiliate earning for ORDER_PAYMENT (ignored)"
-      );
-    }
+    const payment = await db.payment.findFirst({
+      where: { gatewayTransactionId: paymentIntentId, paymentGateway: "STRIPE" },
+      select: { id: true },
+    });
+    if (payment) await appEvents.emit("payment:refunded", { paymentId: payment.id, gateway: "STRIPE", eventId });
   }
-
-  // 2. 尝试作废 SUBSCRIPTION_RENEWAL 的 affiliate earning（通过 invoiceId）
-  if (invoiceId) {
-    try {
-      await voidAffiliateEarningsForStripeInvoiceRefund({
-        invoiceId,
-        idempotencyKey: `stripe_${reason}:${eventId}:invoice:${invoiceId}`,
-      });
-      logger.info(
-        { invoiceId, reason },
-        "Voided affiliate earning for SUBSCRIPTION_RENEWAL refund/dispute"
-      );
-    } catch (error) {
-      logger.error(
-        { error, invoiceId, reason },
-        "Failed to void affiliate earning for SUBSCRIPTION_RENEWAL (ignored)"
-      );
-    }
-  }
+  if (invoiceId) await appEvents.emit("invoice:refunded", { invoiceId, gateway: "STRIPE", eventId });
 }
 
 export const stripeProvider: PaymentProvider = {
-  async confirmPayment(params: { checkoutSessionId?: string; gatewayTransactionId?: string }) {
-    const stripe = getStripe();
-    const checkoutSessionId = params.checkoutSessionId;
-    const gatewayTransactionId = params.gatewayTransactionId;
-
-    // Prefer Checkout Session when available (subscription mode)
-    if (checkoutSessionId) {
-      const session = await stripe.checkout.sessions.retrieve(checkoutSessionId);
-      const isPaid = session.payment_status === "paid";
-      return {
-        isPaid,
-        gatewayTransactionId: typeof session.payment_intent === "string" ? session.payment_intent : undefined,
-        gatewaySubscriptionId: typeof session.subscription === "string" ? session.subscription : undefined,
-      };
-    }
-
-    // Fallback: PaymentIntent
-    if (gatewayTransactionId) {
-      const pi = await stripe.paymentIntents.retrieve(gatewayTransactionId);
-      return {
-        isPaid: pi.status === "succeeded",
-        gatewayTransactionId: pi.id,
-      };
-    }
-
-    return { isPaid: false };
-  },
-
-  async expireCheckoutSession(checkoutSessionId: string) {
-    const stripe = getStripe();
-    await stripe.checkout.sessions.expire(checkoutSessionId);
-  },
-
-  async createPayment({ payment, order }: { payment: ProviderPayment; order: ProviderOrder }) {
-    const stripe = getStripe();
-    const stripeCustomerId = (payment.extra?.stripeCustomerId as string | undefined) ?? undefined;
-    const extraMetadata =
-      payment.extra &&
-      typeof payment.extra === "object" &&
-      "metadata" in payment.extra &&
-      payment.extra.metadata &&
-      typeof payment.extra.metadata === "object"
-        ? (payment.extra.metadata as Record<string, unknown>)
-        : undefined;
-
-    // Stripe metadata 只能是字符串，这里做一次安全过滤
-    const stripeMetadata: Record<string, string> = {
-      orderId: order.id,
-      paymentId: payment.id,
-    };
-    if (extraMetadata) {
-      for (const [key, value] of Object.entries(extraMetadata)) {
-        if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
-          stripeMetadata[key] = String(value);
-        }
-      }
-    }
-
-    const session = await stripe.checkout.sessions.create({
-      mode: "payment",
-      line_items: [
-        {
-          price_data: {
-            currency: order.currency,
-            unit_amount: order.amount,
-            product_data: { name: order.productSnapshot?.name ?? "Product" },
-          },
-          quantity: 1,
-        },
-      ],
-      success_url: payment.extra?.SuccessURL ?? "https://example.com/success",
-      cancel_url: payment.extra?.CancelURL ?? "https://example.com/cancel",
-      customer: stripeCustomerId,
-      // IMPORTANT:
-      // We MUST attach paymentId/orderId onto PaymentIntent.metadata, otherwise
-      // `payment_intent.succeeded` / `payment_intent.payment_failed` webhooks cannot
-      // be reliably mapped back to our DB payment row.
-      payment_intent_data: {
-        metadata: stripeMetadata,
-        // 优化 3DS：移除 setup_future_usage，不再强制请求“未来后台扣款权限”。
-        // 这将大幅降低单次购买（如积分包）触发 3DS 的概率。
-        // ...(stripeCustomerId ? { setup_future_usage: "off_session" as const } : {}),
-      },
-      metadata: stripeMetadata,
-    });
-
-    return {
-      paymentUrl: session.url!,
-      // 交易主 ID：PaymentIntent
-      gatewayTransactionId: session.payment_intent as string | undefined,
-      // 补偿用的 Checkout Session ID
-      checkoutSessionId: session.id,
-    };
-  },
+  createPayment: stripeOneOffProvider.createPayment,
+  confirmPayment: stripeOneOffProvider.confirmPayment,
+  queryPaymentStatus: stripeOneOffProvider.queryPaymentStatus,
+  expireCheckoutSession: stripeOneOffProvider.expireCheckoutSession,
 
   async createSubscription({ payment, order }: { payment: ProviderPayment; order: ProviderOrder }) {
     const stripe = getStripe();
@@ -222,18 +92,7 @@ export const stripeProvider: PaymentProvider = {
         ? (payment.extra.metadata as Record<string, unknown>)
         : undefined;
 
-    // Stripe metadata 只能是字符串，这里做一次安全过滤
-    const stripeMetadata: Record<string, string> = {
-      orderId: order.id,
-      paymentId: payment.id,
-    };
-    if (extraMetadata) {
-      for (const [key, value] of Object.entries(extraMetadata)) {
-        if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
-          stripeMetadata[key] = String(value);
-        }
-      }
-    }
+    const stripeMetadata = stripePaymentMetadata(order.id, payment.id, extraMetadata);
 
     // 从商品快照中读取 trial 配置（仅订阅产品才会有）
     const snapshot = order.productSnapshot as
@@ -328,12 +187,22 @@ export const stripeProvider: PaymentProvider = {
   },
 
   async handlePaymentWebhook(req: Request) {
-    const stripe = getStripe();
     const signature = req.headers.get("stripe-signature");
     if (!signature) return null;
     const body = await req.text();
-    const event = stripe.webhooks.constructEvent(body, signature, getStripeWebhookSecret());
+    const event = await stripeOneOffProvider.verifyWebhook(body, signature);
     logger.info({ type: event.type, id: event.id }, "Stripe payment webhook received");
+
+    // Only the complete example composes subscription and cashflow side effects.
+    // The selected one-off adapter owns Checkout payment status normalization.
+    if (
+      event.type === "checkout.session.completed" ||
+      event.type === "checkout.session.async_payment_succeeded" ||
+      event.type === "checkout.session.async_payment_failed" ||
+      event.type === "checkout.session.expired"
+    ) {
+      if (event.data.object.mode === "payment") return normalizeStripeOneOffEvent(event);
+    }
 
     switch (event.type) {
       case "checkout.session.completed": {
@@ -475,7 +344,8 @@ export const stripeProvider: PaymentProvider = {
             reason: "refund",
           });
         }
-        // 返回 REFUNDED 状态，让 handle-webhooks 更新 payment 状态
+        // Partial refunds retain the payment's settled state.
+        if (!charge.refunded) return null;
         return new BaseWebhookResult({
           status: "REFUNDED",
           gatewayTransactionId: charge.payment_intent ?? undefined,
@@ -539,15 +409,10 @@ export const stripeProvider: PaymentProvider = {
   },
 
   async handleSubscriptionWebhook(req: Request) {
-    const stripe = getStripe();
     const signature = req.headers.get("stripe-signature");
     if (!signature) return null;
     const body = await req.text();
-    const event = stripe.webhooks.constructEvent(
-      body,
-      signature,
-      getStripeWebhookSecret()
-    );
+    const event = await stripeOneOffProvider.verifyWebhook(body, signature);
     logger.info(
       { type: event.type, id: event.id },
       "Stripe subscription webhook received"

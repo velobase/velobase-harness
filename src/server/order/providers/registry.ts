@@ -1,19 +1,9 @@
-import type { PaymentProvider } from "./types";
+import {
+  createPaymentProviderRegistry,
+  type PaymentProvider,
+} from "@velobase/payments/providers";
 
-const providers = new Map<string, PaymentProvider>();
-
-export function registerProvider(name: string, provider: PaymentProvider) {
-  providers.set(name.toUpperCase(), provider);
-}
-
-export function hasProvider(name: string): boolean {
-  return providers.has(name.toUpperCase());
-}
-
-export function getProvider(name: string): PaymentProvider {
-  const p = providers.get(name.toUpperCase());
-  if (!p) throw new Error(`Payment provider not found: ${name}`);
-  return p;
-}
-
-
+const providers = createPaymentProviderRegistry<PaymentProvider>();
+export const registerProvider = providers.register;
+export const hasProvider = providers.has;
+export const getProvider = providers.get;

@@ -17,7 +17,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Users, Wallet, Clock, CheckCircle, ArrowRight } from "lucide-react";
+import { Users, ArrowRight } from "lucide-react";
 import Link from "next/link";
 import type { UserDetailData } from "./types";
 import { useFormatter, useTranslations } from "next-intl";
@@ -28,6 +28,7 @@ interface UserAffiliateCardProps {
 
 export function UserAffiliateCard({ user }: UserAffiliateCardProps) {
   const t = useTranslations("admin.userManagement.affiliate");
+  const payouts = useTranslations("admin.affiliatePayouts");
   const format = useFormatter();
   const formatUsd = (amountCents: number) =>
     format.number(amountCents / 100, { style: "currency", currency: "USD" });
@@ -48,9 +49,6 @@ export function UserAffiliateCard({ user }: UserAffiliateCardProps) {
                     year: "numeric",
                     month: "2-digit",
                     day: "2-digit",
-                    hour: "2-digit",
-                    minute: "2-digit",
-                    second: "2-digit",
                   },
                 ),
               })
@@ -59,7 +57,7 @@ export function UserAffiliateCard({ user }: UserAffiliateCardProps) {
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Referral Info */}
-        <div className="grid grid-cols-2 gap-4 text-sm md:grid-cols-4">
+        <div className="grid grid-cols-1 gap-x-6 gap-y-4 text-sm sm:grid-cols-2">
           <div>
             <p className="text-muted-foreground">{t("referralCode")}</p>
             <p className="font-mono">{user.affiliate.referralCode || "-"}</p>
@@ -75,12 +73,12 @@ export function UserAffiliateCard({ user }: UserAffiliateCardProps) {
             {user.affiliate.referredBy ? (
               <Link
                 href={`/admin/users/${user.affiliate.referredBy.id}`}
-                className="inline-flex items-center gap-1 text-blue-600 hover:underline"
+                className="inline-flex max-w-full items-center gap-1 text-primary hover:underline"
               >
                 {user.affiliate.referredBy.email ||
                   user.affiliate.referredBy.name ||
                   t("unknown")}
-                <ArrowRight className="h-3 w-3" />
+                <ArrowRight className="h-3 w-3 shrink-0" />
               </Link>
             ) : (
               <p>-</p>
@@ -88,7 +86,7 @@ export function UserAffiliateCard({ user }: UserAffiliateCardProps) {
           </div>
           <div>
             <p className="text-muted-foreground">{t("payoutWallet")}</p>
-            <p className="truncate font-mono text-xs">
+            <p className="truncate font-mono text-xs" title={user.affiliate.payoutWallet || undefined}>
               {user.affiliate.payoutWallet || "-"}
             </p>
           </div>
@@ -99,39 +97,36 @@ export function UserAffiliateCard({ user }: UserAffiliateCardProps) {
         {/* Affiliate Wallet Balances */}
         <div>
           <p className="mb-2 text-sm font-medium">{t("affiliateWallet")}</p>
-          <div className="grid grid-cols-4 gap-2">
-            <div className="rounded-lg bg-amber-50 p-2 text-center dark:bg-amber-950/30">
-              <p className="text-lg font-bold text-amber-600">
+          <div className="grid grid-cols-2 gap-x-6 gap-y-4 xl:grid-cols-4">
+            <div>
+              <p className="whitespace-nowrap text-xl font-medium tabular-nums">
                 {formatUsd(user.affiliate.balances.pendingCents)}
               </p>
-              <p className="text-muted-foreground flex items-center justify-center gap-1 text-xs">
-                <Clock className="h-3 w-3" />
+              <p className="mt-1 text-xs text-muted-foreground">
                 {t("pending")}
               </p>
             </div>
-            <div className="rounded-lg bg-green-50 p-2 text-center dark:bg-green-950/30">
-              <p className="text-lg font-bold text-green-600">
+            <div>
+              <p className="whitespace-nowrap text-xl font-medium tabular-nums">
                 {formatUsd(user.affiliate.balances.availableCents)}
               </p>
-              <p className="text-muted-foreground flex items-center justify-center gap-1 text-xs">
-                <Wallet className="h-3 w-3" />
+              <p className="mt-1 text-xs text-muted-foreground">
                 {t("available")}
               </p>
             </div>
-            <div className="rounded-lg bg-blue-50 p-2 text-center dark:bg-blue-950/30">
-              <p className="text-lg font-bold text-blue-600">
+            <div>
+              <p className="whitespace-nowrap text-xl font-medium tabular-nums">
                 {formatUsd(user.affiliate.balances.lockedCents)}
               </p>
-              <p className="text-muted-foreground flex items-center justify-center gap-1 text-xs">
-                <CheckCircle className="h-3 w-3" />
+              <p className="mt-1 text-xs text-muted-foreground">
                 {t("locked")}
               </p>
             </div>
-            <div className="bg-muted/50 rounded-lg p-2 text-center">
-              <p className="text-muted-foreground text-lg font-bold">
+            <div>
+              <p className="whitespace-nowrap text-xl font-medium tabular-nums">
                 {formatUsd(user.affiliate.balances.debtCents)}
               </p>
-              <p className="text-muted-foreground text-xs">{t("debt")}</p>
+              <p className="mt-1 text-xs text-muted-foreground">{t("debt")}</p>
             </div>
           </div>
         </div>
@@ -142,7 +137,7 @@ export function UserAffiliateCard({ user }: UserAffiliateCardProps) {
             <Separator />
             <div>
               <p className="mb-2 text-sm font-medium">{t("recentPayouts")}</p>
-              <Table>
+              <Table className="min-w-[560px] whitespace-nowrap">
                 <TableHeader>
                   <TableRow>
                     <TableHead>{t("type")}</TableHead>
@@ -156,29 +151,31 @@ export function UserAffiliateCard({ user }: UserAffiliateCardProps) {
                   {user.affiliate.payoutRequests.map((req) => (
                     <TableRow key={req.id}>
                       <TableCell>
-                        <Badge variant="outline">
-                          {req.type === "CASHOUT_USDT" ? "USDT" : t("credits")}
-                        </Badge>
+                        {req.type === "CASHOUT_USDT" ? "USDT" : t("credits")}
                       </TableCell>
-                      <TableCell className="font-medium">
+                      <TableCell className="font-medium tabular-nums">
                         {formatUsd(req.amountCents)}
                       </TableCell>
                       <TableCell>
                         <Badge
                           variant={
                             req.status === "COMPLETED"
-                              ? "default"
+                              ? "secondary"
                               : req.status === "REJECTED" ||
                                   req.status === "FAILED"
                                 ? "destructive"
                                 : "secondary"
                           }
                         >
-                          {req.status}
+                          {payouts.has(`statuses.${req.status.toLowerCase()}`)
+                            ? payouts(`statuses.${req.status.toLowerCase()}`)
+                            : req.status}
                         </Badge>
                       </TableCell>
-                      <TableCell className="max-w-32 truncate font-mono text-xs">
-                        {req.walletAddress || "-"}
+                      <TableCell className="font-mono text-xs">
+                        <span className="block max-w-32 truncate" title={req.walletAddress || undefined}>
+                          {req.walletAddress || "-"}
+                        </span>
                       </TableCell>
                       <TableCell className="text-muted-foreground text-sm">
                         {format.dateTime(new Date(req.createdAt), {

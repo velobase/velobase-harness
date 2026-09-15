@@ -24,11 +24,9 @@ import {
 import {
   Shield,
   ShieldOff,
-  Smartphone,
   CreditCard,
   Coins,
   Ban,
-  CheckCircle,
   Trash2,
   Film,
   ShoppingCart,
@@ -88,22 +86,15 @@ export function UserActionsToolbar({ user }: UserActionsToolbarProps) {
   const canBypassBlur = user.stats?.canBypassBlur ?? false;
 
   return (
-    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+    <div className="users-detail-toolbar flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
       {/* Status Badges */}
       <div className="flex flex-wrap items-center gap-2">
-        {user.isBlocked ? (
-          <Badge variant="destructive" className="gap-1">
-            <Ban className="h-3 w-3" />
-            {t("blocked")}
-          </Badge>
-        ) : (
-          <Badge variant="outline" className="gap-1">
-            <CheckCircle className="h-3 w-3" />
-            {t("active")}
-          </Badge>
-        )}
+        <span className={`users-status ${user.isBlocked ? "is-blocked" : "is-active"}`}>
+          <span aria-hidden="true" />
+          {user.isBlocked ? t("blocked") : t("active")}
+        </span>
         {user.isAdmin && (
-          <Badge variant="default" className="gap-1">
+          <Badge variant="secondary" className="gap-1 font-normal">
             <Shield className="h-3 w-3" />
             {t("admin")}
           </Badge>
@@ -114,19 +105,10 @@ export function UserActionsToolbar({ user }: UserActionsToolbarProps) {
             {t("actionsToolbar.paidUser")}
           </Badge>
         )}
-        {!user.isPrimaryDeviceAccount && (
-          <Badge
-            variant="outline"
-            className="gap-1 border-amber-500 text-amber-600"
-          >
-            <Smartphone className="h-3 w-3" />
-            {t("actionsToolbar.secondaryAccount")}
-          </Badge>
-        )}
         {canBypassBlur && (
           <Badge
             variant="outline"
-            className="gap-1 border-green-500 text-green-600"
+            className="gap-1"
           >
             <Eye className="h-3 w-3" />
             {t("actionsToolbar.blurBypass")}
@@ -159,11 +141,11 @@ export function UserActionsToolbar({ user }: UserActionsToolbarProps) {
         {/* More Actions Dropdown */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="sm">
+            <Button variant="outline" size="sm" aria-label={t("actions")}>
               <MoreHorizontal className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-48">
+          <DropdownMenuContent align="end" className="admin-theme admin-popup w-48">
             {/* Blur Bypass Toggle */}
             <DropdownMenuItem
               onClick={() =>
@@ -224,15 +206,17 @@ export function UserActionsToolbar({ user }: UserActionsToolbarProps) {
         <AlertDialog>
           <AlertDialogTrigger asChild>
             <Button
-              variant="outline"
+              variant="ghost"
               size="sm"
               disabled={deleteMutation.isPending}
-              className="text-destructive hover:text-destructive"
+              className="text-muted-foreground hover:text-destructive"
+              aria-label={t("actionsToolbar.deleteUser")}
+              title={t("actionsToolbar.deleteUser")}
             >
               <Trash2 className="h-4 w-4" />
             </Button>
           </AlertDialogTrigger>
-          <AlertDialogContent>
+          <AlertDialogContent className="admin-theme admin-popup">
             <AlertDialogHeader>
               <AlertDialogTitle>
                 {t("actionsToolbar.deleteUser")}

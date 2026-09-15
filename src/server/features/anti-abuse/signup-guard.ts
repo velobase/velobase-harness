@@ -171,7 +171,7 @@ export async function enforceSignupAbuse(
 
   try {
     if (result.isAbuse) {
-      const { postConsume } = await import('@/server/billing/services/post-consume')
+      const { settleDeduction: postConsume } = await import('@/server/billing/services/post-consume')
       const { getBalance } = await import('@/server/billing/services/get-balance')
 
       const balance = await getBalance({ userId })

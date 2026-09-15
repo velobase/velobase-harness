@@ -957,6 +957,34 @@ model UserSubscriptionCycle {
   @@map("membership_user_subscription_cycles")
 }
 
+model SubscriptionDelivery {
+  id             String                       @id
+  userId         String                       @map("user_id")
+  subscriptionId String                       @map("subscription_id")
+  cycleId        String                       @map("cycle_id")
+  plan           Json
+  createdAt      DateTime                     @default(now()) @map("created_at")
+  completedAt    DateTime?                    @map("completed_at")
+  effects        SubscriptionDeliveryEffect[]
+
+  @@index([cycleId])
+  @@index([subscriptionId])
+  @@index([userId])
+  @@index([completedAt])
+  @@map("membership_subscription_deliveries")
+}
+
+model SubscriptionDeliveryEffect {
+  deliveryId  String               @map("delivery_id")
+  effectKey   String               @map("effect_key")
+  result      Json?
+  completedAt DateTime?             @map("completed_at")
+  delivery    SubscriptionDelivery @relation(fields: [deliveryId], references: [id], onDelete: Restrict)
+
+  @@id([deliveryId, effectKey])
+  @@map("membership_subscription_delivery_effects")
+}
+
 model UserEntitlement {
   id            String                    @id @default(uuid())
   userId        String                    @map("user_id")
@@ -1254,6 +1282,7 @@ enum PromoCodeType {
 }
 
 enum PromoCodeStatus {
+  DRAFT
   UNDEFINED
   ACTIVE
   DISABLED
@@ -1283,6 +1312,7 @@ enum TouchTriggerType {
 }
 
 enum TouchScheduleStatus {
+  UNKNOWN
   PENDING
   PROCESSING
   SENT
@@ -1292,6 +1322,7 @@ enum TouchScheduleStatus {
 }
 
 enum TouchRecordStatus {
+  UNKNOWN
   SENT
   DELIVERED
   DELIVERY_DELAYED
@@ -1509,6 +1540,7 @@ model SupportTicket {
   updatedAt  DateTime  @updatedAt @map("updated_at")
   resolvedAt DateTime? @map("resolved_at")
 
+  replies SupportReply[]
   timeline SupportTimeline[]
   user     User?             @relation(fields: [userId], references: [id], onDelete: SetNull)
 
@@ -1546,9 +1578,55 @@ model SupportTimeline {
 }
 
 model SupportSyncCursor {
+  leaseToken String? @map("lease_token")
+  leaseExpiresAt DateTime? @map("lease_expires_at")
+  uidValidity String? @map("uid_validity")
   id        String   @id // e.g., "email_inbox"
   lastUid   Int      @default(0) @map("last_uid")
   updatedAt DateTime @updatedAt @map("updated_at")
 
   @@map("support_sync_cursors")
+}
+
+// Deployment membership is in source control; these rows only control operation.
+model FeatureSetting {
+  id        String   @id
+  enabled   Boolean
+  updatedBy String   @map("updated_by")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  @@map("feature_settings")
+}
+
+model ServiceConnection {
+  id        String   @id
+  config    Json
+  secret    String?  @db.Text
+  verifiedAt DateTime? @map("verified_at")
+  updatedBy String   @map("updated_by")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  @@map("service_connections")
+}
+
+// SMTP cannot provide exactly-once delivery. UNKNOWN requires operator review.
+enum SupportReplyStatus {
+  PENDING
+  SENDING
+  SENT
+  UNKNOWN
+  CANCELED
+}
+model SupportReply {
+  id String @id
+  ticketId String @map("ticket_id")
+  actor SupportActorType
+  actorId String? @map("actor_id")
+  body String @db.Text
+  status SupportReplyStatus @default(PENDING)
+  messageId String? @map("message_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  ticket SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  @@index([status, createdAt])
+  @@index([ticketId, createdAt])
+  @@map("support_replies")
 }

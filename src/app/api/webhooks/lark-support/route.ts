@@ -1,3 +1,4 @@
+import { isFeatureEnabled } from "@/server/features/state";
 /**
  * 飞书卡片回调 Webhook
  *
@@ -9,7 +10,6 @@
 
 import { NextResponse, type NextRequest } from "next/server";
 import { createLogger } from "@/lib/logger";
-import { MODULES } from "@/config/modules";
 
 const logger = createLogger("lark-support-webhook");
 
@@ -27,7 +27,7 @@ interface LarkCardCallback {
 }
 
 export async function POST(req: NextRequest) {
-  if (!MODULES.features.supportAutomation.enabled) {
+  if (!(await isFeatureEnabled("ai-support"))) {
     return NextResponse.json(
       { error: "Support automation is disabled" },
       { status: 404 },

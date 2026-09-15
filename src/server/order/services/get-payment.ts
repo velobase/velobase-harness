@@ -1,4 +1,5 @@
 import { db } from "@/server/db";
+import { paymentRecords } from "@/modules/payments/server/service";
 import { getNowPaymentsPaymentStatus } from "../providers/nowpayments";
 import { processFulfillmentByPayment } from "@/server/fulfillment/manager";
 import { ENABLE_PAYMENT_GATEWAY_PREFERENCE_AUTO_SYNC } from "../config";
@@ -24,13 +25,23 @@ export async function getPayment(paymentId: string) {
 
   // For NOWPAYMENTS, refresh provider status to drive UI (confirming/confirmed/sending, etc.)
   try {
-    if ((payment.paymentGateway ?? "").toUpperCase() === "NOWPAYMENTS" && payment.status === "PENDING") {
-      const extra = payment.extra && typeof payment.extra === "object" ? (payment.extra as Record<string, unknown>) : {};
-      const np = extra.nowpayments && typeof extra.nowpayments === "object" ? (extra.nowpayments as Record<string, unknown>) : {};
+    if (
+      (payment.paymentGateway ?? "").toUpperCase() === "NOWPAYMENTS" &&
+      payment.status === "PENDING"
+    ) {
+      const extra =
+        payment.extra && typeof payment.extra === "object"
+          ? (payment.extra as Record<string, unknown>)
+          : {};
+      const np =
+        extra.nowpayments && typeof extra.nowpayments === "object"
+          ? (extra.nowpayments as Record<string, unknown>)
+          : {};
       const npPaymentId =
         typeof np.payment_id === "string" || typeof np.payment_id === "number"
           ? String(np.payment_id)
-          : typeof payment.gatewayTransactionId === "string" && payment.gatewayTransactionId.length > 0
+          : typeof payment.gatewayTransactionId === "string" &&
+              payment.gatewayTransactionId.length > 0
             ? payment.gatewayTransactionId
             : null;
 
@@ -56,9 +67,15 @@ export async function getPayment(paymentId: string) {
             payment_id: String(status.payment_id),
             payment_status: status.payment_status,
             pay_address: status.pay_address ?? np.pay_address,
-            pay_amount: typeof status.pay_amount === "string" ? Number(status.pay_amount) : status.pay_amount ?? np.pay_amount,
+            pay_amount:
+              typeof status.pay_amount === "string"
+                ? Number(status.pay_amount)
+                : (status.pay_amount ?? np.pay_amount),
             pay_currency: status.pay_currency ?? np.pay_currency,
-            actually_paid: typeof status.actually_paid === "string" ? Number(status.actually_paid) : status.actually_paid,
+            actually_paid:
+              typeof status.actually_paid === "string"
+                ? Number(status.actually_paid)
+                : status.actually_paid,
             payin_hash: status.payin_hash ?? undefined,
             payout_hash: status.payout_hash ?? undefined,
             updated_at: status.updated_at ?? undefined,
@@ -75,10 +92,12 @@ export async function getPayment(paymentId: string) {
 
         // If webhook is missing, proactively sync terminal status and fulfill (idempotently)
         if (mappedPaymentStatus !== "PENDING") {
-          await db.payment.update({
-            where: { id: payment.id },
-            data: { status: mappedPaymentStatus },
+          const recorded = await paymentRecords.recordVerifiedState({
+            paymentId: payment.id,
+            gateway: "NOWPAYMENTS",
+            status: mappedPaymentStatus,
           });
+          if (!recorded.applied) return recorded.payment;
 
           if (mappedPaymentStatus === "SUCCEEDED" && payment.orderId) {
             const order = await db.order.findUnique({
@@ -87,7 +106,7 @@ export async function getPayment(paymentId: string) {
             });
 
             if (order?.status !== "FULFILLED") {
-              await processFulfillmentByPayment(payment);
+              await processFulfillmentByPayment(recorded.payment);
               await db.order.update({
                 where: { id: payment.orderId },
                 data: { status: "FULFILLED" },
@@ -100,7 +119,10 @@ export async function getPayment(paymentId: string) {
               // Optional: sync default payment preference after success (AUTO -> gateway).
               if (ENABLE_PAYMENT_GATEWAY_PREFERENCE_AUTO_SYNC) {
                 await db.user.updateMany({
-                  where: { id: payment.userId, paymentGatewayPreference: "AUTO" },
+                  where: {
+                    id: payment.userId,
+                    paymentGatewayPreference: "AUTO",
+                  },
                   data: { paymentGatewayPreference: "NOWPAYMENTS" },
                 });
               }
@@ -122,6 +144,11 @@ export async function getPayment(paymentId: string) {
     // ignore provider refresh failures; return DB state
   }
 
-  return payment;
+  return db.payment.findUniqueOrThrow({
+    where: { id: paymentId },
+    include: {
+      order: true,
+      user: { select: { id: true, email: true, name: true } },
+    },
+  });
 }
-

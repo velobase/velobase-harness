@@ -1,3 +1,4 @@
+import { outreach, outreachOperation } from "@/modules/outreach/server/service";
 import { z } from "zod";
 import { adminProcedure } from "@/server/api/trpc";
 import type { Prisma, TouchScheduleStatus, TouchChannel } from "@prisma/client";
@@ -14,7 +15,7 @@ export const listTouchScenes = adminProcedure
       search: z.string().optional(),
       channel: z.enum(["all", "EMAIL", "SMS", "PUSH"]).default("all"),
       isActive: z.enum(["all", "true", "false"]).default("all"),
-    })
+    }),
   )
   .query(async ({ ctx, input }) => {
     const { page, pageSize, search, channel, isActive } = input;
@@ -46,7 +47,13 @@ export const listTouchScenes = adminProcedure
       orderBy: { createdAt: "desc" },
       include: {
         templates: {
-          select: { id: true, locale: true, version: true, isDefault: true, isActive: true },
+          select: {
+            id: true,
+            locale: true,
+            version: true,
+            isDefault: true,
+            isActive: true,
+          },
           orderBy: [{ isDefault: "desc" }, { locale: "asc" }],
         },
         _count: {
@@ -71,7 +78,11 @@ export const getTouchScene = adminProcedure
       where: { key: input.key },
       include: {
         templates: {
-          orderBy: [{ isDefault: "desc" }, { locale: "asc" }, { version: "asc" }],
+          orderBy: [
+            { isDefault: "desc" },
+            { locale: "asc" },
+            { version: "asc" },
+          ],
         },
         _count: {
           select: { schedules: true },
@@ -89,13 +100,17 @@ export const getTouchScene = adminProcedure
 export const createTouchScene = adminProcedure
   .input(
     z.object({
-      key: z.string().min(1).max(100).regex(/^[a-z0-9_]+$/),
+      key: z
+        .string()
+        .min(1)
+        .max(100)
+        .regex(/^[a-z0-9_]+$/),
       name: z.string().min(1).max(200),
       description: z.string().optional(),
       channel: z.enum(["EMAIL", "SMS", "PUSH"]),
       triggerType: z.enum(["SCHEDULED", "EVENT", "MANUAL"]),
       isActive: z.boolean().default(true),
-    })
+    }),
   )
   .mutation(async ({ ctx, input }) => {
     const scene = await ctx.db.touchScene.create({
@@ -113,7 +128,7 @@ export const updateTouchScene = adminProcedure
       channel: z.enum(["EMAIL", "SMS", "PUSH"]).optional(),
       triggerType: z.enum(["SCHEDULED", "EVENT", "MANUAL"]).optional(),
       isActive: z.boolean().optional(),
-    })
+    }),
   )
   .mutation(async ({ ctx, input }) => {
     const { key, ...data } = input;
@@ -154,7 +169,7 @@ export const createTouchTemplate = adminProcedure
       subject: z.string().optional(),
       bodyText: z.string().optional(),
       bodyHtml: z.string().optional(),
-    })
+    }),
   )
   .mutation(async ({ ctx, input }) => {
     const template = await ctx.db.touchTemplate.create({
@@ -174,7 +189,7 @@ export const updateTouchTemplate = adminProcedure
       subject: z.string().optional(),
       bodyText: z.string().optional(),
       bodyHtml: z.string().optional(),
-    })
+    }),
   )
   .mutation(async ({ ctx, input }) => {
     const { id, ...data } = input;
@@ -204,15 +219,35 @@ export const listTouchSchedules = adminProcedure
       page: z.number().min(1).default(1),
       pageSize: z.number().min(1).max(100).default(20),
       search: z.string().optional(),
-      status: z.enum(["all", "PENDING", "PROCESSING", "SENT", "CANCELLED", "SUPERSEDED", "FAILED"]).default("all"),
+      status: z
+        .enum([
+          "all",
+          "PENDING",
+          "PROCESSING",
+          "SENT",
+          "CANCELLED",
+          "SUPERSEDED",
+          "FAILED",
+          "UNKNOWN",
+        ])
+        .default("all"),
       sceneKey: z.string().optional(), // 按场景筛选
       channel: z.enum(["all", "EMAIL", "SMS", "PUSH"]).default("all"),
       dateFrom: z.string().optional(),
       dateTo: z.string().optional(),
-    })
+    }),
   )
   .query(async ({ ctx, input }) => {
-    const { page, pageSize, search, status, sceneKey, channel, dateFrom, dateTo } = input;
+    const {
+      page,
+      pageSize,
+      search,
+      status,
+      sceneKey,
+      channel,
+      dateFrom,
+      dateTo,
+    } = input;
 
     const where: Prisma.TouchScheduleWhereInput = {};
 
@@ -321,6 +356,11 @@ export const cancelTouchSchedule = adminProcedure
       throw new Error("Schedule not found");
     }
 
+    if (schedule.referenceType === "OUTREACH") {
+      await outreachOperation(() => outreach.cancel({ id: schedule.id }));
+      return { success: true };
+    }
+
     if (schedule.status !== "PENDING" && schedule.status !== "PROCESSING") {
       throw new Error(`Cannot cancel schedule with status: ${schedule.status}`);
     }
@@ -338,4 +378,3 @@ export const cancelTouchSchedule = adminProcedure
 
     return { success: true };
   });
-

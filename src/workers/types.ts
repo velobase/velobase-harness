@@ -1,7 +1,7 @@
 import type { Job, Queue } from "bullmq";
 
 export type WorkerProcessor<T = unknown> = {
-  bivarianceHack(job: Job<T>): Promise<void>;
+  bivarianceHack(job: Job<T>, token?: string): Promise<void>;
 }["bivarianceHack"];
 
 export interface WorkerRegisterOptions {

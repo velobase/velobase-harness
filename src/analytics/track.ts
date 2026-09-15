@@ -1,9 +1,18 @@
 import posthog from "posthog-js";
 
+let trackingEnabled = false;
+export function setTrackingEnabled(enabled: boolean) {
+  trackingEnabled = enabled;
+}
+
 /**
  * 埋点追踪函数
  */
-export function track(event: string, properties?: Record<string, unknown>): void {
+export function track(
+  event: string,
+  properties?: Record<string, unknown>,
+): void {
+  if (!trackingEnabled) return;
   posthog.capture(event, properties);
 }
 
@@ -11,6 +20,7 @@ export function track(event: string, properties?: Record<string, unknown>): void
  * 用户属性设置（用于用户画像）
  */
 export function setUserProperties(properties: Record<string, unknown>): void {
+  if (!trackingEnabled) return;
   posthog.people.set(properties);
 }
 
@@ -20,4 +30,3 @@ export function setUserProperties(properties: Record<string, unknown>): void {
 export function resetUser(): void {
   posthog.reset();
 }
-

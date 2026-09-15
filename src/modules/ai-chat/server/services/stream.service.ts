@@ -1,5 +1,5 @@
-import { streamText, convertToModelMessages, stepCountIs } from "ai";
-import { createOpenRouter } from "@openrouter/ai-sdk-provider";
+import { streamChat, type ToolSet } from "@velobase/ai-chat";
+import { createOpenRouterChatModel } from "@velobase/ai-chat-openrouter";
 import { createId } from "@paralleldrive/cuid2";
 import { env } from "@/env";
 import { db } from "@/server/db";
@@ -13,10 +13,15 @@ import {
   createDocumentProcessingInteraction,
   loadConversationInteractions,
 } from "./interaction.service";
-import { generateConversationTitle, extractTextFromMessage } from "./title-generation.service";
+import {
+  generateConversationTitle,
+  extractTextFromMessage,
+} from "./title-generation.service";
 import { calculateChatCost } from "@/server/billing/config/token-pricing";
-import { postConsume } from "@/server/billing/services/post-consume";
+import { settleDeduction as postConsume } from "@/server/billing/services/post-consume";
 import { createLogger } from "@/lib/logger";
+
+import { isFeatureEnabled } from "@/server/features/state";
 
 const logger = createLogger("stream-service");
 
@@ -25,7 +30,8 @@ export interface StreamOptions {
   agentConfig: AgentConfig;
   messagesForAI: ChatUIMessage[];
   filteredMessages: ChatUIMessage[];
-  tools: Record<string, unknown>;
+  tools: ToolSet;
+  abortSignal?: AbortSignal;
   userAgentId?: string;
   trigger: "submit-message" | "regenerate-message";
   parentInteractionId: string | null;
@@ -37,7 +43,9 @@ export interface StreamOptions {
 /**
  * Stream LLM response and persist to database
  */
-export async function streamLLMResponse(options: StreamOptions): Promise<Response> {
+export async function streamLLMResponse(
+  options: StreamOptions,
+): Promise<Response> {
   const {
     conversationId,
     agentConfig,
@@ -52,15 +60,8 @@ export async function streamLLMResponse(options: StreamOptions): Promise<Respons
     authContext,
   } = options;
 
-  // Convert to ModelMessages for LLM
-  const modelMessages = convertToModelMessages(messagesForAI, {
-    ignoreIncompleteToolCalls: true,
-  });
-
-  // Create OpenRouter model
-  const openrouter = createOpenRouter({
-    apiKey: env.OPENROUTER_API_KEY,
-  });
+  const billThisTurn =
+    !authContext.isGuest && (await isFeatureEnabled("credits"));
 
   // Pre-generate interaction IDs (ensures frontend always has real IDs)
   const preGeneratedIds = {
@@ -68,16 +69,23 @@ export async function streamLLMResponse(options: StreamOptions): Promise<Respons
     assistant: createId(),
   };
 
-  logger.info({ preGeneratedIds, trigger }, "Pre-generated interaction IDs for streaming");
+  logger.info(
+    { preGeneratedIds, trigger },
+    "Pre-generated interaction IDs for streaming",
+  );
 
   // Stream response with tools
-  const result = streamText({
-    model: openrouter(agentConfig.model),
-    messages: modelMessages,
-    tools: tools as Parameters<typeof streamText>[0]['tools'],
+  const result = streamChat({
+    model: createOpenRouterChatModel({
+      apiKey: env.OPENROUTER_API_KEY ?? "",
+      model: agentConfig.model,
+    }),
+    messages: messagesForAI,
+    tools,
     system: agentConfig.instructions,
     maxOutputTokens: 50000,
-    stopWhen: stepCountIs(50),
+    maxSteps: 50,
+    abortSignal: options.abortSignal,
     providerOptions: {
       ...(agentConfig.model.includes("gemini") && {
         google: {
@@ -116,7 +124,7 @@ export async function streamLLMResponse(options: StreamOptions): Promise<Respons
             messageCount: finalMessages.length,
             previousCount: loadedMessages.length,
           },
-          "Saving conversation interactions"
+          "Saving conversation interactions",
         );
 
         const newMessages = finalMessages.slice(loadedMessages.length);
@@ -125,7 +133,8 @@ export async function streamLLMResponse(options: StreamOptions): Promise<Respons
         // Use transaction to ensure atomicity
         await db.$transaction(async (tx) => {
           // Load interactions to check if this is the first message
-          const interactions = await loadConversationInteractions(conversationId);
+          const interactions =
+            await loadConversationInteractions(conversationId);
 
           for (const msg of newMessages) {
             if (msg.role === "user") {
@@ -139,24 +148,30 @@ export async function streamLLMResponse(options: StreamOptions): Promise<Respons
                   interactionId: preGeneratedIds.user ?? msg.id,
                   parentId: parentInteractionId,
                   updateActiveInteraction: true,
-                }
+                },
               );
 
               parentInteractionId = userInteraction.id;
 
               logger.info(
-                { interactionId: userInteraction.id, parentId: userInteraction.parentId },
-                "Created user_message interaction"
+                {
+                  interactionId: userInteraction.id,
+                  parentId: userInteraction.parentId,
+                },
+                "Created user_message interaction",
               );
 
               // Generate title for first message (async, non-blocking)
               if (interactions.length === 0) {
                 const textContent = extractTextFromMessage(msg);
                 if (textContent) {
-                  void generateConversationTitle(conversationId, textContent).catch((error) => {
+                  void generateConversationTitle(
+                    conversationId,
+                    textContent,
+                  ).catch((error) => {
                     logger.error(
                       { error, conversationId },
-                      "Failed to generate conversation title"
+                      "Failed to generate conversation title",
                     );
                   });
                 }
@@ -168,14 +183,14 @@ export async function streamLLMResponse(options: StreamOptions): Promise<Respons
                   conversationId,
                   userAgentId!,
                   userInteraction.id,
-                  docResult
+                  docResult,
                 );
               }
 
               if (documentProcessingResults.length > 0) {
                 logger.info(
                   { count: documentProcessingResults.length },
-                  "Created document_processing interactions"
+                  "Created document_processing interactions",
                 );
               }
             } else if (msg.role === "assistant") {
@@ -193,14 +208,18 @@ export async function streamLLMResponse(options: StreamOptions): Promise<Respons
                   interactionId: preGeneratedIds.assistant,
                   parentId: parentInteractionId,
                   updateActiveInteraction: true,
-                }
+                },
               );
 
               parentInteractionId = aiInteraction.id;
 
               logger.info(
-                { messageId: msg.id, interactionId: aiInteraction.id, parentId: aiInteraction.parentId },
-                "Created ai_message interaction"
+                {
+                  messageId: msg.id,
+                  interactionId: aiInteraction.id,
+                  parentId: aiInteraction.parentId,
+                },
+                "Created ai_message interaction",
               );
             }
           }
@@ -212,10 +231,13 @@ export async function streamLLMResponse(options: StreamOptions): Promise<Respons
           });
         });
 
-        logger.info({ conversationId, savedCount: newMessages.length }, "Interactions saved successfully");
+        logger.info(
+          { conversationId, savedCount: newMessages.length },
+          "Interactions saved successfully",
+        );
 
         // After persistence succeeded, perform billing (server-side only)
-        if (!authContext.isGuest && authContext.userId) {
+        if (billThisTurn && authContext.userId) {
           try {
             const usage = await result.totalUsage;
             const inputTokens = usage?.inputTokens ?? 0;
@@ -230,13 +252,19 @@ export async function streamLLMResponse(options: StreamOptions): Promise<Respons
               totalUsage: { inputTokens, outputTokens },
             });
           } catch (billingError) {
-            logger.error({ err: billingError, conversationId }, "Billing failed after persistence");
+            logger.error(
+              { err: billingError, conversationId },
+              "Billing failed after persistence",
+            );
           }
         } else if (authContext.isGuest) {
           logger.info({ conversationId }, "Guest user - skip billing");
         }
       } catch (error) {
-        logger.error({ err: error, conversationId }, "Failed to save interactions");
+        logger.error(
+          { err: error, conversationId },
+          "Failed to save interactions",
+        );
       }
     },
   });
@@ -257,29 +285,34 @@ async function handleBilling(params: {
     outputTokens: number;
   };
 }): Promise<void> {
-  const { userId, conversationId, assistantInteractionId, model, totalUsage } = params;
+  const { userId, conversationId, assistantInteractionId, model, totalUsage } =
+    params;
 
   try {
     // Calculate cost based on token usage
     const cost = calculateChatCost(
       model,
       totalUsage.inputTokens,
-      totalUsage.outputTokens
+      totalUsage.outputTokens,
     );
 
     // Execute billing
     const businessId = `chat_${conversationId}_${assistantInteractionId}`;
-    
+
     // Generate user-friendly model name
-    const modelName = model.split('/').pop()?.split('-').map(w => 
-      w.charAt(0).toUpperCase() + w.slice(1)
-    ).join(' ') ?? 'AI';
-    
+    const modelName =
+      model
+        .split("/")
+        .pop()
+        ?.split("-")
+        .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+        .join(" ") ?? "AI";
+
     await postConsume({
       userId,
       amount: cost,
       businessId,
-      businessType: 'TOKEN_USAGE',
+      businessType: "TOKEN_USAGE",
       description: `AI Chat - ${modelName}`,
     });
 
@@ -291,15 +324,14 @@ async function handleBilling(params: {
         outputTokens: totalUsage.outputTokens,
         model,
       },
-      "Chat turn billed successfully"
+      "Chat turn billed successfully",
     );
   } catch (billingError) {
     logger.error(
       { err: billingError, conversationId, userId },
-      "Billing failed - user may have insufficient credits"
+      "Billing failed - user may have insufficient credits",
     );
     // Note: We don't throw here to avoid disrupting the chat experience
     // The interaction is already saved, billing failure is logged
   }
 }
-

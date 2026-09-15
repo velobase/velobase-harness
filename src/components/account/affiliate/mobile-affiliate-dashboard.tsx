@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useFeature } from "@/components/features/feature-gate";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -28,6 +29,8 @@ interface Props {
 }
 
 export function MobileAffiliateDashboard({ status }: Props) {
+  const creditsEnabled = useFeature("credits");
+  const canExchange = creditsEnabled || Boolean(status.pendingCreditExchange);
   const [withdrawOpen, setWithdrawOpen] = useState(false);
   const [exchangeOpen, setExchangeOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
@@ -35,12 +38,12 @@ export function MobileAffiliateDashboard({ status }: Props) {
   const availableUsd = (status.balances.availableCents / 100).toFixed(2);
   const pendingUsd = (status.balances.pendingCents / 100).toFixed(2);
   const minCashoutUsd = status.rules.minCashoutCents / 100;
-  
+
   const progressPercent = Math.min(
     100,
-    (status.balances.availableCents / status.rules.minCashoutCents) * 100
+    (status.balances.availableCents / status.rules.minCashoutCents) * 100,
   );
-  
+
   const isCashoutReady =
     status.balances.availableCents >= status.rules.minCashoutCents;
 
@@ -51,85 +54,85 @@ export function MobileAffiliateDashboard({ status }: Props) {
     }
   };
 
-  const shareText = encodeURIComponent(
-    "Build with AI SaaS — join today!"
-  );
+  const shareText = encodeURIComponent("Build with AI SaaS — join today!");
   const shareUrl = encodeURIComponent(
-    status.referralLink || "https://example.com"
+    status.referralLink || "https://example.com",
   );
-  
+
   const twitterShareUrl = `https://twitter.com/intent/tweet?text=${shareText}&url=${shareUrl}`;
   const telegramShareUrl = `https://t.me/share/url?url=${shareUrl}&text=${shareText}`;
 
   return (
     <>
-    <div className="flex flex-col flex-1 px-4 pt-4 pb-8 space-y-6 relative animate-in fade-in duration-500">
+      <div className="animate-in fade-in relative flex flex-1 flex-col space-y-6 px-4 pt-4 pb-8 duration-500">
         {/* Identity Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2 text-amber-500">
-          <Crown className="w-5 h-5 fill-current" />
-          <span className="font-bold text-lg tracking-tight">Partner Program</span>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2 text-amber-500">
+            <Crown className="h-5 w-5 fill-current" />
+            <span className="text-lg font-bold tracking-tight">
+              Partner Program
+            </span>
+          </div>
         </div>
-      </div>
 
         {/* Hero Status */}
-      <div className="bg-primary/5 rounded-lg p-3 text-sm text-muted-foreground border border-primary/10">
-          <span className="font-medium text-primary">Status: Active.</span> Share
-          your link and earn 30% commission on every payment.
-      </div>
+        <div className="bg-primary/5 text-muted-foreground border-primary/10 rounded-lg border p-3 text-sm">
+          <span className="text-primary font-medium">Status: Active.</span>{" "}
+          Share your link and earn 30% commission on every payment.
+        </div>
 
         {/* Wallet Card */}
-      <Card className="bg-gradient-to-br from-zinc-900 via-zinc-900 to-amber-950/30 border-amber-500/20 shadow-xl overflow-hidden relative">
-        <div className="absolute top-0 right-0 p-32 bg-amber-500/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3 pointer-events-none" />
+        <Card className="relative overflow-hidden border-amber-500/20 bg-gradient-to-br from-zinc-900 via-zinc-900 to-amber-950/30 shadow-xl">
+          <div className="pointer-events-none absolute top-0 right-0 translate-x-1/3 -translate-y-1/2 rounded-full bg-amber-500/5 p-32 blur-3xl" />
 
           {/* Activity Button */}
           <div className="absolute top-3 right-3 z-20">
             <Button
               variant="ghost"
               size="sm"
-              className="h-7 text-xs bg-black/20 hover:bg-black/40 text-zinc-400 hover:text-white border border-white/5 rounded-full px-2.5 backdrop-blur-sm"
+              className="h-7 rounded-full border border-white/5 bg-black/20 px-2.5 text-xs text-zinc-400 backdrop-blur-sm hover:bg-black/40 hover:text-white"
               onClick={() => setHistoryOpen(true)}
             >
-              <History className="w-3.5 h-3.5 mr-1.5" />
+              <History className="mr-1.5 h-3.5 w-3.5" />
               Transactions
             </Button>
           </div>
-        
-        <CardContent className="pt-6 pb-6 space-y-6 relative z-10">
-          {/* Main Balance */}
-          <div className="space-y-1">
-            <div className="text-xs font-medium text-zinc-400 uppercase tracking-wider flex items-center gap-2">
-              <Wallet className="w-3.5 h-3.5" />
+
+          <CardContent className="relative z-10 space-y-6 pt-6 pb-6">
+            {/* Main Balance */}
+            <div className="space-y-1">
+              <div className="flex items-center gap-2 text-xs font-medium tracking-wider text-zinc-400 uppercase">
+                <Wallet className="h-3.5 w-3.5" />
                 Wallet Balance
-            </div>
-            <div className="text-4xl font-bold text-white tracking-tight">
-              ${availableUsd}
-            </div>
+              </div>
+              <div className="text-4xl font-bold tracking-tight text-white">
+                ${availableUsd}
+              </div>
               {status.balances.pendingCents > 0 && (
-                <div className="text-sm font-medium text-amber-500 flex items-center gap-1.5 animate-in fade-in slide-in-from-left-2">
-                  <Clock className="w-3.5 h-3.5" />
-                  ${pendingUsd} pending settlement
+                <div className="animate-in fade-in slide-in-from-left-2 flex items-center gap-1.5 text-sm font-medium text-amber-500">
+                  <Clock className="h-3.5 w-3.5" />${pendingUsd} pending
+                  settlement
                 </div>
               )}
-          </div>
+            </div>
 
-          {/* Progress Bar */}
-          <div className="space-y-2">
-            <div className="flex justify-between text-xs text-zinc-400">
-              <span>Withdrawal Progress</span>
-              <span>${minCashoutUsd} Minimum</span>
-            </div>
-            <div className="h-2 bg-zinc-800 rounded-full overflow-hidden">
-              <div 
-                className={cn(
-                  "h-full rounded-full transition-all duration-500 ease-out",
-                  isCashoutReady ? "bg-green-500" : "bg-amber-500"
-                )}
-                style={{ width: `${progressPercent}%` }}
-              />
-            </div>
-            {!isCashoutReady && (
-              <div className="text-xs text-amber-500/80 text-right">
+            {/* Progress Bar */}
+            <div className="space-y-2">
+              <div className="flex justify-between text-xs text-zinc-400">
+                <span>Withdrawal Progress</span>
+                <span>${minCashoutUsd} Minimum</span>
+              </div>
+              <div className="h-2 overflow-hidden rounded-full bg-zinc-800">
+                <div
+                  className={cn(
+                    "h-full rounded-full transition-all duration-500 ease-out",
+                    isCashoutReady ? "bg-green-500" : "bg-amber-500",
+                  )}
+                  style={{ width: `${progressPercent}%` }}
+                />
+              </div>
+              {!isCashoutReady && (
+                <div className="text-right text-xs text-amber-500/80">
                   $
                   {(
                     (status.rules.minCashoutCents -
@@ -137,112 +140,131 @@ export function MobileAffiliateDashboard({ status }: Props) {
                     100
                   ).toFixed(2)}{" "}
                   more to withdraw
-              </div>
-            )}
-          </div>
-
-          {/* Actions */}
-          <div className="grid grid-cols-2 gap-3">
-            <Button 
-              className={cn(
-                "w-full font-semibold", 
-                isCashoutReady 
-                  ? "bg-green-600 hover:bg-green-700 text-white" 
-                    : "bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-zinc-300"
+                </div>
               )}
+            </div>
+
+            {/* Actions */}
+            <div className="grid grid-cols-2 gap-3">
+              <Button
+                className={cn(
+                  "w-full font-semibold",
+                  isCashoutReady
+                    ? "bg-green-600 text-white hover:bg-green-700"
+                    : "bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-zinc-300",
+                )}
                 onClick={() => {
                   if (isCashoutReady) {
                     setWithdrawOpen(true);
                   } else {
-                    const remaining = (status.rules.minCashoutCents - status.balances.availableCents) / 100;
+                    const remaining =
+                      (status.rules.minCashoutCents -
+                        status.balances.availableCents) /
+                      100;
                     toast.info(`You need $${minCashoutUsd} to withdraw.`, {
                       description: `Earn $${remaining.toFixed(2)} more to unlock cashout!`,
                       duration: 4000,
                     });
                   }
                 }}
-            >
+              >
                 Withdraw
-            </Button>
-            <Button 
-              variant="outline" 
-              className="w-full bg-transparent border-zinc-700 text-zinc-300 hover:bg-white/5 hover:text-white px-2"
-                onClick={() => setExchangeOpen(true)}
-            >
-              <Coins className="w-4 h-4 mr-1.5" />
-                Get Credits
-            </Button>
-          </div>
+              </Button>
+              {canExchange && (
+                <>
+                  <Button
+                    variant="outline"
+                    className="w-full border-zinc-700 bg-transparent px-2 text-zinc-300 hover:bg-white/5 hover:text-white"
+                    onClick={() => setExchangeOpen(true)}
+                  >
+                    <Coins className="mr-1.5 h-4 w-4" />
+                    Get Credits
+                  </Button>
+                </>
+              )}
+            </div>
 
             {/* Pending - REMOVED (moved to top) */}
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
 
         {/* Referral Link */}
-      <div className="space-y-4">
-        <div className="text-center space-y-1">
-          <h2 className="text-lg font-bold">Your Referral Link</h2>
-          <p className="text-sm text-muted-foreground">
-              Earn <span className="text-amber-500 font-bold">30%</span> on every
-              payment.
-          </p>
-        </div>
-
-        <div className="flex gap-2 p-1.5 bg-muted/50 rounded-xl border">
-          <div className="flex-1 flex items-center px-3 text-xs font-mono text-muted-foreground truncate select-all">
-            {status.referralLink || "https://example.com?ref=..."}
+        <div className="space-y-4">
+          <div className="space-y-1 text-center">
+            <h2 className="text-lg font-bold">Your Referral Link</h2>
+            <p className="text-muted-foreground text-sm">
+              Earn <span className="font-bold text-amber-500">30%</span> on
+              every payment.
+            </p>
           </div>
-          <Button size="sm" onClick={copyLink} className="shrink-0">
-            <Copy className="w-4 h-4 mr-2" />
-            Copy
-          </Button>
-        </div>
+
+          <div className="bg-muted/50 flex gap-2 rounded-xl border p-1.5">
+            <div className="text-muted-foreground flex flex-1 items-center truncate px-3 font-mono text-xs select-all">
+              {status.referralLink || "https://example.com?ref=..."}
+            </div>
+            <Button size="sm" onClick={copyLink} className="shrink-0">
+              <Copy className="mr-2 h-4 w-4" />
+              Copy
+            </Button>
+          </div>
 
           {/* Social Share */}
-        <div className="grid grid-cols-2 gap-3">
-          <a 
-            href={twitterShareUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center justify-center gap-2 bg-black text-white h-10 rounded-md font-medium text-sm hover:opacity-90 transition-opacity"
-          >
-              <XIcon className="w-4 h-4" />
-            Post to X
-          </a>
-          <a 
-            href={telegramShareUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center justify-center gap-2 bg-[#229ED9] text-white h-10 rounded-md font-medium text-sm hover:opacity-90 transition-opacity"
-          >
-            <SendIcon className="w-4 h-4" />
+          <div className="grid grid-cols-2 gap-3">
+            <a
+              href={twitterShareUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex h-10 items-center justify-center gap-2 rounded-md bg-black text-sm font-medium text-white transition-opacity hover:opacity-90"
+            >
+              <XIcon className="h-4 w-4" />
+              Post to X
+            </a>
+            <a
+              href={telegramShareUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex h-10 items-center justify-center gap-2 rounded-md bg-[#229ED9] text-sm font-medium text-white transition-opacity hover:opacity-90"
+            >
+              <SendIcon className="h-4 w-4" />
               Share on TG
-          </a>
+            </a>
+          </div>
         </div>
-      </div>
 
         {/* How it works */}
-      <div className="pt-6 border-t">
-          <h3 className="text-sm font-medium mb-4 text-center text-muted-foreground">
+        <div className="border-t pt-6">
+          <h3 className="text-muted-foreground mb-4 text-center text-sm font-medium">
             How it works
           </h3>
-        <div className="flex justify-between items-start px-2">
-            <StepIcon icon={<Share2 className="w-5 h-5" />} title="Share" desc="Your Link" />
-          <div className="pt-3 text-muted-foreground/30">
-            <ArrowRightLeft className="w-4 h-4" />
+          <div className="flex items-start justify-between px-2">
+            <StepIcon
+              icon={<Share2 className="h-5 w-5" />}
+              title="Share"
+              desc="Your Link"
+            />
+            <div className="text-muted-foreground/30 pt-3">
+              <ArrowRightLeft className="h-4 w-4" />
+            </div>
+            <StepIcon
+              icon={<User className="h-5 w-5" />}
+              title="Refer"
+              desc="New Users"
+            />
+            <div className="text-muted-foreground/30 pt-3">
+              <ArrowRightLeft className="h-4 w-4" />
+            </div>
+            <StepIcon
+              icon={<Coins className="h-5 w-5" />}
+              title="Earn"
+              desc="30% Cash"
+            />
           </div>
-            <StepIcon icon={<User className="w-5 h-5" />} title="Refer" desc="New Users" />
-          <div className="pt-3 text-muted-foreground/30">
-            <ArrowRightLeft className="w-4 h-4" />
-          </div>
-            <StepIcon icon={<Coins className="w-5 h-5" />} title="Earn" desc="30% Cash" />
-        </div>
-        
-        <p className="text-xs text-center text-muted-foreground/60 mt-6 max-w-[280px] mx-auto">
+
+          <p className="text-muted-foreground/60 mx-auto mt-6 max-w-[280px] text-center text-xs">
             Crypto payments are instant. Card payments settle in 30 days.
-        </p>
+          </p>
+        </div>
       </div>
-    </div>
 
       {/* Drawers */}
       <WithdrawDrawer
@@ -252,17 +274,19 @@ export function MobileAffiliateDashboard({ status }: Props) {
         minCashoutCents={status.rules.minCashoutCents}
         defaultWallet={status.payoutWallet}
       />
-      <ExchangeDrawer
-        open={exchangeOpen}
-        onOpenChange={setExchangeOpen}
-        availableCents={status.balances.availableCents}
-        exchangeUnitCents={status.rules.exchangeUnitCents}
-        exchangeUnitCredits={status.rules.exchangeUnitCredits}
-      />
-      <CommissionHistory 
-        open={historyOpen}
-        onOpenChange={setHistoryOpen}
-      />
+      {canExchange && (
+        <>
+          {" "}
+          <ExchangeDrawer
+            open={exchangeOpen}
+            onOpenChange={setExchangeOpen}
+            availableCents={status.balances.availableCents}
+            exchangeUnitCents={status.rules.exchangeUnitCents}
+            exchangeUnitCredits={status.rules.exchangeUnitCredits}
+          />
+        </>
+      )}
+      <CommissionHistory open={historyOpen} onOpenChange={setHistoryOpen} />
     </>
   );
 }
@@ -277,13 +301,13 @@ function StepIcon({
   desc: string;
 }) {
   return (
-    <div className="flex flex-col items-center text-center gap-2 w-20">
-      <div className="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center">
+    <div className="flex w-20 flex-col items-center gap-2 text-center">
+      <div className="bg-primary/10 text-primary flex h-10 w-10 items-center justify-center rounded-full">
         {icon}
       </div>
       <div>
         <div className="text-xs font-bold">{title}</div>
-        <div className="text-[10px] text-muted-foreground">{desc}</div>
+        <div className="text-muted-foreground text-[10px]">{desc}</div>
       </div>
     </div>
   );
@@ -299,13 +323,13 @@ function XIcon({ className }: { className?: string }) {
 
 function SendIcon({ className }: { className?: string }) {
   return (
-    <svg 
-      viewBox="0 0 24 24" 
-      fill="none" 
-      stroke="currentColor" 
-      strokeWidth="2" 
-      strokeLinecap="round" 
-      strokeLinejoin="round" 
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
       className={className}
     >
       <line x1="22" y1="2" x2="11" y2="13" />

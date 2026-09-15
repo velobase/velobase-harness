@@ -1,0 +1,13 @@
+{
+  "name": "@velobase/payments",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./providers": "./src/providers.ts"
+  },
+  "dependencies": {
+    "zod": "3"
+  }
+}

@@ -23,6 +23,13 @@ import { useState, useCallback, useMemo } from "react";
 import { useDebounce } from "@/hooks/use-debounce";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useRouter } from "next/navigation";
 import {
   ChevronLeft,
@@ -37,11 +44,14 @@ import {
   Check,
   Copy,
   ExternalLink,
+  MoreHorizontal,
+  Users,
 } from "lucide-react";
 import { toast } from "sonner";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { useFormatter, useLocale, useTranslations } from "next-intl";
+import "@/app/admin/users/users.css";
 
 type FilterStatus = "all" | "active" | "blocked";
 type FilterYesNo = "all" | "yes" | "no";
@@ -181,44 +191,54 @@ export function UsersTable() {
   const endItem = Math.min(page * pageSize, total);
 
   return (
-    <div className="mx-auto max-w-[1400px] space-y-4">
-      {/* Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">{t("title")}</h1>
-          <p className="text-muted-foreground">
-            {total > 0
-              ? t("subtitleTotal", { count: total })
-              : t("subtitleEmpty")}
-          </p>
+    <div className="admin-users mx-auto max-w-[1400px]">
+      <h1 className="sr-only">{t("title")}</h1>
+
+      <div className="users-list-toolbar">
+        <div className="users-status-tabs" role="group" aria-label={t("status")}>
+          {(["all", "active", "blocked"] as const).map((status) => (
+            <button
+              key={status}
+              type="button"
+              aria-pressed={filters.status === status}
+              onClick={() => updateFilter("status", status)}
+            >
+              {t(status)}
+            </button>
+          ))}
         </div>
-        <div className="flex items-center gap-2">
-          <div className="relative flex-1 sm:w-72">
+        <div className="users-search-tools">
+          <div className="relative min-w-0 flex-1 sm:w-64">
             <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
             <Input
               placeholder={t("searchPlaceholder")}
+              aria-label={t("searchPlaceholder")}
               value={search}
               onChange={(e) => {
                 setSearch(e.target.value);
                 setPage(1);
               }}
-              className="pl-9"
+              className="h-8 pl-9 text-xs shadow-none"
             />
           </div>
           <Button
             variant={showFilters ? "secondary" : "outline"}
-            size="icon"
+            size="sm"
             onClick={() => setShowFilters(!showFilters)}
-            className={cn(hasActiveFilters && "border-primary text-primary")}
+            aria-expanded={showFilters}
+            aria-controls="users-filters"
+            className={cn("h-8 gap-2 text-xs shadow-none", hasActiveFilters && "border-primary/40 text-primary")}
           >
             <Filter className="h-4 w-4" />
+            {t("filters")}
+            {hasActiveFilters && <span className="h-1.5 w-1.5 rounded-full bg-primary" />}
           </Button>
         </div>
       </div>
 
       {/* Filters */}
       {showFilters && (
-        <div className="bg-muted/30 space-y-4 rounded-lg border p-4">
+        <div id="users-filters" className="users-filter-panel">
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-medium">{t("filters")}</h3>
             {hasActiveFilters && (
@@ -233,26 +253,7 @@ export function UsersTable() {
               </Button>
             )}
           </div>
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-4 lg:grid-cols-8">
-            <div className="space-y-1">
-              <label className="text-muted-foreground text-xs">
-                {t("status")}
-              </label>
-              <Select
-                value={filters.status}
-                onValueChange={(v) => updateFilter("status", v as FilterStatus)}
-              >
-                <SelectTrigger className="h-9">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">{t("all")}</SelectItem>
-                  <SelectItem value="active">{t("active")}</SelectItem>
-                  <SelectItem value="blocked">{t("blocked")}</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
+          <div className="grid grid-cols-1 gap-x-5 gap-y-4 sm:grid-cols-2 lg:grid-cols-4">
             <div className="space-y-1">
               <label className="text-muted-foreground text-xs">
                 {t("primaryAccount")}
@@ -266,7 +267,7 @@ export function UsersTable() {
                 <SelectTrigger className="h-9">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="admin-theme admin-popup">
                   <SelectItem value="all">{t("all")}</SelectItem>
                   <SelectItem value="yes">{t("yes")}</SelectItem>
                   <SelectItem value="no">{t("no")}</SelectItem>
@@ -287,7 +288,7 @@ export function UsersTable() {
                 <SelectTrigger className="h-9">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="admin-theme admin-popup">
                   <SelectItem value="all">{t("all")}</SelectItem>
                   <SelectItem value="yes">{t("yes")}</SelectItem>
                   <SelectItem value="no">{t("no")}</SelectItem>
@@ -306,7 +307,7 @@ export function UsersTable() {
                 <SelectTrigger className="h-9">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="admin-theme admin-popup">
                   <SelectItem value="all">{t("all")}</SelectItem>
                   <SelectItem value="yes">{t("admin")}</SelectItem>
                   <SelectItem value="no">{t("user")}</SelectItem>
@@ -327,7 +328,7 @@ export function UsersTable() {
                 <SelectTrigger className="h-9">
                   <SelectValue placeholder={t("all")} />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="admin-theme admin-popup">
                   <SelectItem value="all">{t("all")}</SelectItem>
                   {utmSources?.map((source) => (
                     <SelectItem key={source} value={source}>
@@ -351,7 +352,7 @@ export function UsersTable() {
                 <SelectTrigger className="h-9">
                   <SelectValue placeholder={t("all")} />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="admin-theme admin-popup">
                   <SelectItem value="all">{t("all")}</SelectItem>
                   {countryCodes?.map((code) => (
                     <SelectItem key={code} value={code}>
@@ -391,7 +392,7 @@ export function UsersTable() {
       )}
 
       {/* Table */}
-      <div className="bg-card rounded-md border">
+      <div className="users-table-surface">
         <Table>
           <TableHeader>
             <TableRow>
@@ -403,7 +404,7 @@ export function UsersTable() {
               <TableHead className="w-[100px]">{t("country")}</TableHead>
               <TableHead className="w-[100px]">{t("utmSource")}</TableHead>
               <TableHead className="w-[100px]">{t("joined")}</TableHead>
-              <TableHead className="w-[120px]">{t("actions")}</TableHead>
+              <TableHead className="w-[48px]"><span className="sr-only">{t("actions")}</span></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -443,39 +444,45 @@ export function UsersTable() {
               <TableRow>
                 <TableCell
                   colSpan={9}
-                  className="text-muted-foreground py-10 text-center"
+                  className="text-muted-foreground py-20 text-center"
                 >
-                  {t("noUsers")}
+                  <Users className="mx-auto mb-3 h-7 w-7 opacity-40" />
+                  <p className="text-sm font-medium text-foreground">{t("noUsers")}</p>
+                  {(search || hasActiveFilters) && (
+                    <Button variant="ghost" size="sm" className="mt-3 text-xs" onClick={() => { setSearch(""); clearFilters(); }}>
+                      {t("clearAll")}
+                    </Button>
+                  )}
                 </TableCell>
               </TableRow>
             ) : (
               data?.items.map((user) => (
                 <TableRow
                   key={user.id}
-                  className="hover:bg-muted/50 cursor-pointer"
+                  className="users-data-row cursor-pointer"
                   onClick={() => handleRowClick(user.id)}
                 >
                   <TableCell className="font-medium">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-3">
                       {user.image ? (
                         <img
                           src={user.image}
                           alt=""
-                          className="h-7 w-7 rounded-full"
+                          className="users-avatar h-8 w-8 rounded-full object-cover"
                         />
                       ) : (
-                        <div className="bg-muted text-muted-foreground flex h-7 w-7 items-center justify-center rounded-full text-xs">
+                        <div className="users-avatar flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs">
                           {user.name?.[0]?.toUpperCase() || "?"}
                         </div>
                       )}
                       <div className="min-w-0">
-                        <p className="truncate">
+                        <Link href={`/admin/users/${user.id}`} className="users-name block truncate" onClick={(e) => e.stopPropagation()}>
                           {user.name || t("notAvailable")}
-                        </p>
+                        </Link>
                         {user.isAdmin && (
                           <Badge
-                            variant="default"
-                            className="h-4 px-1 text-[10px]"
+                            variant="secondary"
+                            className="mt-1 h-4 rounded px-1.5 text-[10px] font-normal"
                           >
                             {t("admin")}
                           </Badge>
@@ -491,7 +498,7 @@ export function UsersTable() {
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-6 w-6 shrink-0"
+                        className="users-copy-button h-6 w-6 shrink-0"
                         onClick={(e) => {
                           e.stopPropagation();
                           if (user.email) {
@@ -500,46 +507,27 @@ export function UsersTable() {
                           }
                         }}
                         title={t("copyEmail")}
+                        aria-label={t("copyEmail")}
                       >
                         <Copy className="h-3 w-3" />
                       </Button>
                     </div>
                   </TableCell>
                   <TableCell>
-                    {user.isBlocked ? (
-                      <Badge variant="destructive" className="text-xs">
-                        {t("blocked")}
-                      </Badge>
-                    ) : (
-                      <Badge variant="outline" className="text-xs">
-                        {t("active")}
-                      </Badge>
-                    )}
+                    <span className={cn("users-status", user.isBlocked ? "is-blocked" : "is-active")}>
+                      <span aria-hidden="true" />
+                      {user.isBlocked ? t("blocked") : t("active")}
+                    </span>
                   </TableCell>
                   <TableCell>
-                    {user.isPrimaryDeviceAccount ? (
-                      <Badge variant="default" className="text-xs">
-                        {t("yes")}
-                      </Badge>
-                    ) : (
-                      <Badge
-                        variant="outline"
-                        className="border-amber-500 text-xs text-amber-600"
-                      >
-                        {t("no")}
-                      </Badge>
-                    )}
+                    <span className={cn("text-xs", !user.isPrimaryDeviceAccount && "text-muted-foreground")}>
+                      {user.isPrimaryDeviceAccount ? t("yes") : t("no")}
+                    </span>
                   </TableCell>
                   <TableCell>
-                    {user.hasPurchased ? (
-                      <Badge variant="default" className="text-xs">
-                        {t("yes")}
-                      </Badge>
-                    ) : (
-                      <Badge variant="secondary" className="text-xs">
-                        {t("no")}
-                      </Badge>
-                    )}
+                    <span className={cn("text-xs", !user.hasPurchased && "text-muted-foreground")}>
+                      {user.hasPurchased ? t("yes") : t("no")}
+                    </span>
                   </TableCell>
                   <TableCell className="text-muted-foreground text-xs">
                     {user.countryCode ? (
@@ -555,72 +543,40 @@ export function UsersTable() {
                   <TableCell className="text-muted-foreground text-xs">
                     {user.utmSource || "-"}
                   </TableCell>
-                  <TableCell className="text-muted-foreground text-xs">
+                  <TableCell className="text-muted-foreground whitespace-nowrap text-xs">
+                    <span title={format.dateTime(new Date(user.createdAt), { dateStyle: "medium", timeStyle: "medium" })}>
                     {format.dateTime(new Date(user.createdAt), {
                       year: "numeric",
                       month: "2-digit",
                       day: "2-digit",
-                      hour: "2-digit",
-                      minute: "2-digit",
-                      second: "2-digit",
                     })}
+                    </span>
                   </TableCell>
                   <TableCell>
-                    <div className="flex items-center gap-1">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8"
-                        asChild
-                      >
-                        <Link
-                          href={`/admin/users/${user.id}`}
-                          title={t("viewDetails")}
-                          onClick={(e) => e.stopPropagation()}
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground" aria-label={t("actions")} onClick={(e) => e.stopPropagation()}>
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="admin-theme admin-popup w-44" onClick={(e) => e.stopPropagation()}>
+                        <DropdownMenuItem asChild>
+                          <Link href={`/admin/users/${user.id}`}><ExternalLink className="h-4 w-4" />{t("viewDetails")}</Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem asChild>
+                          <Link href={`/admin/works?userId=${user.id}`}><Video className="h-4 w-4" />{t("viewWorks")}</Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          className={cn(!user.isBlocked && "text-destructive focus:text-destructive")}
+                          onClick={(e) => handleBlockToggle(e, user.id, user.isBlocked)}
+                          disabled={blockMutation.isPending || unblockMutation.isPending}
                         >
-                          <ExternalLink className="h-4 w-4" />
-                        </Link>
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8"
-                        asChild
-                      >
-                        <Link
-                          href={`/admin/works?userId=${user.id}`}
-                          title={t("viewWorks")}
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <Video className="h-4 w-4" />
-                        </Link>
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className={cn(
-                          "h-8 w-8",
-                          user.isBlocked
-                            ? "text-green-600 hover:bg-green-50 hover:text-green-700"
-                            : "text-red-600 hover:bg-red-50 hover:text-red-700",
-                        )}
-                        onClick={(e) =>
-                          handleBlockToggle(e, user.id, user.isBlocked)
-                        }
-                        disabled={
-                          blockMutation.isPending || unblockMutation.isPending
-                        }
-                        title={
-                          user.isBlocked ? t("unblockUser") : t("blockUser")
-                        }
-                      >
-                        {user.isBlocked ? (
-                          <Check className="h-4 w-4" />
-                        ) : (
-                          <Ban className="h-4 w-4" />
-                        )}
-                      </Button>
-                    </div>
+                          {user.isBlocked ? <Check className="h-4 w-4" /> : <Ban className="h-4 w-4" />}
+                          {user.isBlocked ? t("unblockUser") : t("blockUser")}
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </TableCell>
                 </TableRow>
               ))
@@ -630,7 +586,7 @@ export function UsersTable() {
       </div>
 
       {/* Pagination */}
-      <div className="flex flex-col items-center justify-between gap-4 px-2 sm:flex-row">
+      <div className="users-pagination flex flex-col items-center justify-between gap-4 sm:flex-row">
         <div className="text-muted-foreground flex items-center gap-2 text-sm">
           <span>{t("rowsPerPage")}</span>
           <Select
@@ -640,10 +596,10 @@ export function UsersTable() {
               setPage(1);
             }}
           >
-            <SelectTrigger className="h-8 w-[70px]">
+            <SelectTrigger className="h-8 w-[70px] shadow-none" aria-label={t("rowsPerPage")}>
               <SelectValue />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="admin-theme admin-popup">
               <SelectItem value="10">10</SelectItem>
               <SelectItem value="20">20</SelectItem>
               <SelectItem value="50">50</SelectItem>
@@ -664,39 +620,43 @@ export function UsersTable() {
           </span>
           <div className="flex items-center gap-1">
             <Button
-              variant="outline"
+              variant="ghost"
               size="icon"
               className="h-8 w-8"
+              aria-label={t("firstPage")}
               onClick={() => setPage(1)}
               disabled={page === 1 || isLoading}
             >
               <ChevronsLeft className="h-4 w-4" />
             </Button>
             <Button
-              variant="outline"
+              variant="ghost"
               size="icon"
               className="h-8 w-8"
+              aria-label={t("previousPage")}
               onClick={() => setPage(page - 1)}
               disabled={page === 1 || isLoading}
             >
               <ChevronLeft className="h-4 w-4" />
             </Button>
-            <span className="w-20 text-center text-sm">
+            <span className="min-w-24 text-center text-xs tabular-nums">
               {t("pageIndicator", { page, totalPages })}
             </span>
             <Button
-              variant="outline"
+              variant="ghost"
               size="icon"
               className="h-8 w-8"
+              aria-label={t("nextPage")}
               onClick={() => setPage(page + 1)}
               disabled={page >= totalPages || isLoading}
             >
               <ChevronRight className="h-4 w-4" />
             </Button>
             <Button
-              variant="outline"
+              variant="ghost"
               size="icon"
               className="h-8 w-8"
+              aria-label={t("lastPage")}
               onClick={() => setPage(totalPages)}
               disabled={page >= totalPages || isLoading}
             >

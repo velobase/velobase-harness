@@ -1,0 +1,9 @@
+# Native development: only PostgreSQL and Redis run in Docker.
+# Shares the demo's existing data volumes; never use --renew-anon-volumes.
+services:
+  postgres:
+    ports:
+      - "127.0.0.1:54333:5432"
+  redis:
+    ports:
+      - "127.0.0.1:56380:6379"

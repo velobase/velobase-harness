@@ -79,15 +79,15 @@ export default function DialogsPage() {
   })) ?? [];
 
   return (
-    <div className="space-y-6">
+    <div className="admin-module-page space-y-4">
       <div>
-        <h1 className="text-2xl font-bold">{t("title")}</h1>
+        <h1 className="sr-only">{t("title")}</h1>
         <p className="text-muted-foreground mt-1">
           {t("subtitle")}
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="admin-preview-grid">
         {/* Login Modal */}
         <DialogCard
           title="LoginModal"

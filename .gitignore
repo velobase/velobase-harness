@@ -4,6 +4,7 @@
 /node_modules
 **/node_modules/
 .pnpm-store/
+.harness-local/
 **/dist/
 **/out/
 **/.expo/
@@ -57,3 +58,5 @@ KNOWN_ISSUES.md
 
 # cloud architecture docs
 docs/cloud/
+
+# Independently generated core Prisma client and small host build outputs

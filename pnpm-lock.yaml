@@ -203,15 +203,69 @@ importers:
       '@types/sharp':
         specifier: ^0.32.0
         version: 0.32.0(@types/node@20.19.25)
+      '@velobase/activities':
+        specifier: workspace:*
+        version: link:packages/activities
+      '@velobase/affiliate':
+        specifier: workspace:*
+        version: link:packages/affiliate
+      '@velobase/ai-chat':
+        specifier: workspace:*
+        version: link:packages/ai-chat
+      '@velobase/ai-chat-openrouter':
+        specifier: workspace:*
+        version: link:packages/ai-chat-openrouter
       '@velobase/api-client':
         specifier: workspace:*
         version: link:packages/api-client
       '@velobase/contracts':
         specifier: workspace:*
         version: link:packages/contracts
-      '@velobaseai/billing':
-        specifier: ^1.1.0
-        version: 1.1.0
+      '@velobase/credits':
+        specifier: workspace:*
+        version: link:packages/credits
+      '@velobase/credits-velobase':
+        specifier: workspace:*
+        version: link:packages/credits-velobase
+      '@velobase/example-composition':
+        specifier: workspace:*
+        version: link:packages/example-composition
+      '@velobase/image-generation':
+        specifier: workspace:*
+        version: link:packages/image-generation
+      '@velobase/image-generation-modelrunner':
+        specifier: workspace:*
+        version: link:packages/image-generation-modelrunner
+      '@velobase/image-generation-wavespeed':
+        specifier: workspace:*
+        version: link:packages/image-generation-wavespeed
+      '@velobase/mailbox':
+        specifier: workspace:*
+        version: link:packages/mailbox
+      '@velobase/module-runtime':
+        specifier: workspace:*
+        version: link:packages/module-runtime
+      '@velobase/outreach':
+        specifier: workspace:*
+        version: link:packages/outreach
+      '@velobase/payments':
+        specifier: workspace:*
+        version: link:packages/payments
+      '@velobase/payments-stripe':
+        specifier: workspace:*
+        version: link:packages/payments-stripe
+      '@velobase/products':
+        specifier: workspace:*
+        version: link:packages/products
+      '@velobase/sharing':
+        specifier: workspace:*
+        version: link:packages/sharing
+      '@velobase/subscriptions':
+        specifier: workspace:*
+        version: link:packages/subscriptions
+      '@velobase/subscriptions-stripe':
+        specifier: workspace:*
+        version: link:packages/subscriptions-stripe
       ai:
         specifier: ^5.0.68
         version: 5.0.108(zod@3.25.76)
@@ -539,12 +593,84 @@ importers:
 
   apps/web:
     dependencies:
+      '@velobase/ai-chat':
+        specifier: workspace:*
+        version: link:../../packages/ai-chat
+      '@velobase/ai-chat-openrouter':
+        specifier: workspace:*
+        version: link:../../packages/ai-chat-openrouter
       '@velobase/api-client':
         specifier: workspace:*
         version: link:../../packages/api-client
       '@velobase/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
+      '@velobase/example-composition':
+        specifier: workspace:*
+        version: link:../../packages/example-composition
+      '@velobase/image-generation':
+        specifier: workspace:*
+        version: link:../../packages/image-generation
+      '@velobase/image-generation-modelrunner':
+        specifier: workspace:*
+        version: link:../../packages/image-generation-modelrunner
+      '@velobase/image-generation-wavespeed':
+        specifier: workspace:*
+        version: link:../../packages/image-generation-wavespeed
+      '@velobase/module-runtime':
+        specifier: workspace:*
+        version: link:../../packages/module-runtime
+
+  packages/activities:
+    dependencies:
+      zod:
+        specifier: '3'
+        version: 3.25.76
+
+  packages/affiliate:
+    dependencies:
+      zod:
+        specifier: '3'
+        version: 3.25.76
+
+  packages/ai-chat:
+    dependencies:
+      ai:
+        specifier: ^5.0.68
+        version: 5.0.108(zod@3.25.76)
+      zod:
+        specifier: '3'
+        version: 3.25.76
+
+  packages/ai-chat-openrouter:
+    dependencies:
+      '@openrouter/ai-sdk-provider':
+        specifier: 1.4.1
+        version: 1.4.1(ai@5.0.108(zod@3.25.76))(zod@3.25.76)
+      zod:
+        specifier: '3'
+        version: 3.25.76
+
+  packages/ai-support:
+    dependencies:
+      zod:
+        specifier: '3'
+        version: 3.25.76
+
+  packages/ai-support-openrouter:
+    dependencies:
+      '@openrouter/ai-sdk-provider':
+        specifier: 1.4.1
+        version: 1.4.1(ai@5.0.108(zod@3.25.76))(zod@3.25.76)
+      '@velobase/ai-support':
+        specifier: workspace:*
+        version: link:../ai-support
+      ai:
+        specifier: ^5.0.68
+        version: 5.0.108(zod@3.25.76)
+      zod:
+        specifier: '3'
+        version: 3.25.76
 
   packages/api-client:
     dependencies:
@@ -556,6 +682,143 @@ importers:
     dependencies:
       zod:
         specifier: ^3.24.2
+        version: 3.25.76
+
+  packages/credits:
+    dependencies:
+      zod:
+        specifier: '3'
+        version: 3.25.76
+
+  packages/credits-velobase:
+    dependencies:
+      '@velobase/credits':
+        specifier: workspace:*
+        version: link:../credits
+      '@velobaseai/billing':
+        specifier: ^1.1.0
+        version: 1.1.0
+
+  packages/email-transport:
+    dependencies:
+      nodemailer:
+        specifier: ^9.1.1
+        version: 9.1.1
+    devDependencies:
+      '@types/nodemailer':
+        specifier: ^8.0.1
+        version: 8.0.1
+
+  packages/example-composition:
+    dependencies:
+      '@velobase/module-runtime':
+        specifier: workspace:*
+        version: link:../module-runtime
+
+  packages/image-generation:
+    dependencies:
+      zod:
+        specifier: '3'
+        version: 3.25.76
+
+  packages/image-generation-modelrunner:
+    dependencies:
+      '@velobase/image-generation':
+        specifier: workspace:*
+        version: link:../image-generation
+
+  packages/image-generation-wavespeed:
+    dependencies:
+      '@velobase/image-generation':
+        specifier: workspace:*
+        version: link:../image-generation
+
+  packages/mailbox:
+    dependencies:
+      '@velobase/email-transport':
+        specifier: workspace:*
+        version: link:../email-transport
+      imap:
+        specifier: ^0.8.19
+        version: 0.8.19
+      mailparser:
+        specifier: ^3.9.20
+        version: 3.9.20
+    devDependencies:
+      '@types/imap':
+        specifier: ^0.8.43
+        version: 0.8.43
+      '@types/mailparser':
+        specifier: ^3.4.6
+        version: 3.4.6
+
+  packages/module-runtime: {}
+
+  packages/outreach:
+    dependencies:
+      '@velobase/module-runtime':
+        specifier: workspace:*
+        version: link:../module-runtime
+      zod:
+        specifier: '3'
+        version: 3.25.76
+    devDependencies:
+      '@types/node':
+        specifier: ^20.14.10
+        version: 20.19.25
+      '@types/react':
+        specifier: ^19.0.0
+        version: 19.2.18
+      typescript:
+        specifier: ^5.8.2
+        version: 5.9.3
+
+  packages/payments:
+    dependencies:
+      zod:
+        specifier: '3'
+        version: 3.25.76
+
+  packages/payments-stripe:
+    dependencies:
+      '@velobase/payments':
+        specifier: workspace:*
+        version: link:../payments
+      stripe:
+        specifier: 19.1.0
+        version: 19.1.0(@types/node@24.13.3)
+      zod:
+        specifier: '3'
+        version: 3.25.76
+
+  packages/products:
+    dependencies:
+      zod:
+        specifier: '3'
+        version: 3.25.76
+
+  packages/sharing:
+    dependencies:
+      zod:
+        specifier: '3'
+        version: 3.25.76
+
+  packages/subscriptions:
+    dependencies:
+      zod:
+        specifier: '3'
+        version: 3.25.76
+
+  packages/subscriptions-stripe:
+    dependencies:
+      '@velobase/subscriptions':
+        specifier: workspace:*
+        version: link:../subscriptions
+      stripe:
+        specifier: 19.1.0
+        version: 19.1.0(@types/node@24.13.3)
+      zod:
+        specifier: '3'
         version: 3.25.76
 
   services/api: {}
@@ -2906,95 +3169,111 @@ packages:
 
   '@react-email/body@0.2.0':
     resolution: {integrity: sha512-9GCWmVmKUAoRfloboCd+RKm6X17xn7eGL7HnpAZUnjBXBilWCxsKnLMTC/ixSHDKS/A/057M1Tx6ZUXd89sVBw==}
+    deprecated: Package no longer supported. Contact Support at https://www.npmjs.com/support for more info.
     peerDependencies:
       react: ^18.0 || ^19.0 || ^19.0.0-rc
 
   '@react-email/button@0.2.0':
     resolution: {integrity: sha512-8i+v6cMxr2emz4ihCrRiYJPp2/sdYsNNsBzXStlcA+/B9Umpm5Jj3WJKYpgTPM+aeyiqlG/MMI1AucnBm4f1oQ==}
     engines: {node: '>=18.0.0'}
+    deprecated: Package no longer supported. Contact Support at https://www.npmjs.com/support for more info.
     peerDependencies:
       react: ^18.0 || ^19.0 || ^19.0.0-rc
 
   '@react-email/code-block@0.2.0':
     resolution: {integrity: sha512-eIrPW9PIFgDopQU0e/OPpwCW2QWQDtNZDSsiN4sJO8KdMnWWnXJicnRfzrit5rHwFo+Y98i+w/Y5ScnBAFr1dQ==}
     engines: {node: '>=22.0.0'}
+    deprecated: Package no longer supported. Contact Support at https://www.npmjs.com/support for more info.
     peerDependencies:
       react: ^18.0 || ^19.0 || ^19.0.0-rc
 
   '@react-email/code-inline@0.0.5':
     resolution: {integrity: sha512-MmAsOzdJpzsnY2cZoPHFPk6uDO/Ncpb4Kh1hAt9UZc1xOW3fIzpe1Pi9y9p6wwUmpaeeDalJxAxH6/fnTquinA==}
     engines: {node: '>=18.0.0'}
+    deprecated: Package no longer supported. Contact Support at https://www.npmjs.com/support for more info.
     peerDependencies:
       react: ^18.0 || ^19.0 || ^19.0.0-rc
 
   '@react-email/column@0.0.13':
     resolution: {integrity: sha512-Lqq17l7ShzJG/d3b1w/+lVO+gp2FM05ZUo/nW0rjxB8xBICXOVv6PqjDnn3FXKssvhO5qAV20lHM6S+spRhEwQ==}
     engines: {node: '>=18.0.0'}
+    deprecated: Package no longer supported. Contact Support at https://www.npmjs.com/support for more info.
     peerDependencies:
       react: ^18.0 || ^19.0 || ^19.0.0-rc
 
   '@react-email/components@1.0.1':
     resolution: {integrity: sha512-HnL0Y/up61sOBQT2cQg9N/kCoW0bP727gDs2MkFWQYELg6+iIHidMDvENXFC0f1ZE6hTB+4t7sszptvTcJWsDA==}
     engines: {node: '>=22.0.0'}
+    deprecated: Package no longer supported. Contact Support at https://www.npmjs.com/support for more info.
     peerDependencies:
       react: ^18.0 || ^19.0 || ^19.0.0-rc
 
   '@react-email/container@0.0.15':
     resolution: {integrity: sha512-Qo2IQo0ru2kZq47REmHW3iXjAQaKu4tpeq/M8m1zHIVwKduL2vYOBQWbC2oDnMtWPmkBjej6XxgtZByxM6cCFg==}
     engines: {node: '>=18.0.0'}
+    deprecated: Package no longer supported. Contact Support at https://www.npmjs.com/support for more info.
     peerDependencies:
       react: ^18.0 || ^19.0 || ^19.0.0-rc
 
   '@react-email/font@0.0.9':
     resolution: {integrity: sha512-4zjq23oT9APXkerqeslPH3OZWuh5X4crHK6nx82mVHV2SrLba8+8dPEnWbaACWTNjOCbcLIzaC9unk7Wq2MIXw==}
+    deprecated: Package no longer supported. Contact Support at https://www.npmjs.com/support for more info.
     peerDependencies:
       react: ^18.0 || ^19.0 || ^19.0.0-rc
 
   '@react-email/head@0.0.12':
     resolution: {integrity: sha512-X2Ii6dDFMF+D4niNwMAHbTkeCjlYYnMsd7edXOsi0JByxt9wNyZ9EnhFiBoQdqkE+SMDcu8TlNNttMrf5sJeMA==}
     engines: {node: '>=18.0.0'}
+    deprecated: Package no longer supported. Contact Support at https://www.npmjs.com/support for more info.
     peerDependencies:
       react: ^18.0 || ^19.0 || ^19.0.0-rc
 
   '@react-email/heading@0.0.15':
     resolution: {integrity: sha512-xF2GqsvBrp/HbRHWEfOgSfRFX+Q8I5KBEIG5+Lv3Vb2R/NYr0s8A5JhHHGf2pWBMJdbP4B2WHgj/VUrhy8dkIg==}
     engines: {node: '>=18.0.0'}
+    deprecated: Package no longer supported. Contact Support at https://www.npmjs.com/support for more info.
     peerDependencies:
       react: ^18.0 || ^19.0 || ^19.0.0-rc
 
   '@react-email/hr@0.0.11':
     resolution: {integrity: sha512-S1gZHVhwOsd1Iad5IFhpfICwNPMGPJidG/Uysy1AwmspyoAP5a4Iw3OWEpINFdgh9MHladbxcLKO2AJO+cA9Lw==}
     engines: {node: '>=18.0.0'}
+    deprecated: Package no longer supported. Contact Support at https://www.npmjs.com/support for more info.
     peerDependencies:
       react: ^18.0 || ^19.0 || ^19.0.0-rc
 
   '@react-email/html@0.0.11':
     resolution: {integrity: sha512-qJhbOQy5VW5qzU74AimjAR9FRFQfrMa7dn4gkEXKMB/S9xZN8e1yC1uA9C15jkXI/PzmJ0muDIWmFwatm5/+VA==}
     engines: {node: '>=18.0.0'}
+    deprecated: Package no longer supported. Contact Support at https://www.npmjs.com/support for more info.
     peerDependencies:
       react: ^18.0 || ^19.0 || ^19.0.0-rc
 
   '@react-email/img@0.0.11':
     resolution: {integrity: sha512-aGc8Y6U5C3igoMaqAJKsCpkbm1XjguQ09Acd+YcTKwjnC2+0w3yGUJkjWB2vTx4tN8dCqQCXO8FmdJpMfOA9EQ==}
     engines: {node: '>=18.0.0'}
+    deprecated: Package no longer supported. Contact Support at https://www.npmjs.com/support for more info.
     peerDependencies:
       react: ^18.0 || ^19.0 || ^19.0.0-rc
 
   '@react-email/link@0.0.12':
     resolution: {integrity: sha512-vF+xxQk2fGS1CN7UPQDbzvcBGfffr+GjTPNiWM38fhBfsLv6A/YUfaqxWlmL7zLzVmo0K2cvvV9wxlSyNba1aQ==}
     engines: {node: '>=18.0.0'}
+    deprecated: Package no longer supported. Contact Support at https://www.npmjs.com/support for more info.
     peerDependencies:
       react: ^18.0 || ^19.0 || ^19.0.0-rc
 
   '@react-email/markdown@0.0.17':
     resolution: {integrity: sha512-6op3AfsBC9BJKkhG+eoMFRFWlr0/f3FYbtQrK+VhGzJocEAY0WINIFN+W8xzXr//3IL0K/aKtnH3FtpIuescQQ==}
     engines: {node: '>=22.0.0'}
+    deprecated: Package no longer supported. Contact Support at https://www.npmjs.com/support for more info.
     peerDependencies:
       react: ^18.0 || ^19.0 || ^19.0.0-rc
 
   '@react-email/preview@0.0.13':
     resolution: {integrity: sha512-F7j9FJ0JN/A4d7yr+aw28p4uX7VLWs7hTHtLo7WRyw4G+Lit6Zucq4UWKRxJC8lpsUdzVmG7aBJnKOT+urqs/w==}
     engines: {node: '>=18.0.0'}
+    deprecated: Package no longer supported. Contact Support at https://www.npmjs.com/support for more info.
     peerDependencies:
       react: ^18.0 || ^19.0 || ^19.0.0-rc
 
@@ -3008,18 +3287,21 @@ packages:
   '@react-email/row@0.0.12':
     resolution: {integrity: sha512-HkCdnEjvK3o+n0y0tZKXYhIXUNPDx+2vq1dJTmqappVHXS5tXS6W5JOPZr5j+eoZ8gY3PShI2LWj5rWF7ZEtIQ==}
     engines: {node: '>=18.0.0'}
+    deprecated: Package no longer supported. Contact Support at https://www.npmjs.com/support for more info.
     peerDependencies:
       react: ^18.0 || ^19.0 || ^19.0.0-rc
 
   '@react-email/section@0.0.16':
     resolution: {integrity: sha512-FjqF9xQ8FoeUZYKSdt8sMIKvoT9XF8BrzhT3xiFKdEMwYNbsDflcjfErJe3jb7Wj/es/lKTbV5QR1dnLzGpL3w==}
     engines: {node: '>=18.0.0'}
+    deprecated: Package no longer supported. Contact Support at https://www.npmjs.com/support for more info.
     peerDependencies:
       react: ^18.0 || ^19.0 || ^19.0.0-rc
 
   '@react-email/tailwind@2.0.1':
     resolution: {integrity: sha512-/xq0IDYVY7863xPY7cdI45Xoz7M6CnIQBJcQvbqN7MNVpopfH9f+mhjayV1JGfKaxlGWuxfLKhgi9T2shsnEFg==}
     engines: {node: '>=22.0.0'}
+    deprecated: Package no longer supported. Contact Support at https://www.npmjs.com/support for more info.
     peerDependencies:
       '@react-email/body': 0.2.0
       '@react-email/button': 0.2.0
@@ -3058,6 +3340,7 @@ packages:
   '@react-email/text@0.1.5':
     resolution: {integrity: sha512-o5PNHFSE085VMXayxH+SJ1LSOtGsTv+RpNKnTiJDrJUwoBu77G3PlKOsZZQHCNyD28WsQpl9v2WcJLbQudqwPg==}
     engines: {node: '>=18.0.0'}
+    deprecated: Package no longer supported. Contact Support at https://www.npmjs.com/support for more info.
     peerDependencies:
       react: ^18.0 || ^19.0 || ^19.0.0-rc
 
@@ -3658,6 +3941,7 @@ packages:
 
   '@ungap/structured-clone@1.3.0':
     resolution: {integrity: sha512-WmoN8qaIAo7WTYWbAZuG8PYEhn5fkz7dZrqTBZ7dtt//lL2Gwms1IcnQ5yHqjDfX8Ft5j4YzDM23f87zBfDe9g==}
+    deprecated: Potential CWE-502 - Update to 1.3.1 or higher
 
   '@unrs/resolver-binding-android-arm-eabi@1.11.1':
     resolution: {integrity: sha512-ppLRUgHVaGRWUx0R0Ut06Mjo9gBaBkg3v/8AxusGLhsIotbBLuRk51rAzqLC8gq6NyyAojEXglNjzf6R948DNw==}
@@ -4109,9 +4393,6 @@ packages:
     resolution: {integrity: sha512-Gmy6FhYlCY7uOElZUSbxo2UCDH8owEk996gkbrpsgGtrJLM3J7jGxl9Ic7Qwwj4ivOE5AWZWRMecDdF7hqGjFA==}
     engines: {node: '>=10'}
 
-  caniuse-lite@1.0.30001760:
-    resolution: {integrity: sha512-7AAMPcueWELt1p3mi13HR/LHH0TJLT11cnwDJEs3xA4+CK/PLKeO9Kl1oru24htkyUKtkGCvAx4ohB0Ttry8Dw==}
-
   caniuse-lite@1.0.30001810:
     resolution: {integrity: sha512-TITQPUkaz+aVk5GL6NhOdwk1aEaNTSDPsGFWrTuhKGtjTF70jL/Oht2W4c6rXUe5fu7Ie19VIahAXHIIiWWNeg==}
 
@@ -4334,6 +4615,7 @@ packages:
   cron-parser@4.9.0:
     resolution: {integrity: sha512-p0SaNjrHOnQeR8/VnfGbmg9te2kfyYSQ7Sc/j/6DtPL3JQvKxmjO9TSjNFpujqV3vEYYBvNNvXSxzyksBWAx1Q==}
     engines: {node: '>=12.0.0'}
+    deprecated: v4 is no longer maintained, upgrade to v5
 
   cross-spawn@7.0.6:
     resolution: {integrity: sha512-uV2QOWP2nWzsy2aMp8aRibhi9dlzF5Hgh5SHaB9OiTGEyDTiJJyx0uy51QXdyWbtAHNua4XJzUKca3OzKUd3vA==}
@@ -4729,6 +5011,7 @@ packages:
   eslint@9.39.1:
     resolution: {integrity: sha512-BhHmn2yNOFA9H9JmmIVKJmd288g9hrVRDkdoIgRCRuSySRUHH7r/DI6aAXW9T1WwUuY3DFgrcaqB+deURBLR5g==}
     engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
+    deprecated: This version is no longer supported. Please see https://eslint.org/version-support for other options.
     hasBin: true
     peerDependencies:
       jiti: '*'
@@ -5154,6 +5437,7 @@ packages:
 
   glob@10.5.0:
     resolution: {integrity: sha512-DfXN8DfhJ7NH3Oe7cFmu3NCu1wKbkReJ8TorzSAFbSKrlNaQSKfIzqYqVY8zlbs2NLBbWpRiU52GX2PbaBVNkg==}
+    deprecated: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
     hasBin: true
 
   glob@13.0.6:
@@ -5377,10 +5661,6 @@ packages:
 
   iconv-lite@0.6.3:
     resolution: {integrity: sha512-4fCk79wshMdzMp2rH06qWrJE4iolqLhCUH+OiuIgU++RB0+94NlDL81atO7GX55uUKueo0txHNtvEyI6D7WdMw==}
-    engines: {node: '>=0.10.0'}
-
-  iconv-lite@0.7.0:
-    resolution: {integrity: sha512-cf6L2Ds3h57VVmkZe+Pn+5APsT7FpqJtEhhieDCvrE2MK5Qk9MyffgQyuxQTm6BChfeZNtcOLHp9IcWRVcIcBQ==}
     engines: {node: '>=0.10.0'}
 
   iconv-lite@0.7.3:
@@ -7357,10 +7637,6 @@ packages:
   shiki@3.19.0:
     resolution: {integrity: sha512-77VJr3OR/VUZzPiStyRhADmO2jApMM0V2b1qf0RpfWya8Zr1PeZev5AEpPGAAKWdiYUtcZGBE4F5QvJml1PvWA==}
 
-  side-channel-list@1.0.0:
-    resolution: {integrity: sha512-FCLHtRD/gnpCiCHEiJLOwdmFP+wzCmDEkc9y7NsYxeF4u7Btsn1ZuwgwJGxImImHicJArLP4R0yX4c2KCrMrTA==}
-    engines: {node: '>= 0.4'}
-
   side-channel-list@1.0.1:
     resolution: {integrity: sha512-mjn/0bi/oUURjc5Xl7IaWi/OJJJumuoJFQJfDDyO46+hBWsfaVM65TBHq2eoZBhzl9EchxOijpkbRC8SVBQU0w==}
     engines: {node: '>= 0.4'}
@@ -7371,10 +7647,6 @@ packages:
 
   side-channel-weakmap@1.0.2:
     resolution: {integrity: sha512-WPS/HvHQTYnHisLo9McqBHOJk2FkHO/tlpvldyrnem4aeQp4hai3gythswg6p01oSoTl58rcpiFAjF2br2Ak2A==}
-    engines: {node: '>= 0.4'}
-
-  side-channel@1.1.0:
-    resolution: {integrity: sha512-ZX99e6tRweoUXqR+VBrslhda51Nh5MTQwou5tnUDgbtyM0dBgmhEDtWGP/xbKn6hqfPRHujUNwz5fy/wbbhnpw==}
     engines: {node: '>= 0.4'}
 
   side-channel@1.1.1:
@@ -8155,6 +8427,14 @@ snapshots:
       '@img/sharp-linuxmusl-x64': 0.33.5
       '@img/sharp-win32-x64': 0.33.5
 
+  '@auth/core@0.41.3':
+    dependencies:
+      '@panva/hkdf': 1.2.1
+      jose: 6.1.3
+      oauth4webapi: 3.8.3
+      preact: 10.24.3
+      preact-render-to-string: 6.5.11(preact@10.24.3)
+
   '@auth/core@0.41.3(nodemailer@9.1.1)':
     dependencies:
       '@panva/hkdf': 1.2.1
@@ -8164,6 +8444,15 @@ snapshots:
       preact-render-to-string: 6.5.11(preact@10.24.3)
     optionalDependencies:
       nodemailer: 9.1.1
+
+  '@auth/prisma-adapter@2.11.3(@prisma/client@6.19.0(prisma@6.19.0(typescript@5.9.3))(typescript@5.9.3))':
+    dependencies:
+      '@auth/core': 0.41.3
+      '@prisma/client': 6.19.0(prisma@6.19.0(typescript@5.9.3))(typescript@5.9.3)
+    transitivePeerDependencies:
+      - '@simplewebauthn/browser'
+      - '@simplewebauthn/server'
+      - nodemailer
 
   '@auth/prisma-adapter@2.11.3(@prisma/client@6.19.0(prisma@6.19.0(typescript@5.9.3))(typescript@5.9.3))(nodemailer@9.1.1)':
     dependencies:
@@ -11314,6 +11603,10 @@ snapshots:
 
   '@types/range-parser@1.2.7': {}
 
+  '@types/react-dom@19.2.3(@types/react@19.2.18)':
+    dependencies:
+      '@types/react': 19.2.18
+
   '@types/react-dom@19.2.3(@types/react@19.2.7)':
     dependencies:
       '@types/react': 19.2.7
@@ -11965,8 +12258,6 @@ snapshots:
 
   camelcase@6.3.0: {}
 
-  caniuse-lite@1.0.30001760: {}
-
   caniuse-lite@1.0.30001810: {}
 
   ccount@2.0.1: {}
@@ -12556,7 +12847,7 @@ snapshots:
       eslint: 9.39.1(jiti@2.6.1)
       eslint-import-resolver-node: 0.3.9
       eslint-import-resolver-typescript: 3.10.1(eslint-plugin-import@2.32.0)(eslint@9.39.1(jiti@2.6.1))
-      eslint-plugin-import: 2.32.0(@typescript-eslint/parser@8.48.1(eslint@9.39.1(jiti@2.6.1))(typescript@5.9.3))(eslint-import-resolver-typescript@3.10.1)(eslint@9.39.1(jiti@2.6.1))
+      eslint-plugin-import: 2.32.0(@typescript-eslint/parser@8.48.1(eslint@9.39.1(jiti@2.6.1))(typescript@5.9.3))(eslint@9.39.1(jiti@2.6.1))
       eslint-plugin-jsx-a11y: 6.10.2(eslint@9.39.1(jiti@2.6.1))
       eslint-plugin-react: 7.37.5(eslint@9.39.1(jiti@2.6.1))
       eslint-plugin-react-hooks: 5.2.0(eslint@9.39.1(jiti@2.6.1))
@@ -12586,7 +12877,7 @@ snapshots:
       tinyglobby: 0.2.15
       unrs-resolver: 1.11.1
     optionalDependencies:
-      eslint-plugin-import: 2.32.0(@typescript-eslint/parser@8.48.1(eslint@9.39.1(jiti@2.6.1))(typescript@5.9.3))(eslint-import-resolver-typescript@3.10.1)(eslint@9.39.1(jiti@2.6.1))
+      eslint-plugin-import: 2.32.0(@typescript-eslint/parser@8.48.1(eslint@9.39.1(jiti@2.6.1))(typescript@5.9.3))(eslint@9.39.1(jiti@2.6.1))
     transitivePeerDependencies:
       - supports-color
 
@@ -12601,7 +12892,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  eslint-plugin-import@2.32.0(@typescript-eslint/parser@8.48.1(eslint@9.39.1(jiti@2.6.1))(typescript@5.9.3))(eslint-import-resolver-typescript@3.10.1)(eslint@9.39.1(jiti@2.6.1)):
+  eslint-plugin-import@2.32.0(@typescript-eslint/parser@8.48.1(eslint@9.39.1(jiti@2.6.1))(typescript@5.9.3))(eslint@9.39.1(jiti@2.6.1)):
     dependencies:
       '@rtsao/scc': 1.1.0
       array-includes: 3.1.9
@@ -13633,10 +13924,6 @@ snapshots:
     dependencies:
       safer-buffer: 2.1.2
 
-  iconv-lite@0.7.0:
-    dependencies:
-      safer-buffer: 2.1.2
-
   iconv-lite@0.7.3:
     dependencies:
       safer-buffer: 2.1.2
@@ -13671,7 +13958,7 @@ snapshots:
     dependencies:
       es-errors: 1.3.0
       hasown: 2.0.2
-      side-channel: 1.1.0
+      side-channel: 1.1.1
 
   intl-messageformat@11.2.1:
     dependencies:
@@ -14995,6 +15282,12 @@ snapshots:
     optionalDependencies:
       nodemailer: 9.1.1
 
+  next-auth@5.0.0-beta.32(next@15.5.25(@opentelemetry/api@1.9.0)(@types/node@20.19.25)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.1(react@19.2.1))(react@19.2.1))(react@19.2.1):
+    dependencies:
+      '@auth/core': 0.41.3
+      next: 15.5.25(@opentelemetry/api@1.9.0)(@types/node@20.19.25)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.1(react@19.2.1))(react@19.2.1)
+      react: 19.2.1
+
   next-intl-swc-plugin-extractor@4.14.2: {}
 
   next-intl@4.14.2(next@15.5.25(@opentelemetry/api@1.9.0)(@types/node@20.19.25)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.1(react@19.2.1))(react@19.2.1))(react@19.2.1):
@@ -15023,7 +15316,7 @@ snapshots:
     dependencies:
       '@next/env': 15.5.25
       '@swc/helpers': 0.5.15
-      caniuse-lite: 1.0.30001760
+      caniuse-lite: 1.0.30001810
       postcss: 8.5.27
       react: 19.2.1
       react-dom: 19.2.1(react@19.2.1)
@@ -15539,7 +15832,7 @@ snapshots:
     dependencies:
       bytes: 3.1.2
       http-errors: 2.0.1
-      iconv-lite: 0.7.0
+      iconv-lite: 0.7.3
       unpipe: 1.0.0
 
   rc9@2.1.2:
@@ -16141,11 +16434,6 @@ snapshots:
       '@shikijs/vscode-textmate': 10.0.2
       '@types/hast': 3.0.4
 
-  side-channel-list@1.0.0:
-    dependencies:
-      es-errors: 1.3.0
-      object-inspect: 1.13.4
-
   side-channel-list@1.0.1:
     dependencies:
       es-errors: 1.3.0
@@ -16165,14 +16453,6 @@ snapshots:
       get-intrinsic: 1.3.0
       object-inspect: 1.13.4
       side-channel-map: 1.0.1
-
-  side-channel@1.1.0:
-    dependencies:
-      es-errors: 1.3.0
-      object-inspect: 1.13.4
-      side-channel-list: 1.0.0
-      side-channel-map: 1.0.1
-      side-channel-weakmap: 1.0.2
 
   side-channel@1.1.1:
     dependencies:
@@ -16296,7 +16576,7 @@ snapshots:
       internal-slot: 1.1.0
       regexp.prototype.flags: 1.5.4
       set-function-name: 2.0.2
-      side-channel: 1.1.0
+      side-channel: 1.1.1
 
   string.prototype.repeat@1.0.0:
     dependencies:
@@ -16360,6 +16640,12 @@ snapshots:
       qs: 6.16.0
     optionalDependencies:
       '@types/node': 20.19.25
+
+  stripe@19.1.0(@types/node@24.13.3):
+    dependencies:
+      qs: 6.16.0
+    optionalDependencies:
+      '@types/node': 24.13.3
 
   structured-headers@0.4.1: {}
 

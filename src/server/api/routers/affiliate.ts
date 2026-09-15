@@ -6,11 +6,16 @@ import type { PrismaClient } from "@prisma/client";
 import { env } from "@/env";
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
 import {
-  exchangeAffiliateCredits,
   getAffiliateAccountBalances,
   matureAffiliateEarningsForUser,
   requestAffiliateCashout,
 } from "@/server/affiliate/services/ledger";
+
+import {
+  exchangeInput,
+  exchangeAffiliateCredits,
+  pendingExchange,
+} from "@/modules/affiliate/server/credits-extension";
 
 const MIN_ELIGIBLE_TOTAL_PAID_CENTS = 499; // $4.99
 const MIN_CASHOUT_CENTS = 5000; // $50.00
@@ -23,7 +28,10 @@ function isEvmAddress(addr: string): boolean {
 
 type Db = PrismaClient;
 
-async function getTotalPaidCents(ctx: { db: Db; userId: string }): Promise<number> {
+async function getTotalPaidCents(ctx: {
+  db: Db;
+  userId: string;
+}): Promise<number> {
   const stats = await ctx.db.userStats.findUnique({
     where: { userId: ctx.userId },
     select: { totalPaidCents: true },
@@ -31,7 +39,10 @@ async function getTotalPaidCents(ctx: { db: Db; userId: string }): Promise<numbe
   return stats?.totalPaidCents ?? 0;
 }
 
-async function ensureReferralCode(ctx: { db: Db; userId: string }): Promise<string> {
+async function ensureReferralCode(ctx: {
+  db: Db;
+  userId: string;
+}): Promise<string> {
   const user = await ctx.db.user.findUnique({
     where: { id: ctx.userId },
     select: { referralCode: true },
@@ -52,39 +63,60 @@ async function ensureReferralCode(ctx: { db: Db; userId: string }): Promise<stri
       // collision; retry
     }
   }
-  throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to generate referral code" });
+  throw new TRPCError({
+    code: "INTERNAL_SERVER_ERROR",
+    message: "Failed to generate referral code",
+  });
 }
 
-const affiliateRequiredProcedure = protectedProcedure.use(async ({ ctx, next }) => {
-  const totalPaidCents = await getTotalPaidCents({ db: ctx.db, userId: ctx.session.user.id });
-  if (totalPaidCents < MIN_ELIGIBLE_TOTAL_PAID_CENTS) {
-    throw new TRPCError({ code: "FORBIDDEN", message: "Not eligible" });
-  }
-  return next();
-});
+const affiliateRequiredProcedure = protectedProcedure.use(
+  async ({ ctx, next }) => {
+    const totalPaidCents = await getTotalPaidCents({
+      db: ctx.db,
+      userId: ctx.session.user.id,
+    });
+    if (totalPaidCents < MIN_ELIGIBLE_TOTAL_PAID_CENTS) {
+      throw new TRPCError({ code: "FORBIDDEN", message: "Not eligible" });
+    }
+    return next();
+  },
+);
 
 export const affiliateRouter = createTRPCRouter({
   getStatus: protectedProcedure.query(async ({ ctx }) => {
     const userId = ctx.session.user.id;
     const totalPaidCents = await getTotalPaidCents({ db: ctx.db, userId });
-    const eligible = totalPaidCents >= MIN_ELIGIBLE_TOTAL_PAID_CENTS;
+    const canActivate = totalPaidCents >= MIN_ELIGIBLE_TOTAL_PAID_CENTS;
 
     const user = await ctx.db.user.findUnique({
       where: { id: userId },
-      select: { referralCode: true, payoutWallet: true, affiliateEnabledAt: true },
+      select: {
+        referralCode: true,
+        payoutWallet: true,
+        affiliateEnabledAt: true,
+      },
     });
 
     const referralCode: string | null = user?.referralCode ?? null;
 
-    const balances = eligible
-      ? await getAffiliateAccountBalances(userId)
-      : { pendingCents: 0, availableCents: 0, lockedCents: 0, debtCents: 0 };
+    const [balances, pendingCreditExchange] = await Promise.all([
+      getAffiliateAccountBalances(userId),
+      pendingExchange(userId),
+    ]);
+    const eligible =
+      canActivate ||
+      Boolean(user?.affiliateEnabledAt) ||
+      Object.values(balances).some((amount) => amount > 0);
 
     const base = env.APP_URL ?? "";
-    const referralLink = referralCode ? `${base}/?ref=${encodeURIComponent(referralCode)}` : null;
+    const referralLink = referralCode
+      ? `${base}/?ref=${encodeURIComponent(referralCode)}`
+      : null;
 
     return {
       eligible,
+      canActivate,
+      pendingCreditExchange,
       totalPaidCents,
       referralCode,
       referralLink,
@@ -102,7 +134,7 @@ export const affiliateRouter = createTRPCRouter({
 
   activate: affiliateRequiredProcedure.mutation(async ({ ctx }) => {
     const userId = ctx.session.user.id;
-    
+
     // 1. Mark enabled time once
     await ctx.db.user.updateMany({
       where: { id: userId, affiliateEnabledAt: null },
@@ -115,12 +147,15 @@ export const affiliateRouter = createTRPCRouter({
     return { referralCode };
   }),
 
-  updatePayoutWallet: affiliateRequiredProcedure
+  updatePayoutWallet: protectedProcedure
     .input(z.object({ walletAddress: z.string().trim().min(1) }))
     .mutation(async ({ ctx, input }) => {
       const addr = input.walletAddress;
       if (!isEvmAddress(addr)) {
-        throw new TRPCError({ code: "BAD_REQUEST", message: "Invalid Polygon address" });
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Invalid Polygon address",
+        });
       }
 
       await ctx.db.user.update({
@@ -131,12 +166,12 @@ export const affiliateRouter = createTRPCRouter({
       return { ok: true };
     }),
 
-  listCommissions: affiliateRequiredProcedure
+  listCommissions: protectedProcedure
     .input(
       z.object({
-        limit: z.number().min(1).max(100).default(30),
+        limit: z.number().min(1).max(100).default(20),
         cursor: z.string().nullish(),
-      })
+      }),
     )
     .query(async ({ ctx, input }) => {
       const userId = ctx.session.user.id;
@@ -166,8 +201,8 @@ export const affiliateRouter = createTRPCRouter({
             select: {
               email: true,
               name: true,
-            }
-          }
+            },
+          },
         },
       });
 
@@ -180,18 +215,21 @@ export const affiliateRouter = createTRPCRouter({
       return { items, nextCursor };
     }),
 
-  requestCashout: affiliateRequiredProcedure
+  requestCashout: protectedProcedure
     .input(
       z.object({
         amountCents: z.number().int().min(MIN_CASHOUT_CENTS),
         walletAddress: z.string().trim().min(1),
-      })
+      }),
     )
     .mutation(async ({ ctx, input }) => {
       const userId = ctx.session.user.id;
       // Validate wallet address format
       if (!isEvmAddress(input.walletAddress)) {
-        throw new TRPCError({ code: "BAD_REQUEST", message: "Invalid Polygon address" });
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Invalid Polygon address",
+        });
       }
 
       const { requestId } = await requestAffiliateCashout({
@@ -203,25 +241,13 @@ export const affiliateRouter = createTRPCRouter({
       return { ok: true, requestId };
     }),
 
-  exchangeCredits: affiliateRequiredProcedure
-    .input(
-      z.object({
-        units: z.number().int().min(1).max(1000),
-      })
-    )
-    .mutation(async ({ ctx, input }) => {
-      const userId = ctx.session.user.id;
-      const amountCents = input.units * EXCHANGE_UNIT_CENTS;
-      const credits = input.units * EXCHANGE_UNIT_CREDITS;
-      const payoutRequestId = crypto.randomUUID();
-      await exchangeAffiliateCredits({
-        userId,
-        payoutRequestId,
-        amountCents,
-        credits,
-      });
+  pendingExchange: protectedProcedure.query(({ ctx }) =>
+    pendingExchange(ctx.session.user.id),
+  ),
 
-      return { ok: true, creditsGranted: credits, amountCents, payoutRequestId };
-    }),
+  exchangeCredits: protectedProcedure
+    .input(exchangeInput)
+    .mutation(({ ctx, input }) =>
+      exchangeAffiliateCredits(ctx.session.user.id, input),
+    ),
 });
-

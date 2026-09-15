@@ -19,7 +19,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Loader2, Search, CheckCircle2, XCircle, Clock } from "lucide-react";
+import { Loader2, Search, CheckCircle2, XCircle, Clock, MoreHorizontal } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
@@ -100,7 +107,7 @@ export default function AffiliatePayoutsPage() {
       }
     }
 
-    if (confirm(t("confirmAction", { action }))) {
+    if (confirm(t("confirmAction", { action: t(action.toLowerCase()) }))) {
       updateMutation.mutate({ id: request.id, action });
     }
   };
@@ -116,15 +123,10 @@ export default function AffiliatePayoutsPage() {
   };
 
   return (
-    <div className="container max-w-7xl py-8">
-      <div className="mb-6 flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">{t("title")}</h1>
-          <p className="text-muted-foreground">{t("subtitle")}</p>
-        </div>
-      </div>
+    <div className="admin-module-page space-y-4">
+      <h1 className="sr-only">{t("title")}</h1>
 
-      <div className="mb-6 flex gap-4">
+      <div className="admin-module-toolbar justify-start">
         <div className="relative max-w-sm flex-1">
           <Search className="text-muted-foreground absolute top-2.5 left-2.5 h-4 w-4" />
           <Input
@@ -140,10 +142,10 @@ export default function AffiliatePayoutsPage() {
             setType(v as "CASHOUT_USDT" | "EXCHANGE_CREDITS" | "all")
           }
         >
-          <SelectTrigger className="w-[200px]">
+          <SelectTrigger className="w-[200px]" aria-label={t("type")}>
             <SelectValue placeholder={t("type")} />
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent className="admin-theme admin-popup">
             <SelectItem value="all">{t("allTypes")}</SelectItem>
             <SelectItem value="CASHOUT_USDT">{t("types.cashout")}</SelectItem>
             <SelectItem value="EXCHANGE_CREDITS">
@@ -152,20 +154,21 @@ export default function AffiliatePayoutsPage() {
           </SelectContent>
         </Select>
         <Select value={status} onValueChange={setStatus}>
-          <SelectTrigger className="w-[180px]">
+          <SelectTrigger className="w-[180px]" aria-label={t("status")}>
             <SelectValue placeholder={t("status")} />
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent className="admin-theme admin-popup">
             <SelectItem value="all">{t("allStatuses")}</SelectItem>
             <SelectItem value="REQUESTED">{t("statuses.requested")}</SelectItem>
             <SelectItem value="APPROVED">{t("statuses.approved")}</SelectItem>
             <SelectItem value="COMPLETED">{t("statuses.completed")}</SelectItem>
             <SelectItem value="REJECTED">{t("statuses.rejected")}</SelectItem>
+            <SelectItem value="FAILED">{t("statuses.failed")}</SelectItem>
           </SelectContent>
         </Select>
       </div>
 
-      <div className="rounded-md border">
+      <div className="admin-table-surface">
         <Table>
           <TableHeader>
             <TableRow>
@@ -175,7 +178,7 @@ export default function AffiliatePayoutsPage() {
               <TableHead>{t("amount")}</TableHead>
               <TableHead>{t("destination")}</TableHead>
               <TableHead>{t("status")}</TableHead>
-              <TableHead className="text-right">{t("actions")}</TableHead>
+              <TableHead className="w-12 text-right"><span className="sr-only">{t("actions")}</span></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -197,7 +200,7 @@ export default function AffiliatePayoutsPage() {
             ) : (
               data?.items.map((item) => (
                 <TableRow key={item.id}>
-                  <TableCell>
+                  <TableCell className="whitespace-nowrap">
                     <div className="flex flex-col">
                       <span>
                         {format.dateTime(new Date(item.createdAt), {
@@ -222,22 +225,13 @@ export default function AffiliatePayoutsPage() {
                       {item.affiliateUser.email}
                     </Link>
                   </TableCell>
-                  <TableCell>
-                    <Badge
-                      variant="outline"
-                      className={
-                        item.type === "CASHOUT_USDT"
-                          ? "border-green-200 bg-green-50 text-green-700"
-                          : "border-blue-200 bg-blue-50 text-blue-700"
-                      }
-                    >
+                  <TableCell className="whitespace-nowrap">
                       {item.type === "CASHOUT_USDT"
                         ? t("types.cashout")
                         : t("types.creditsExchange")}
-                    </Badge>
                   </TableCell>
                   <TableCell>
-                    <span className="font-mono font-bold">
+                    <span className="whitespace-nowrap font-medium tabular-nums">
                       {format.number(item.amountCents / 100, {
                         style: "currency",
                         currency: "USD",
@@ -256,7 +250,7 @@ export default function AffiliatePayoutsPage() {
                             href={`https://polygonscan.com/tx/${item.txHash}`}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="mt-1 block text-blue-500 hover:underline"
+                            className="mt-1 block text-primary hover:underline"
                           >
                             {t("viewTransaction")}
                           </a>
@@ -273,32 +267,24 @@ export default function AffiliatePayoutsPage() {
                   </TableCell>
                   <TableCell className="text-right">
                     {item.status === "REQUESTED" && (
-                      <div className="flex justify-end gap-2">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="text-red-600 hover:bg-red-50"
-                          onClick={() => handleAction(item, "REJECT")}
-                        >
-                          {t("reject")}
-                        </Button>
-                        {item.type === "CASHOUT_USDT" ? (
-                          <Button
-                            size="sm"
-                            className="bg-green-600 hover:bg-green-700"
-                            onClick={() => handleAction(item, "COMPLETE")}
-                          >
-                            {t("markPaid")}
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8" aria-label={t("actionsFor", { email: item.affiliateUser.email || item.affiliateUserId })} disabled={updateMutation.isPending}>
+                            <MoreHorizontal className="h-4 w-4" />
                           </Button>
-                        ) : (
-                          <Button
-                            size="sm"
-                            onClick={() => handleAction(item, "COMPLETE")}
-                          >
-                            {t("complete")}
-                          </Button>
-                        )}
-                      </div>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="admin-theme admin-popup">
+                          <DropdownMenuItem onSelect={() => handleAction(item, "COMPLETE")}>
+                            <CheckCircle2 className="h-4 w-4" />
+                            {item.type === "CASHOUT_USDT" ? t("markPaid") : t("complete")}
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem variant="destructive" onSelect={() => handleAction(item, "REJECT")}>
+                            <XCircle className="h-4 w-4" />
+                            {t("reject")}
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     )}
                   </TableCell>
                 </TableRow>
@@ -310,7 +296,7 @@ export default function AffiliatePayoutsPage() {
 
       {/* Complete Cashout Dialog */}
       <Dialog open={completeDialogOpen} onOpenChange={setCompleteDialogOpen}>
-        <DialogContent>
+        <DialogContent className="admin-theme admin-module-dialog">
           <DialogHeader>
             <DialogTitle>{t("completeCashout")}</DialogTitle>
             <DialogDescription>
@@ -390,32 +376,33 @@ export default function AffiliatePayoutsPage() {
 }
 
 function StatusBadge({ status }: { status: string }) {
+  const t = useTranslations("admin.affiliatePayouts");
   const config = {
     REQUESTED: {
-      color: "bg-amber-100 text-amber-800 border-amber-200",
+      variant: "outline" as const,
       icon: Clock,
     },
     APPROVED: {
-      color: "bg-blue-100 text-blue-800 border-blue-200",
+      variant: "secondary" as const,
       icon: CheckCircle2,
     },
     COMPLETED: {
-      color: "bg-green-100 text-green-800 border-green-200",
+      variant: "secondary" as const,
       icon: CheckCircle2,
     },
     REJECTED: {
-      color: "bg-red-100 text-red-800 border-red-200",
+      variant: "destructive" as const,
       icon: XCircle,
     },
-    FAILED: { color: "bg-red-100 text-red-800 border-red-200", icon: XCircle },
-  }[status] || { color: "bg-gray-100 text-gray-800", icon: Clock };
+    FAILED: { variant: "destructive" as const, icon: XCircle },
+  }[status] || { variant: "outline" as const, icon: Clock };
 
   const Icon = config.icon;
 
   return (
-    <Badge variant="outline" className={`${config.color} gap-1 pr-2`}>
+    <Badge variant={config.variant} className="gap-1 pr-2">
       <Icon className="h-3 w-3" />
-      {status}
+      {t.has(`statuses.${status.toLowerCase()}`) ? t(`statuses.${status.toLowerCase()}`) : status}
     </Badge>
   );
 }

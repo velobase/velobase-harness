@@ -68,7 +68,7 @@ export function GrantCreditsDialog({
           {t("grant")}
         </Button>
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent className="admin-theme admin-module-dialog">
         <DialogHeader>
           <DialogTitle>{t("grantTitle")}</DialogTitle>
           <DialogDescription>

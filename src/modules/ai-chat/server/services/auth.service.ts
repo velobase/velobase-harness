@@ -1,3 +1,4 @@
+import { requireFeature } from "@/server/features/state";
 import { auth } from "@/server/auth";
 import { db } from "@/server/db";
 import { UnauthorizedError, NotFoundError } from "../../types/errors";
@@ -22,6 +23,7 @@ export async function authenticateAndVerifyConversation(
   userAgentId?: string,
   agentId?: string,
 ): Promise<AuthContext> {
+  await requireFeature("ai-chat");
   const session = await auth();
   const isGuest = !session?.user;
 
@@ -37,9 +39,11 @@ export async function authenticateAndVerifyConversation(
 
   // Verify permissions
   if (isGuest) {
-    // Guest users can only access guest conversations OR shared conversations
-    if (!conversation.isGuest && !conversation.isShared) {
-      throw new UnauthorizedError("You don't have permission to access this conversation");
+    // Execution requires an editable conversation; public sharing grants read/fork only.
+    if (!conversation.isGuest) {
+      throw new UnauthorizedError(
+        "You don't have permission to access this conversation",
+      );
     }
 
     // Guest must provide agentId
@@ -47,7 +51,10 @@ export async function authenticateAndVerifyConversation(
       throw new UnauthorizedError("agentId required for guests");
     }
 
-    logger.info({ conversationId, agentId, isShared: conversation.isShared }, "Guest authenticated");
+    logger.info(
+      { conversationId, agentId, isShared: conversation.isShared },
+      "Guest authenticated",
+    );
 
     return {
       isGuest: true,
@@ -57,10 +64,12 @@ export async function authenticateAndVerifyConversation(
     };
   } else {
     const isOwner = conversation.userId === session.user.id;
-    
-    // Logged-in users can access their own conversations OR shared conversations
-    if (!isOwner && !conversation.isShared) {
-      throw new UnauthorizedError("You don't have permission to access this conversation");
+
+    // Shared readers must fork before they can write.
+    if (!isOwner) {
+      throw new UnauthorizedError(
+        "You don't have permission to access this conversation",
+      );
     }
 
     // Logged-in user must provide userAgentId
@@ -68,13 +77,16 @@ export async function authenticateAndVerifyConversation(
       throw new UnauthorizedError("userAgentId required");
     }
 
-    logger.info({ 
-      conversationId, 
-      userId: session.user.id, 
-      userAgentId, 
-      isOwner,
-      isShared: conversation.isShared 
-    }, "User authenticated");
+    logger.info(
+      {
+        conversationId,
+        userId: session.user.id,
+        userAgentId,
+        isOwner,
+        isShared: conversation.isShared,
+      },
+      "User authenticated",
+    );
 
     return {
       isGuest: false,
@@ -85,4 +97,3 @@ export async function authenticateAndVerifyConversation(
     };
   }
 }
-

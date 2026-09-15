@@ -1,0 +1,13 @@
+{
+  "name": "@velobase/example-composition",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@velobase/module-runtime": "workspace:*"
+  }
+}

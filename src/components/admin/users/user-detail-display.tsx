@@ -18,7 +18,7 @@ export function UserDetailDisplay({ user }: UserDetailDisplayProps) {
   )
 
   return (
-    <div className="space-y-6">
+    <div className="admin-user-detail">
       {/* Status & Actions */}
       <UserActionsToolbar user={user} />
 

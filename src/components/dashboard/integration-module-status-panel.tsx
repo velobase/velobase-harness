@@ -96,7 +96,7 @@ export function IntegrationModuleStatusPanel() {
         <Puzzle className="h-4 w-4" />
         {t("moduleStatus")}
       </h2>
-      <div className="border-border/50 bg-card/50 rounded-xl border p-5 backdrop-blur-sm">
+      <div className="admin-connection-surface border-border/50 bg-card/50 rounded-xl border p-5 backdrop-blur-sm">
         {inventoryQuery.error ? (
           <Alert variant="destructive">
             <ShieldAlert className="h-4 w-4" />
@@ -118,7 +118,7 @@ export function IntegrationModuleStatusPanel() {
                   <h3 className="text-muted-foreground mb-2 text-xs font-medium tracking-wider uppercase">
                     {t(`categories.${category}`)}
                   </h3>
-                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                  <div className="admin-connection-list grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
                     {inventoryQuery.isLoading
                       ? Array.from({ length: 3 }).map((_, index) => (
                           <div
@@ -188,17 +188,17 @@ function ModuleStatusCard({
       disabled={!clickable}
       onClick={() => onOpen(module)}
       className={cn(
-        "bg-background/50 border-border/30 flex min-h-[82px] items-start gap-3 rounded-lg border px-3 py-3 text-left transition-all",
+        "admin-connection-item bg-background/50 border-border/30 flex min-h-[82px] items-start gap-3 rounded-lg border px-3 py-3 text-left transition-all",
         clickable && "hover:bg-accent/50 hover:border-border hover:shadow-sm",
         !clickable && "cursor-not-allowed opacity-70",
-        ready && "border-green-500/25 bg-green-500/5",
+        ready && "border-border bg-muted/50",
       )}
     >
       <div
         className={cn(
           "flex h-8 w-8 shrink-0 items-center justify-center rounded-md",
           ready
-            ? "bg-green-500/10 text-green-600"
+            ? "bg-secondary text-secondary-foreground"
             : "bg-muted/50 text-muted-foreground",
         )}
       >
@@ -207,7 +207,7 @@ function ModuleStatusCard({
       <div className="min-w-0 flex-1">
         <div className="flex min-w-0 items-center gap-2">
           {ready ? (
-            <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-green-500" />
+            <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-foreground" />
           ) : (
             <XCircle className="text-muted-foreground/40 h-3.5 w-3.5 shrink-0" />
           )}
@@ -268,7 +268,7 @@ function ModuleDialogBody({ module }: { module: ModuleStatusItem }) {
             className="bg-background/50 border-border/30 flex items-center gap-2 rounded-lg border px-3 py-2"
           >
             {item.configured ? (
-              <CheckCircle2 className="h-3.5 w-3.5 text-green-500" />
+              <CheckCircle2 className="h-3.5 w-3.5 text-foreground" />
             ) : (
               <XCircle className="text-muted-foreground/40 h-3.5 w-3.5" />
             )}

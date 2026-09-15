@@ -7,8 +7,12 @@ import { MobileAffiliatePage } from "@/components/account/affiliate/mobile-affil
 import { DesktopAffiliatePage } from "@/components/account/affiliate/desktop-affiliate-page";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { api } from "@/trpc/react";
+import { useFeatureState } from "@/components/features/feature-gate";
+import { useTranslations } from "next-intl";
 
 export default function AffiliateRoute() {
+  const feature = useFeatureState("affiliate");
+  const t = useTranslations("affiliateExchange");
   const { data: session, status: sessionStatus } = useSession();
   const router = useRouter();
   const isMobile = useIsMobile();
@@ -24,12 +28,15 @@ export default function AffiliateRoute() {
     }
   }, [sessionStatus, router]);
 
-  const { data: affiliateStatus, isLoading } = api.affiliate.getStatus.useQuery(undefined, {
-    enabled: !!session,
-  });
+  const { data: affiliateStatus, isLoading } = api.affiliate.getStatus.useQuery(
+    undefined,
+    {
+      enabled: !!session,
+    },
+  );
 
   if (!mounted || sessionStatus === "loading" || isLoading) {
-    return <div className="min-h-screen w-full bg-background" />;
+    return <div className="bg-background min-h-screen w-full" />;
   }
 
   if (!affiliateStatus?.eligible) {
@@ -38,11 +45,25 @@ export default function AffiliateRoute() {
   }
 
   if (isMobile) {
-    return <MobileAffiliatePage status={affiliateStatus} />;
+    return (
+      <>
+        {feature.resolved && !feature.enabled && (
+          <p className="p-4 text-sm" role="status">
+            {t("affiliateDisabled")}
+          </p>
+        )}
+        <MobileAffiliatePage status={affiliateStatus} />
+      </>
+    );
   }
 
   return (
     <div className="container mx-auto px-4 py-8">
+      {feature.resolved && !feature.enabled && (
+        <p className="text-sm" role="status">
+          {t("affiliateDisabled")}
+        </p>
+      )}
       <DesktopAffiliatePage status={affiliateStatus} />
     </div>
   );

@@ -1,0 +1,35 @@
+# The development preview builds from source and excludes local Next.js output.
+# Production Web uses .dockerignore to retain the prebuilt standalone output.
+node_modules
+apps/**/node_modules
+packages/**/node_modules
+services/**/node_modules
+.pnpm-store
+.harness-local
+apps/*/dist
+apps/*/out
+apps/mobile/.expo
+apps/mobile/android
+apps/mobile/ios
+.git
+.next
+apps/**/.next
+.env*
+**/.env*
+README.md
+.vscode
+.idea
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.DS_Store
+coverage
+.turbo
+dist
+build
+*.tsbuildinfo
+.eslintcache
+prisma/*.db
+prisma/*.db-journal

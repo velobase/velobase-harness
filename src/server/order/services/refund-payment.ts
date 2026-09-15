@@ -1,10 +1,7 @@
 import { db } from "@/server/db";
-import { createLogger } from "@/lib/logger";
 import { createStripeRefund } from "./stripe/create-refund";
 import type { Prisma } from "@prisma/client";
-import { voidAffiliateEarningsForRefund } from "@/server/affiliate/services/ledger";
-
-const logger = createLogger("orders:refund-payment");
+import { appEvents } from "@/server/events/bus";
 
 interface RefundPaymentParams {
   paymentId: string;
@@ -52,10 +49,12 @@ export async function refundPayment({
     where: { id: paymentId },
     data: {
       status: "REFUNDED",
-      extra: JSON.parse(JSON.stringify({
-        ...(payment.extra as object),
-        refund,
-      })) as Prisma.InputJsonValue,
+      extra: JSON.parse(
+        JSON.stringify({
+          ...(payment.extra as object),
+          refund,
+        }),
+      ) as Prisma.InputJsonValue,
     },
   });
 
@@ -66,17 +65,11 @@ export async function refundPayment({
     },
   });
 
-  // Void affiliate commissions for this payment (if any).
-  try {
-    const refundId = refund && typeof refund === "object" && "id" in refund ? (refund as { id: string }).id : null;
-    await voidAffiliateEarningsForRefund({
-      paymentId,
-      idempotencyKey: `refund_void:${paymentId}:${refundId ?? "unknown"}`,
-    });
-  } catch (error) {
-    logger.error({ error, paymentId }, "Failed to void affiliate earnings on refund (ignored)");
-  }
+  await appEvents.emit("payment:refunded", {
+    paymentId,
+    gateway: payment.paymentGateway,
+    eventId: `refund:${refund.id}`,
+  });
 
   return updatedPayment;
 }
-

@@ -1,3 +1,7 @@
+import {
+  installedFeatures,
+  deploymentCatalog,
+} from "@velobase/example-composition";
 import { env } from "@/env";
 import type {
   SchedulerContribution,
@@ -10,6 +14,33 @@ import {
   type ModuleId,
   type ModuleState,
 } from "./manifest";
+
+const deployedFeatures = new Set<string>(installedFeatures);
+const featureById = new Map<string, { dependencies: readonly string[] }>(
+  deploymentCatalog.map((feature) => [feature.id, feature]),
+);
+const businessFeatureForModule: Record<string, string | undefined> = {
+  stripe: "payments",
+  lemonsqueezy: "payments",
+  nowpayments: "payments",
+  "payment-reconciliation": "payments",
+  posthog: "attribution",
+  "google-ads": "attribution",
+  affiliate: "affiliate",
+  touch: "touch",
+  "email-management": "email-management",
+  "support-automation": "ai-support",
+  "conversion-alert": "attribution",
+  "ai-chat": "ai-chat",
+  "image-generation": "image-generation",
+};
+function isIncluded(id: string, visited = new Set<string>()): boolean {
+  if (!deployedFeatures.has(id) || visited.has(id)) return false;
+  const next = new Set(visited).add(id);
+  return (featureById.get(id)?.dependencies ?? []).every((dependency) =>
+    isIncluded(dependency, next),
+  );
+}
 
 export const MODULE_DEFINITIONS = [
   {
@@ -28,6 +59,10 @@ export const MODULE_DEFINITIONS = [
   },
   {
     id: "google-ads",
+    loadDisabledSchedulers: async () => [
+      (await import("@/workers/processors/google-ads-upload/scheduler"))
+        .googleAdsUploadScheduler,
+    ],
     kind: "integration",
     label: "Google Ads",
     modeEnv: "GOOGLE_ADS_MODE",
@@ -59,6 +94,12 @@ export const MODULE_DEFINITIONS = [
   },
   {
     id: "stripe",
+    loadDisabledSchedulers: async () => [
+      (await import("@/workers/processors/order-compensation/scheduler"))
+        .orderCompensationScheduler,
+      (await import("@/workers/processors/subscription-compensation/scheduler"))
+        .subscriptionCompensationScheduler,
+    ],
     kind: "integration",
     label: "Stripe",
     modeEnv: "STRIPE_MODE",
@@ -81,6 +122,10 @@ export const MODULE_DEFINITIONS = [
   },
   {
     id: "nowpayments",
+    loadDisabledSchedulers: async () => [
+      (await import("@/workers/processors/order-compensation/scheduler"))
+        .orderCompensationScheduler,
+    ],
     kind: "integration",
     label: "NowPayments",
     modeEnv: "NOWPAYMENTS_MODE",
@@ -94,6 +139,10 @@ export const MODULE_DEFINITIONS = [
   },
   {
     id: "payment-reconciliation",
+    loadDisabledSchedulers: async () => [
+      (await import("@/workers/processors/payment-reconciliation/scheduler"))
+        .paymentReconciliationScheduler,
+    ],
     kind: "integration",
     label: "Payment Reconciliation",
     modeEnv: "PAYMENT_RECONCILIATION_MODE",
@@ -108,6 +157,7 @@ export const MODULE_DEFINITIONS = [
   },
   {
     id: "affiliate",
+    retainEventHandlersWhenDisabled: true,
     kind: "feature",
     label: "Affiliate",
     modeEnv: "AFFILIATE_MODE",
@@ -116,6 +166,10 @@ export const MODULE_DEFINITIONS = [
   },
   {
     id: "touch",
+    loadDisabledSchedulers: async () => [
+      (await import("@/workers/processors/touch-delivery/scheduler"))
+        .touchDeliveryScheduler,
+    ],
     kind: "feature",
     label: "Touch",
     modeEnv: "TOUCH_MODE",
@@ -125,17 +179,26 @@ export const MODULE_DEFINITIONS = [
       (await import("@/workers/features/touch")).getTouchWorkerContributions(),
   },
   {
+    id: "email-management",
+    loadDisabledSchedulers: async () => [
+      (await import("@/workers/processors/support-sync/scheduler"))
+        .supportSyncScheduler,
+    ],
+    kind: "feature",
+    label: "Email Management",
+    modeEnv: "EMAIL_MANAGEMENT_MODE",
+    loadWorkerContributions: async () =>
+      (
+        await import("@/workers/features/email-management")
+      ).getEmailManagementWorkerContributions(),
+  },
+  {
     id: "support-automation",
     kind: "feature",
     label: "Support Automation",
     modeEnv: "SUPPORT_AUTOMATION_MODE",
-    config: [
-      "SUPPORT_EMAIL_ADDRESS",
-      "SUPPORT_EMAIL_PASSWORD",
-      "SUPPORT_IMAP_HOST",
-      "SUPPORT_SMTP_HOST",
-      "OPENROUTER_API_KEY",
-    ],
+    dependencies: ["email-management"],
+    config: ["OPENROUTER_API_KEY"],
     loadWorkerContributions: async () =>
       (
         await import("@/workers/features/support-automation")
@@ -143,6 +206,10 @@ export const MODULE_DEFINITIONS = [
   },
   {
     id: "conversion-alert",
+    loadDisabledSchedulers: async () => [
+      (await import("@/workers/processors/conversion-alert/scheduler"))
+        .conversionAlertScheduler,
+    ],
     kind: "feature",
     label: "Conversion Alert",
     modeEnv: "CONVERSION_ALERT_MODE",
@@ -202,6 +269,7 @@ export const MODULE_DEFINITIONS = [
 ] satisfies readonly ModuleDefinition[];
 
 const MODULE_ENV = {
+  EMAIL_MANAGEMENT_MODE: env.EMAIL_MANAGEMENT_MODE,
   POSTHOG_MODE: env.POSTHOG_MODE,
   GOOGLE_ADS_MODE: env.GOOGLE_ADS_MODE,
   LARK_MODE: env.LARK_MODE,
@@ -322,12 +390,30 @@ export function getModuleState(id: ModuleId): ModuleState | undefined {
 }
 
 export function isModuleEnabled(id: ModuleId): boolean {
-  return STATE_BY_ID.get(id)?.enabled ?? false;
+  const feature = businessFeatureForModule[id];
+  return Boolean(
+    STATE_BY_ID.get(id)?.enabled && (!feature || isIncluded(feature)),
+  );
 }
 
 export function getEnabledModuleDefinitions(): ModuleDefinition[] {
   return MODULE_DEFINITIONS.filter((definition) =>
     isModuleEnabled(definition.id),
+  );
+}
+
+export function getEventModuleDefinitions(): ModuleDefinition[] {
+  return (MODULE_DEFINITIONS as readonly ModuleDefinition[]).filter(
+    (definition) => {
+      if (!definition.loadFrameworkModule) return false;
+      if (isModuleEnabled(definition.id)) return true;
+      const feature = businessFeatureForModule[definition.id];
+      return Boolean(
+        definition.retainEventHandlersWhenDisabled &&
+        feature &&
+        deployedFeatures.has(feature),
+      );
+    },
   );
 }
 
@@ -351,18 +437,14 @@ export async function collectDisabledSchedulerContributions(): Promise<
   SchedulerContribution[]
 > {
   const schedulerById = new Map<string, SchedulerContribution>();
-  const disabledDefinitions = MODULE_DEFINITIONS.filter(
+  const disabledDefinitions: ModuleDefinition[] = MODULE_DEFINITIONS.filter(
     (definition) => !isModuleEnabled(definition.id),
   );
 
   for (const definition of disabledDefinitions) {
-    if (!definition.loadWorkerContributions) continue;
-
-    const contributions = await definition.loadWorkerContributions();
-    for (const contribution of contributions) {
-      const scheduler = contribution.scheduler;
-      if (!scheduler?.remove) continue;
-      schedulerById.set(scheduler.id, scheduler);
+    for (const scheduler of (await definition.loadDisabledSchedulers?.()) ??
+      []) {
+      if (scheduler.remove) schedulerById.set(scheduler.id, scheduler);
     }
   }
 

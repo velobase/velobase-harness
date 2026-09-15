@@ -7,18 +7,8 @@ import type {
 } from "@prisma/client";
 
 // Order types
-export type OrderType =
-  | "NEW_PURCHASE"
-  | "RENEWAL"
-  | "UPGRADE"
-  | "DOWNGRADE"
-  | "PROMO_GRANT";
-export type OrderStatus =
-  | "PENDING"
-  | "FULFILLED"
-  | "CANCELLED"
-  | "EXPIRED"
-  | "REFUNDED";
+import type { OrderType } from "@velobase/payments";
+export type { OrderType, OrderStatus } from "@velobase/payments";
 
 // Payment types
 export type PaymentStatus =

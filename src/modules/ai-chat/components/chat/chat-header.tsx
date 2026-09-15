@@ -75,11 +75,16 @@ export function ChatHeader({
   const [shareUrlCopied, setShareUrlCopied] = useState(false);
 
   const utils = api.useUtils();
+  const { data: enabledFeatures } = api.features.publicState.useQuery(
+    undefined,
+    { refetchInterval: 15000 },
+  );
+  const sharingEnabled = enabledFeatures?.includes("sharing") ?? false;
 
   // Get conversation info (includes sharing status)
   const { data: conversation } = api.conversation.get.useQuery(
     { conversationId: conversationId! },
-    { enabled: !!conversationId }
+    { enabled: !!conversationId },
   );
 
   // Get user agents (for logged-in users)
@@ -92,7 +97,7 @@ export function ChatHeader({
     undefined,
     {
       enabled: status === "authenticated" && !isGuest,
-    }
+    },
   );
 
   // Share conversation mutation
@@ -139,7 +144,9 @@ export function ChatHeader({
     },
   });
 
-  const selectedAgent = userAgents?.find((a: AgentWithDetails) => a.id === selectedUserAgentId);
+  const selectedAgent = userAgents?.find(
+    (a: AgentWithDetails) => a.id === selectedUserAgentId,
+  );
   const isPro = billingStatus?.tier === "PLUS";
   const isShared = conversation?.isShared ?? false;
 
@@ -181,7 +188,7 @@ export function ChatHeader({
     if (!conversationId) return;
     if (
       window.confirm(
-        "Are you sure you want to delete this conversation? This action cannot be undone."
+        "Are you sure you want to delete this conversation? This action cannot be undone.",
       )
     ) {
       deleteConversation.mutate({ conversationId });
@@ -192,29 +199,32 @@ export function ChatHeader({
     <header
       className={cn(
         // Position: sticky on mobile, absolute on larger screens
-        "sticky md:absolute top-0 left-0 right-0 z-20",
+        "sticky top-0 right-0 left-0 z-20 md:absolute",
         // Layout
-        "flex items-center justify-between h-14 px-4",
+        "flex h-14 items-center justify-between px-4",
         // Pointer events: header doesn't block clicks, but children do
         "pointer-events-none [&>*]:pointer-events-auto",
         // Visual
         "select-none",
         // Responsive: transparent on desktop, has background on mobile
-        "bg-background/80 md:bg-transparent backdrop-blur-sm md:backdrop-blur-none",
-        "border-b border-border/40 md:border-none",
+        "bg-background/80 backdrop-blur-sm md:bg-transparent md:backdrop-blur-none",
+        "border-border/40 border-b md:border-none",
         // Animation
         "transition-all duration-200",
-        className
+        className,
       )}
     >
       {/* Left: Agent Switcher - Floating style */}
       <div className="flex items-center gap-2">
         {!isGuest && userAgents && userAgents.length > 0 ? (
-          <Popover open={isAgentSelectorOpen} onOpenChange={setIsAgentSelectorOpen}>
+          <Popover
+            open={isAgentSelectorOpen}
+            onOpenChange={setIsAgentSelectorOpen}
+          >
             <PopoverTrigger asChild>
               <Button
                 variant="ghost"
-                className="h-9 px-3 font-medium hover:bg-muted/80 bg-background/60 backdrop-blur-sm rounded-full border border-border/40 shadow-sm transition-all hover:shadow-md"
+                className="hover:bg-muted/80 bg-background/60 border-border/40 h-9 rounded-full border px-3 font-medium shadow-sm backdrop-blur-sm transition-all hover:shadow-md"
               >
                 <AgentLogo
                   avatar={selectedAgent?.agent.avatar}
@@ -222,10 +232,10 @@ export function ChatHeader({
                   color={selectedAgent?.agent.color}
                   size="xs"
                 />
-                <span className="max-w-[200px] truncate ml-2">
+                <span className="ml-2 max-w-[200px] truncate">
                   {selectedAgent?.agent.name || "Select Agent"}
                 </span>
-                <ChevronDown className="h-4 w-4 ml-2 opacity-50" />
+                <ChevronDown className="ml-2 h-4 w-4 opacity-50" />
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-[280px] p-0" align="start">
@@ -237,7 +247,7 @@ export function ChatHeader({
                     {userAgents.map((agent: AgentWithDetails) => {
                       const isSelected = agent.id === selectedUserAgentId;
                       const isDefault = agent.isDefault;
-                      
+
                       return (
                         <CommandItem
                           key={agent.id}
@@ -245,21 +255,25 @@ export function ChatHeader({
                           onSelect={() => handleAgentChange(agent.id)}
                           className="flex items-center justify-between gap-2"
                         >
-                          <div className="flex items-center gap-2 min-w-0">
+                          <div className="flex min-w-0 items-center gap-2">
                             <AgentLogo
                               avatar={agent.agent.avatar}
                               name={agent.agent.name}
                               color={agent.agent.color}
                               size="sm"
                             />
-                            <span className="truncate text-sm">{agent.agent.name}</span>
+                            <span className="truncate text-sm">
+                              {agent.agent.name}
+                            </span>
                           </div>
-                          <div className="flex items-center gap-1 shrink-0">
+                          <div className="flex shrink-0 items-center gap-1">
                             {isDefault && (
-                              <span className="text-xs text-muted-foreground">Default</span>
+                              <span className="text-muted-foreground text-xs">
+                                Default
+                              </span>
                             )}
                             {isSelected && (
-                              <Check className="h-4 w-4 text-primary" />
+                              <Check className="text-primary h-4 w-4" />
                             )}
                           </div>
                         </CommandItem>
@@ -272,10 +286,10 @@ export function ChatHeader({
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="w-full justify-start text-sm h-8"
+                  className="h-8 w-full justify-start text-sm"
                   onClick={() => {
                     setIsAgentSelectorOpen(false);
-                    window.location.href = '/explorer';
+                    window.location.href = "/explorer";
                   }}
                 >
                   Browse more agents...
@@ -284,7 +298,7 @@ export function ChatHeader({
             </PopoverContent>
           </Popover>
         ) : (
-          <div className="flex items-center gap-2 px-3 h-9 text-sm text-muted-foreground bg-background/60 backdrop-blur-sm rounded-full border border-border/40 shadow-sm">
+          <div className="text-muted-foreground bg-background/60 border-border/40 flex h-9 items-center gap-2 rounded-full border px-3 text-sm shadow-sm backdrop-blur-sm">
             <Bot className="h-4 w-4" />
             <span>App</span>
           </div>
@@ -294,15 +308,15 @@ export function ChatHeader({
       {/* Center: Upgrade Prompt (for free users) - Floating style */}
       <div className="absolute left-1/2 -translate-x-1/2">
         {!isGuest && !isPro && (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-8 gap-2 px-3 bg-primary/10 hover:bg-primary/20 text-primary rounded-full border border-primary/20 shadow-sm hover:shadow-md transition-all"
-              onClick={() => router.push("/account/billing")}
-            >
-              <Sparkles className="h-3.5 w-3.5" />
-              <span className="text-xs font-medium">Get Plus</span>
-            </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="bg-primary/10 hover:bg-primary/20 text-primary border-primary/20 h-8 gap-2 rounded-full border px-3 shadow-sm transition-all hover:shadow-md"
+            onClick={() => router.push("/account/billing")}
+          >
+            <Sparkles className="h-3.5 w-3.5" />
+            <span className="text-xs font-medium">Get Plus</span>
+          </Button>
         )}
       </div>
 
@@ -314,19 +328,19 @@ export function ChatHeader({
             variant="ghost"
             size="sm"
             className={cn(
-              "h-9 px-3 hover:bg-muted/80 bg-background/60 backdrop-blur-sm rounded-full border shadow-sm transition-all hover:shadow-md",
-              isShared ? "border-primary/40 text-primary" : "border-border/40"
+              "hover:bg-muted/80 bg-background/60 h-9 rounded-full border px-3 shadow-sm backdrop-blur-sm transition-all hover:shadow-md",
+              isShared ? "border-primary/40 text-primary" : "border-border/40",
             )}
             onClick={handleShareConversation}
           >
             {isShared ? (
               <>
-                <Check className="h-4 w-4 mr-2" />
+                <Check className="mr-2 h-4 w-4" />
                 <span className="hidden sm:inline">Shared</span>
               </>
             ) : (
               <>
-                <Share2 className="h-4 w-4 mr-2" />
+                <Share2 className="mr-2 h-4 w-4" />
                 <span className="hidden sm:inline">Share</span>
               </>
             )}
@@ -337,23 +351,27 @@ export function ChatHeader({
         {conversationId && !isGuest && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                className="h-9 w-9 hover:bg-muted/80 bg-background/60 backdrop-blur-sm rounded-full border border-border/40 shadow-sm transition-all hover:shadow-md"
+              <Button
+                variant="ghost"
+                size="icon"
+                className="hover:bg-muted/80 bg-background/60 border-border/40 h-9 w-9 rounded-full border shadow-sm backdrop-blur-sm transition-all hover:shadow-md"
               >
                 <MoreHorizontal className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">
-              <DropdownMenuItem onClick={handleShareConversation}>
-                <Share2 className="mr-2 h-4 w-4" />
-                Share
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={handleCopyShareUrl}>
-                <Copy className="mr-2 h-4 w-4" />
-                Copy Link
-              </DropdownMenuItem>
+              {sharingEnabled && (
+                <DropdownMenuItem onClick={handleShareConversation}>
+                  <Share2 className="mr-2 h-4 w-4" />
+                  Share
+                </DropdownMenuItem>
+              )}
+              {sharingEnabled && (
+                <DropdownMenuItem onClick={handleCopyShareUrl}>
+                  <Copy className="mr-2 h-4 w-4" />
+                  Copy Link
+                </DropdownMenuItem>
+              )}
               <DropdownMenuItem>
                 <Download className="mr-2 h-4 w-4" />
                 Export
@@ -375,34 +393,37 @@ export function ChatHeader({
         )}
       </div>
 
-
       {/* Share Dialog */}
-      <Dialog open={isShareDialogOpen} onOpenChange={setIsShareDialogOpen}>
-        <DialogContent className="sm:max-w-md overflow-hidden">
+      <Dialog
+        open={isShareDialogOpen && sharingEnabled}
+        onOpenChange={setIsShareDialogOpen}
+      >
+        <DialogContent className="overflow-hidden sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Share Conversation</DialogTitle>
           </DialogHeader>
           {!isShared ? (
             // Not shared yet
             <div className="space-y-4">
-              <p className="text-sm text-muted-foreground">
-                Share this conversation with anyone. They will be able to view it but not continue the conversation unless they fork it.
+              <p className="text-muted-foreground text-sm">
+                Share this conversation with anyone. They will be able to view
+                it but not continue the conversation unless they fork it.
               </p>
-              <Button 
-                onClick={handleEnableSharing} 
+              <Button
+                onClick={handleEnableSharing}
                 className="w-full"
                 disabled={shareConversation.isPending}
               >
-                <Share2 className="h-4 w-4 mr-2" />
+                <Share2 className="mr-2 h-4 w-4" />
                 Enable Public Sharing
               </Button>
             </div>
           ) : (
             // Already shared
-            <div className="space-y-4 min-w-0">
-              <div className="flex items-center gap-2 min-w-0">
-                <div className="flex-1 min-w-0 px-3 py-2 bg-muted rounded-md overflow-hidden">
-                  <div className="text-sm truncate">
+            <div className="min-w-0 space-y-4">
+              <div className="flex min-w-0 items-center gap-2">
+                <div className="bg-muted min-w-0 flex-1 overflow-hidden rounded-md px-3 py-2">
+                  <div className="truncate text-sm">
                     {conversationId
                       ? `${window.location.origin}/chat/${conversationId}`
                       : ""}
@@ -421,11 +442,11 @@ export function ChatHeader({
                   )}
                 </Button>
               </div>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-muted-foreground text-xs">
                 Anyone with this link can view this conversation.
               </p>
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 onClick={handleDisableSharing}
                 className="w-full"
                 disabled={unshareConversation.isPending}
@@ -439,4 +460,3 @@ export function ChatHeader({
     </header>
   );
 }
-

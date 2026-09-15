@@ -1,11 +1,19 @@
-import { db } from '@/server/db'
-import type { z } from 'zod'
-import type { adminCreateProductSchema } from '../schemas/admin'
+import { db } from "@/server/db";
+import type { z } from "zod";
+import { requireFeature } from "@/server/features/state";
+import { adminCreateProductSchema } from "../schemas/admin";
 
-type CreateProductInput = z.infer<typeof adminCreateProductSchema>
+type CreateProductInput = z.infer<typeof adminCreateProductSchema>;
 
 export async function adminCreateProduct(input: CreateProductInput) {
-  const { subscription, creditsPackage, ...productData } = input
+  const { subscription, creditsPackage, ...productData } =
+    adminCreateProductSchema.parse(input);
+  if (productData.type === "SUBSCRIPTION" && !subscription)
+    throw new Error("Subscription binding is required");
+  if (productData.type === "CREDITS_PACKAGE" && !creditsPackage)
+    throw new Error("Credits package binding is required");
+  if (productData.status === "ACTIVE" && productData.isAvailable)
+    await requireFeature("products");
 
   // Create product with related entities in a transaction
   const product = await db.$transaction(async (tx) => {
@@ -23,22 +31,22 @@ export async function adminCreateProduct(input: CreateProductInput) {
         sortOrder: productData.sortOrder,
         interval: subscription?.interval ?? null,
       },
-    })
+    });
 
     // Create subscription plan and link if SUBSCRIPTION
-    if (productData.type === 'SUBSCRIPTION' && subscription) {
+    if (productData.type === "SUBSCRIPTION" && subscription) {
       // Create or reuse subscription plan
       const plan = await tx.subscriptionPlan.create({
         data: {
           type: subscription.planType,
           name: `${subscription.planType} ${subscription.interval}`,
-          status: 'ACTIVE',
+          status: "ACTIVE",
           interval: subscription.interval,
           intervalCount: 1,
           creditsPerPeriod: subscription.creditsPerMonth,
           creditsPerMonth: subscription.creditsPerMonth, // Keep synced for backward compatibility
         },
-      })
+      });
 
       // Link product to plan
       await tx.productSubscription.create({
@@ -46,22 +54,21 @@ export async function adminCreateProduct(input: CreateProductInput) {
           productId: newProduct.id,
           planId: plan.id,
         },
-      })
+      });
     }
 
     // Create credits package if CREDITS_PACKAGE
-    if (productData.type === 'CREDITS_PACKAGE' && creditsPackage) {
+    if (productData.type === "CREDITS_PACKAGE" && creditsPackage) {
       await tx.productCreditsPackage.create({
         data: {
           productId: newProduct.id,
           creditsAmount: creditsPackage.creditsAmount,
         },
-      })
+      });
     }
 
-    return newProduct
-  })
+    return newProduct;
+  });
 
-  return product
+  return product;
 }
-

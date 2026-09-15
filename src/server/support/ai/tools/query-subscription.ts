@@ -20,6 +20,7 @@ export async function querySubscription(userId: string): Promise<SubscriptionInf
   const subscription = await db.userSubscription.findFirst({
     where: {
       userId,
+      deletedAt: null,
       status: { in: ["ACTIVE", "TRIALING", "PAST_DUE", "CANCELED"] },
     },
     orderBy: { createdAt: "desc" },
@@ -36,6 +37,9 @@ export async function querySubscription(userId: string): Promise<SubscriptionInf
     where: {
       subscriptionId: subscription.id,
       status: "ACTIVE",
+      deletedAt: null,
+      startsAt: { lte: new Date() },
+      expiresAt: { gt: new Date() },
     },
     orderBy: { startsAt: "desc" },
   });
@@ -49,4 +53,3 @@ export async function querySubscription(userId: string): Promise<SubscriptionInf
     canceledAt: subscription.canceledAt ?? undefined,
   };
 }
-

@@ -1,32 +1,9 @@
-import { TRPCError } from '@trpc/server'
-import { getVelobase } from '../velobase'
-import type { GrantParams, GrantOutput } from '../types'
-
+import { credits, creditOperation } from "@/modules/credits/server/service";
+import type { GrantParams, GrantOutput } from "@velobase/credits/types";
 export async function grant(params: GrantParams): Promise<GrantOutput> {
-  if (!params.userId) throw new TRPCError({ code: 'BAD_REQUEST', message: 'userId is required' })
-  if (!params.outerBizId) throw new TRPCError({ code: 'BAD_REQUEST', message: 'outerBizId is required' })
-  if (params.amount <= 0) throw new TRPCError({ code: 'BAD_REQUEST', message: 'amount must be greater than 0' })
-
-  const vb = getVelobase()
-
-  const result = await vb.customers.deposit({
-    customerId: params.userId,
-    amount: params.amount,
-    wallet: params.wallet,
-    source: params.source ?? 'default',
-    idempotencyKey: params.outerBizId,
-    startsAt: params.startsAt?.toISOString(),
-    expiresAt: params.expiresAt?.toISOString(),
-    description: params.description ?? undefined,
-  })
-
-  return {
-    accountId: result.accountId,
-    wallet: result.wallet,
-    source: result.source,
-    totalAmount: result.totalAmount,
-    addedAmount: result.addedAmount,
-    recordId: result.recordId,
-    isIdempotentReplay: result.isIdempotentReplay,
-  }
+  return creditOperation(() => credits.grant(params));
+}
+/** Settle a paid order, existing subscription or reserved exchange; never expose as a user mutation. */
+export async function settleGrant(params: GrantParams): Promise<GrantOutput> {
+  return creditOperation(() => credits.settleGrant(params));
 }

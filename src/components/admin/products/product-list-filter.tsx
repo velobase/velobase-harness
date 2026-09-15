@@ -40,7 +40,7 @@ export function ProductListFilter({
 }: ProductListFilterProps) {
   const t = useTranslations("admin.productManagement")
   return (
-    <div className="border rounded-lg p-4 bg-muted/30 space-y-4">
+    <div className="admin-module-filters space-y-4">
       <div className="flex items-center justify-between">
         <h3 className="font-medium text-sm">{t("filters")}</h3>
         {hasActiveFilters && (
@@ -60,7 +60,7 @@ export function ProductListFilter({
             <SelectTrigger className="h-9">
               <SelectValue />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="admin-theme admin-popup">
               <SelectItem value="all">{t("all")}</SelectItem>
               <SelectItem value="SUBSCRIPTION">{t("subscription")}</SelectItem>
               <SelectItem value="CREDITS_PACKAGE">{t("creditsPackage")}</SelectItem>
@@ -78,7 +78,7 @@ export function ProductListFilter({
             <SelectTrigger className="h-9">
               <SelectValue />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="admin-theme admin-popup">
               <SelectItem value="all">{t("all")}</SelectItem>
               <SelectItem value="ACTIVE">{t("active")}</SelectItem>
               <SelectItem value="INACTIVE">{t("inactive")}</SelectItem>
@@ -95,7 +95,7 @@ export function ProductListFilter({
             <SelectTrigger className="h-9">
               <SelectValue />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="admin-theme admin-popup">
               <SelectItem value="all">{t("all")}</SelectItem>
               <SelectItem value="yes">{t("yes")}</SelectItem>
               <SelectItem value="no">{t("no")}</SelectItem>

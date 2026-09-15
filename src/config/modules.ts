@@ -2,6 +2,7 @@ export {
   collectDisabledSchedulerContributions,
   collectEnabledWorkerContributions,
   getEnabledModuleDefinitions,
+  getEventModuleDefinitions,
   getModuleState,
   isModuleEnabled,
   MODULE_DEFINITIONS,

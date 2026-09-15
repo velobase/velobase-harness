@@ -1,18 +1,18 @@
-"use client"
+"use client";
 
-import { api } from "@/trpc/react"
-import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
+import { api } from "@/trpc/react";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
-import { useState, useCallback } from "react"
-import { useDebounce } from "@/hooks/use-debounce"
-import { useFormatter, useTranslations } from "next-intl"
+} from "@/components/ui/select";
+import { useState, useCallback } from "react";
+import { useDebounce } from "@/hooks/use-debounce";
+import { useFormatter, useTranslations } from "next-intl";
 import {
   ChevronLeft,
   ChevronRight,
@@ -20,112 +20,124 @@ import {
   ChevronsRight,
   Search,
   Filter,
-} from "lucide-react"
-import { cn } from "@/lib/utils"
-import { ProductListFilter, defaultFilters, type ProductFilters } from "./product-list-filter"
-import { ProductListTable } from "./product-list-table"
-import { ProductDetailSheet } from "./product-detail-sheet"
-import type { RouterOutputs } from "@/trpc/react"
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+import {
+  ProductListFilter,
+  defaultFilters,
+  type ProductFilters,
+} from "./product-list-filter";
+import { ProductListTable } from "./product-list-table";
+import { ProductDetailSheet } from "./product-detail-sheet";
+import type { RouterOutputs } from "@/trpc/react";
 
-type Product = RouterOutputs["admin"]["listProducts"]["items"][number]
+type Product = RouterOutputs["admin"]["listProducts"]["items"][number];
 
 export function ProductsTable() {
-  const t = useTranslations("admin.productManagement")
-  const format = useFormatter()
-  const [search, setSearch] = useState("")
-  const [page, setPage] = useState(1)
-  const [pageSize, setPageSize] = useState(20)
-  const [filters, setFilters] = useState<ProductFilters>(defaultFilters)
-  const [showFilters, setShowFilters] = useState(false)
-  
+  const t = useTranslations("admin.productManagement");
+  const catalog = useTranslations("productCatalog");
+  const format = useFormatter();
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
+  const [filters, setFilters] = useState<ProductFilters>(defaultFilters);
+  const [showFilters, setShowFilters] = useState(false);
+
   // Detail Sheet State
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
-  const [isDetailOpen, setIsDetailOpen] = useState(false)
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
 
-  const debouncedSearch = useDebounce(search, 500)
+  const debouncedSearch = useDebounce(search, 500);
 
-  const utils = api.useUtils()
+  const utils = api.useUtils();
 
-  const { data, isLoading } = api.admin.listProducts.useQuery({
+  const {
+    data,
+    isLoading,
+    error: listError,
+  } = api.admin.listProducts.useQuery({
     page,
     pageSize,
     search: debouncedSearch || undefined,
     type: filters.type,
     status: filters.status,
     isAvailable: filters.isAvailable,
-  })
+  });
 
   const toggleAvailability = api.admin.toggleProductAvailability.useMutation({
     onSuccess: () => {
-      void utils.admin.listProducts.invalidate()
+      void utils.admin.listProducts.invalidate();
       // Refresh detail if open
       if (selectedProduct) {
-         void utils.admin.getProduct.invalidate({ productId: selectedProduct.id })
+        void utils.admin.getProduct.invalidate({
+          productId: selectedProduct.id,
+        });
       }
     },
-  })
+  });
 
   // Airwallex sync removed — only Stripe + NowPayments supported
 
-  const updateFilter = useCallback(<K extends keyof ProductFilters>(key: K, value: ProductFilters[K]) => {
-    setFilters((prev) => ({ ...prev, [key]: value }))
-    setPage(1)
-  }, [])
+  const updateFilter = useCallback(
+    <K extends keyof ProductFilters>(key: K, value: ProductFilters[K]) => {
+      setFilters((prev) => ({ ...prev, [key]: value }));
+      setPage(1);
+    },
+    [],
+  );
 
   const clearFilters = useCallback(() => {
-    setFilters(defaultFilters)
-    setPage(1)
-  }, [])
+    setFilters(defaultFilters);
+    setPage(1);
+  }, []);
 
-  const hasActiveFilters = Object.entries(filters).some(([, value]) => value !== "all")
+  const hasActiveFilters = Object.entries(filters).some(
+    ([, value]) => value !== "all",
+  );
 
-  const totalPages = data?.totalPages ?? 1
-  const total = data?.total ?? 0
-  const startItem = (page - 1) * pageSize + 1
-  const endItem = Math.min(page * pageSize, total)
+  const totalPages = data?.totalPages ?? 1;
+  const total = data?.total ?? 0;
+  const startItem = (page - 1) * pageSize + 1;
+  const endItem = Math.min(page * pageSize, total);
 
   const handleViewDetail = (product: Product) => {
-    setSelectedProduct(product)
-    setIsDetailOpen(true)
-  }
+    setSelectedProduct(product);
+    setIsDetailOpen(true);
+  };
 
   return (
-    <div className="space-y-4 max-w-[1400px] mx-auto">
+    <div className="admin-module-page space-y-4">
       {/* Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">{t("title")}</h1>
-          <p className="text-muted-foreground">
-            {total > 0 ? t("subtitleTotal", { count: total }) : t("subtitleEmpty")}
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
+      <div className="admin-module-toolbar">
+        <h1 className="sr-only">{t("title")}</h1>
+        <div className="admin-module-tools">
           <div className="relative flex-1 sm:w-72">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
             <Input
-              placeholder={t("searchPlaceholder")}
+              aria-label={t("searchPlaceholder")} placeholder={t("searchPlaceholder")}
               value={search}
               onChange={(e) => {
-                setSearch(e.target.value)
-                setPage(1)
+                setSearch(e.target.value);
+                setPage(1);
               }}
               className="pl-9"
             />
           </div>
           <Button
             variant={showFilters ? "secondary" : "outline"}
-            size="icon"
+            size="sm" aria-label={t("filters")} aria-expanded={showFilters}
             onClick={() => setShowFilters(!showFilters)}
             className={cn(hasActiveFilters && "border-primary text-primary")}
           >
             <Filter className="h-4 w-4" />
+            {t("filters")}
           </Button>
         </div>
       </div>
 
       {/* Filters */}
       {showFilters && (
-        <ProductListFilter 
+        <ProductListFilter
           filters={filters}
           onChange={updateFilter}
           onClear={clearFilters}
@@ -134,24 +146,47 @@ export function ProductsTable() {
       )}
 
       {/* Table */}
+      {(listError || toggleAvailability.error) && (
+        <p role="alert" className="text-destructive text-sm">
+          {catalog(
+            toggleAvailability.error?.data?.code === "FORBIDDEN"
+              ? "enableToPublish"
+              : toggleAvailability.error?.data?.code === "CONFLICT"
+                ? "conflict"
+                : "failed",
+          )}
+        </p>
+      )}
       <ProductListTable
         isLoading={isLoading}
         products={data?.items ?? []}
         pageSize={pageSize}
-        onToggleAvailability={(id) => toggleAvailability.mutate({ productId: id })}
+        onToggleAvailability={(product, available) =>
+          toggleAvailability.mutate({
+            productId: product.id,
+            revision: new Date(product.updatedAt).toISOString(),
+            isAvailable: available,
+          })
+        }
         isToggling={toggleAvailability.isPending}
         onViewDetail={handleViewDetail}
       />
 
       {/* Pagination */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-2">
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+      <div className="flex flex-col items-center justify-between gap-4 px-2 sm:flex-row">
+        <div className="text-muted-foreground flex items-center gap-2 text-sm">
           <span>{t("perPage")}</span>
-          <Select value={pageSize.toString()} onValueChange={(v) => { setPageSize(Number(v)); setPage(1) }}>
+          <Select
+            value={pageSize.toString()}
+            onValueChange={(v) => {
+              setPageSize(Number(v));
+              setPage(1);
+            }}
+          >
             <SelectTrigger className="h-8 w-[70px]">
               <SelectValue />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="admin-theme admin-popup">
               <SelectItem value="10">10</SelectItem>
               <SelectItem value="20">20</SelectItem>
               <SelectItem value="50">50</SelectItem>
@@ -161,7 +196,7 @@ export function ProductsTable() {
         </div>
 
         <div className="flex items-center gap-6">
-          <span className="text-sm text-muted-foreground">
+          <span className="text-muted-foreground text-sm">
             {total > 0
               ? `${format.number(startItem)}-${format.number(endItem)} / ${format.number(total)}`
               : t("zeroResults")}
@@ -185,7 +220,7 @@ export function ProductsTable() {
             >
               <ChevronLeft className="h-4 w-4" />
             </Button>
-            <span className="text-sm w-20 text-center">
+            <span className="w-20 text-center text-sm">
               {t("pageIndicator", { page, total: totalPages })}
             </span>
             <Button
@@ -218,5 +253,5 @@ export function ProductsTable() {
         onUpdate={() => utils.admin.listProducts.invalidate()}
       />
     </div>
-  )
+  );
 }

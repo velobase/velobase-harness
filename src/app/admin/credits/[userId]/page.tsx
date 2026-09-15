@@ -20,7 +20,7 @@ export default function CreditDetailsPage() {
 
   if (isLoading) {
     return (
-      <div className="space-y-6 max-w-5xl mx-auto">
+      <div className="admin-module-page space-y-6">
         <div className="flex items-center gap-4">
           <Skeleton className="h-10 w-10" />
           <div className="space-y-2">
@@ -35,22 +35,22 @@ export default function CreditDetailsPage() {
 
   if (!user) {
     return (
-      <div className="space-y-6 max-w-5xl mx-auto">
+      <div className="admin-module-page space-y-6">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" asChild>
             <Link href="/admin/credits">
               <ArrowLeft className="h-4 w-4" />
             </Link>
           </Button>
-          <h1 className="text-2xl font-bold text-red-500">{t("userNotFound")}</h1>
+          <h1 className="text-2xl font-bold text-destructive">{t("userNotFound")}</h1>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="space-y-6 max-w-5xl mx-auto">
-      <div className="flex items-center gap-4 mb-6">
+    <div className="admin-module-page space-y-6">
+      <div className="flex items-center gap-4">
         <Button variant="outline" size="icon" asChild>
           <Link href="/admin/credits">
             <ArrowLeft className="h-4 w-4" />
@@ -70,17 +70,6 @@ export default function CreditDetailsPage() {
       <UserCreditsDisplay 
         userId={userId} 
         userName={user.name} 
-        // We can optimize UserCreditsDisplay to not show the user header again since we show it on top page level
-        // But currently UserCreditsDisplay has the Grant button in its header. 
-        // Let's keep it as is for now, maybe hide the user info part in UserCreditsDisplay if we want to be cleaner?
-        // UserCreditsDisplay header: [Avatar + Name/ID] [Grant Button]
-        // Page header: [Back] [Name + Email]
-        // It's a bit redundant.
-        // Let's hide the user info in UserCreditsDisplay via className or props if needed.
-        // Actually, UserCreditsDisplay design is self-contained. 
-        // Let's modify UserCreditsDisplay to accept a prop to hide header info?
-        // Or just let it be. The UserCreditsDisplay header has the Grant button.
-        // The page header is for navigation context.
       />
     </div>
   )

@@ -10,12 +10,41 @@ const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
 /** @type {import("next").NextConfig} */
 const config = {
   output: "standalone",
-  transpilePackages: ["@velobase/contracts", "@velobase/api-client"],
+  transpilePackages: [
+    "@velobase/ai-chat",
+    "@velobase/ai-chat-openrouter",
+    "@velobase/image-generation",
+    "@velobase/image-generation-wavespeed",
+    "@velobase/image-generation-modelrunner",
+    "@velobase/contracts",
+    "@velobase/api-client",
+    "@velobase/module-runtime",
+    "@velobase/example-composition",
+    "@velobase/mailbox",
+    "@velobase/email-transport",
+    "@velobase/sharing",
+    "@velobase/activities",
+    "@velobase/outreach",
+    "@velobase/affiliate",
+    "@velobase/credits",
+    "@velobase/products",
+    "@velobase/payments",
+    "@velobase/payments-stripe",
+    "@velobase/subscriptions",
+    "@velobase/subscriptions-stripe",
+    "@velobase/credits-velobase",
+  ],
   typescript: {
     ignoreBuildErrors: false,
   },
-  // Ensure server-only native packages are not bundled for the browser
-  serverExternalPackages: ["sharp", "posthog-node"],
+  // Load server SDKs through Node: their generated clients do not need Webpack
+  // transforms, which otherwise make even the first page expensive to compile.
+  serverExternalPackages: [
+    "sharp",
+    "posthog-node",
+    "google-ads-api",
+    "@larksuiteoapi/node-sdk",
+  ],
   images: {
     remotePatterns: [
       {

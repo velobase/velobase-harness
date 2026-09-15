@@ -1,3 +1,5 @@
+import { isFeatureEnabled } from "@/server/features/state";
+import { FeatureGate } from "@/components/features/feature-gate";
 import "@/styles/globals.css";
 
 import { type Metadata, type Viewport } from "next";
@@ -18,7 +20,11 @@ import { GeoUpdater } from "@/components/geo-updater";
 import { PostHogProvider } from "@/analytics";
 import { UtmTracker } from "@/components/analytics/utm-tracker";
 import { headers, cookies } from "next/headers";
-import { ADS_CONFIG, isGoogleAdsEnabled, isTwitterAdsEnabled } from "@/analytics/ads";
+import {
+  ADS_CONFIG,
+  isGoogleAdsEnabled,
+  isTwitterAdsEnabled,
+} from "@/analytics/ads";
 import { auth } from "@/server/auth";
 import { getClientCountryFromHeaders } from "@/server/lib/get-client-country";
 import { isEeaLikeCountry } from "@/server/lib/is-eea-country";
@@ -30,7 +36,8 @@ const CONSENT_COOKIE = "app_cookie_consent";
 
 export const metadata: Metadata = {
   title: "AI SaaS Framework",
-  description: "Production-ready AI SaaS framework with auth, billing, payments, and AI chat built in.",
+  description:
+    "Production-ready AI SaaS framework with auth, billing, payments, and AI chat built in.",
   icons: [
     { rel: "icon", url: "/favicon.ico", sizes: "any" },
     { rel: "icon", url: "/favicon.svg", type: "image/svg+xml" },
@@ -76,11 +83,14 @@ export default async function RootLayout({
   const twitterAdsEnabled = isTwitterAdsEnabled();
   const TWITTER_PIXEL_ID = ADS_CONFIG.twitter.pixelId;
 
-  const countryCode = getClientCountryFromHeaders(headersList as unknown as Headers);
+  const countryCode = getClientCountryFromHeaders(
+    headersList as unknown as Headers,
+  );
   const isEea = isEeaLikeCountry(countryCode);
   const cookieStore = await cookies();
   const consent = cookieStore.get(CONSENT_COOKIE)?.value ?? "";
-  const analyticsEnabled = !isEea || consent === "all";
+  const analyticsEnabled =
+    (await isFeatureEnabled("attribution")) && (!isEea || consent === "all");
 
   const locale = await getLocale();
   const messages = await getMessages();
@@ -122,36 +132,38 @@ export default async function RootLayout({
       </head>
       <body>
         <NextIntlClientProvider locale={locale} messages={messages}>
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="dark"
-          disableTransitionOnChange
-        >
-          <SessionProvider
-            // Preload session on the server to avoid an extra client fetch on first paint.
-            // This also prevents noisy ClientFetchError logs in strict privacy/Incognito environments
-            // when /api/auth/session is blocked or fails transiently.
-            session={session}
-            refetchOnWindowFocus={false}
-            refetchInterval={0}
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="dark"
+            disableTransitionOnChange
           >
-            <PostHogProvider analyticsEnabled={analyticsEnabled}>
+            <SessionProvider
+              // Preload session on the server to avoid an extra client fetch on first paint.
+              // This also prevents noisy ClientFetchError logs in strict privacy/Incognito environments
+              // when /api/auth/session is blocked or fails transiently.
+              session={session}
+              refetchOnWindowFocus={false}
+              refetchInterval={0}
+            >
               <TRPCReactProvider>
-                <Suspense fallback={null}>
-                  {analyticsEnabled ? <UtmTracker /> : null}
-                </Suspense>
-                <DeviceKeyEnsurer />
-                <TimezoneUpdater />
-                <GeoUpdater />
-                <ServiceNoticeBanner />
-                {children}
-                <LoginModal />
-                <PaymentSelectionDialog />
-                <Toaster />
+                <PostHogProvider analyticsEnabled={analyticsEnabled}>
+                  <Suspense fallback={null}>
+                    {analyticsEnabled ? <UtmTracker /> : null}
+                  </Suspense>
+                  <DeviceKeyEnsurer />
+                  <TimezoneUpdater />
+                  <GeoUpdater />
+                  <ServiceNoticeBanner />
+                  {children}
+                  <LoginModal />
+                  <FeatureGate feature="payments">
+                    <PaymentSelectionDialog />
+                  </FeatureGate>
+                  <Toaster />
+                </PostHogProvider>
               </TRPCReactProvider>
-            </PostHogProvider>
-          </SessionProvider>
-        </ThemeProvider>
+            </SessionProvider>
+          </ThemeProvider>
         </NextIntlClientProvider>
         {isEea && !consent ? <CookieBar /> : null}
       </body>

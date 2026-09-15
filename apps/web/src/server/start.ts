@@ -50,7 +50,15 @@ export async function startWeb(): Promise<WebHandle> {
     );
     child = fork(
       nextBin,
-      ["dev", "--turbo", "--port", String(port), "--hostname", hostname],
+      [
+        "dev",
+        // Keep the local Docker experience within a bounded compilation footprint.
+        ...(env.NEXT_PUBLIC_LOCAL_DEMO === "on" ? [] : ["--turbo"]),
+        "--port",
+        String(port),
+        "--hostname",
+        hostname,
+      ],
       {
         env: {
           ...process.env,
@@ -95,14 +103,21 @@ export async function startWeb(): Promise<WebHandle> {
   return { shutdown };
 }
 
-function waitForPort(port: number, host: string, timeoutMs: number): Promise<void> {
+function waitForPort(
+  port: number,
+  host: string,
+  timeoutMs: number,
+): Promise<void> {
   const start = Date.now();
   return new Promise((resolve, reject) => {
     const check = () => {
-      const req = http.get({ host, port, path: "/healthz", timeout: 2000 }, (res) => {
-        res.resume();
-        resolve();
-      });
+      const req = http.get(
+        { host, port, path: "/healthz", timeout: 2000 },
+        (res) => {
+          res.resume();
+          resolve();
+        },
+      );
       req.on("error", () => {
         if (Date.now() - start > timeoutMs) {
           reject(new Error(`Next.js did not start within ${timeoutMs}ms`));

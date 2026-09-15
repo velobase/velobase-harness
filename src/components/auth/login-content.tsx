@@ -138,6 +138,19 @@ export function LoginContent({
         </div>
 
         <div className="flex w-full max-w-xs flex-col gap-3">
+          {login.localDemoEnabled && (
+            <>
+              <button
+                onClick={login.handleLocalDemoLogin}
+                className="bg-primary text-primary-foreground flex h-12 w-full items-center justify-center rounded-xl px-4 text-[15px] font-medium"
+              >
+                {t("localDemo")}
+              </button>
+              <p className="text-muted-foreground text-center text-xs">
+                {t("localDemoNotice")}
+              </p>
+            </>
+          )}
           {OAUTH_PROVIDERS.map((provider) => (
             <button
               key={provider.id}

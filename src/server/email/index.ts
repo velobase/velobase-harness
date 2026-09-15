@@ -4,13 +4,18 @@ import { resolveProviderChain } from "./providers";
 import type { SendEmailParams, SendEmailResult } from "./types";
 
 export type { SendEmailParams, SendEmailResult, EmailProvider } from "./types";
-export { MagicLinkEmailTemplate, renderMagicLinkHtml } from "./templates/magic-link";
+export {
+  MagicLinkEmailTemplate,
+  renderMagicLinkHtml,
+} from "./templates/magic-link";
 export { EmailCodeTemplate, renderEmailCodeHtml } from "./templates/email-code";
 
 const providerChain = resolveProviderChain(env.EMAIL_PROVIDER);
 
 if (providerChain.length === 0) {
-  logger.warn("No email providers configured — email sending will fail at runtime");
+  logger.warn(
+    "No email providers configured — email sending will fail at runtime",
+  );
 }
 
 /**
@@ -24,21 +29,29 @@ if (providerChain.length === 0) {
  *
  * If unset, all available providers are tried in registration order.
  */
-export async function sendEmail(params: SendEmailParams): Promise<SendEmailResult> {
+export async function sendEmail(
+  params: SendEmailParams,
+): Promise<SendEmailResult> {
   if (providerChain.length === 0) {
-    throw new Error("No email providers configured. Set RESEND_API_KEY and/or SENDGRID_API_KEY.");
+    throw new Error(
+      "No email providers configured. Set RESEND_API_KEY and/or SENDGRID_API_KEY.",
+    );
   }
 
   const errors: Array<{ provider: string; error: string }> = [];
+  const deliveryChain =
+    params.deliveryPolicy === "single-provider"
+      ? providerChain.slice(0, 1)
+      : providerChain;
 
-  for (const provider of providerChain) {
+  for (const provider of deliveryChain) {
     try {
       return await provider.send(params);
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       errors.push({ provider: provider.name, error: message });
 
-      if (providerChain.length > 1) {
+      if (deliveryChain.length > 1) {
         logger.warn(
           { provider: provider.name, to: params.to, error: message },
           `Email provider "${provider.name}" failed, trying next`,
@@ -47,10 +60,7 @@ export async function sendEmail(params: SendEmailParams): Promise<SendEmailResul
     }
   }
 
-  logger.error(
-    { to: params.to, errors },
-    "All email providers failed",
-  );
+  logger.error({ to: params.to, errors }, "All email providers failed");
   throw new Error(
     `All email providers failed: ${errors.map((e) => `[${e.provider}] ${e.error}`).join("; ")}`,
   );

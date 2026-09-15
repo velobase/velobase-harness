@@ -1,6 +1,6 @@
 /**
  * Worker Factory
- * 
+ *
  * 封装 BullMQ Worker 创建，统一事件处理
  */
 import { Worker } from "bullmq";
@@ -9,7 +9,7 @@ import { redis } from "@/server/redis";
 import { createLogger } from "@/lib/logger";
 import { asyncSendBackendAlert } from "@/lib/lark";
 
-type ProcessorFunction<T> = (job: Job<T>) => Promise<void>;
+type ProcessorFunction<T> = (job: Job<T>, token?: string) => Promise<void>;
 
 interface CreateWorkerOptions extends Omit<WorkerOptions, "connection"> {
   concurrency?: number;
@@ -24,7 +24,7 @@ const defaultOptions: CreateWorkerOptions = {
 export function createWorkerInstance<T>(
   queueName: string,
   processor: ProcessorFunction<T>,
-  options: CreateWorkerOptions = {}
+  options: CreateWorkerOptions = {},
 ): Worker<T> {
   const logger = createLogger(`worker:${queueName}`);
   const mergedOptions = { ...defaultOptions, ...options };
@@ -36,7 +36,10 @@ export function createWorkerInstance<T>(
 
   // 统一事件处理
   worker.on("active", (job) => {
-    logger.info({ jobId: job.id, jobName: job.name, data: job.data }, "🔄 Job started");
+    logger.info(
+      { jobId: job.id, jobName: job.name, data: job.data },
+      "🔄 Job started",
+    );
   });
 
   worker.on("completed", (job) => {
@@ -52,7 +55,7 @@ export function createWorkerInstance<T>(
         stack: err.stack,
         attempts: job?.attemptsMade,
       },
-      "❌ Job failed"
+      "❌ Job failed",
     );
 
     asyncSendBackendAlert({
@@ -63,9 +66,13 @@ export function createWorkerInstance<T>(
       service: queueName,
       resourceId: job?.id ? String(job.id) : undefined,
       user:
-        (job?.data as Record<string, unknown>)?.userId as string | undefined ||
-        (job?.data as Record<string, unknown>)?.user_id as string | undefined ||
-        (job?.data as Record<string, unknown>)?.email as string | undefined,
+        ((job?.data as Record<string, unknown>)?.userId as
+          | string
+          | undefined) ||
+        ((job?.data as Record<string, unknown>)?.user_id as
+          | string
+          | undefined) ||
+        ((job?.data as Record<string, unknown>)?.email as string | undefined),
       errorName: err.name,
       errorMessage: err.message,
       stack: err.stack,
@@ -109,4 +116,3 @@ export function createWorkerInstance<T>(
 
   return worker;
 }
-

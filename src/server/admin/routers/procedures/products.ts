@@ -1,4 +1,9 @@
 import { z } from "zod";
+import {
+  updateHostProductSchema,
+  updateHostProduct,
+  toggleHostProductAvailability,
+} from "@/modules/products/server/service";
 import { adminProcedure } from "@/server/api/trpc";
 import type { Prisma, ProductType, ProductStatus } from "@prisma/client";
 
@@ -8,10 +13,17 @@ export const listProducts = adminProcedure
       page: z.number().min(1).default(1),
       pageSize: z.number().min(1).max(100).default(20),
       search: z.string().optional(),
-      type: z.enum(["all", "SUBSCRIPTION", "CREDITS_PACKAGE", "ONE_TIME_ENTITLEMENT"]).default("all"),
+      type: z
+        .enum([
+          "all",
+          "SUBSCRIPTION",
+          "CREDITS_PACKAGE",
+          "ONE_TIME_ENTITLEMENT",
+        ])
+        .default("all"),
       status: z.enum(["all", "ACTIVE", "INACTIVE"]).default("all"),
       isAvailable: z.enum(["all", "yes", "no"]).default("all"),
-    })
+    }),
   )
   .query(async ({ ctx, input }) => {
     const { page, pageSize, search, type, status, isAvailable } = input;
@@ -83,41 +95,21 @@ export const getProduct = adminProcedure
   });
 
 export const updateProduct = adminProcedure
-  .input(
-    z.object({
-      productId: z.string(),
-      name: z.string().optional(),
-      price: z.number().int().min(0).optional(),
-      originalPrice: z.number().int().min(0).optional(),
-      status: z.enum(["ACTIVE", "INACTIVE"]).optional(),
-      isAvailable: z.boolean().optional(),
-      sortOrder: z.number().int().optional(),
-      hasTrial: z.boolean().optional(),
-      trialDays: z.number().int().min(0).optional(),
-      trialCreditsAmount: z.number().int().min(0).optional(),
-    })
-  )
-  .mutation(async ({ ctx, input }) => {
-    const { productId, ...data } = input;
-    return ctx.db.product.update({
-      where: { id: productId },
-      data: {
-        ...data,
-        status: data.status as ProductStatus,
-      },
-    });
-  });
+  .input(updateHostProductSchema)
+  .mutation(({ input }) => updateHostProduct(input));
 
 export const toggleProductAvailability = adminProcedure
-  .input(z.object({ productId: z.string() }))
-  .mutation(async ({ ctx, input }) => {
-    const product = await ctx.db.product.findUnique({
-      where: { id: input.productId },
-    });
-    if (!product) throw new Error("Product not found");
-
-    return ctx.db.product.update({
-      where: { id: input.productId },
-      data: { isAvailable: !product.isAvailable },
-    });
-  });
+  .input(
+    z.object({
+      productId: z.string().min(1),
+      revision: z.string().datetime().optional(),
+      isAvailable: z.boolean().optional(),
+    }),
+  )
+  .mutation(({ input }) =>
+    toggleHostProductAvailability(
+      input.productId,
+      input.revision,
+      input.isAvailable,
+    ),
+  );

@@ -72,7 +72,7 @@ export function DeductCreditsDialog({
           {t("deduct")}
         </Button>
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent className="admin-theme admin-module-dialog">
         <DialogHeader>
           <DialogTitle>{t("deductTitle")}</DialogTitle>
           <DialogDescription>

@@ -6,6 +6,8 @@ export interface SendEmailParams {
   react?: React.ReactElement;
   from?: string;
   replyTo?: string;
+  /** Durable business outboxes must not fall through to another provider after an uncertain send. */
+  deliveryPolicy?: "single-provider";
 }
 
 export interface SendEmailResult {

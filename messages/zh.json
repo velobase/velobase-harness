@@ -43,6 +43,8 @@
     "refundPolicy": "Refund Policy"
   },
   "auth": {
+    "localDemo": "以本地管理员身份体验",
+    "localDemoNotice": "仅在本机体验，无需注册或配置账号。",
     "welcomeTitle": "Welcome to AI SaaS",
     "welcomeSubtitle": "Sign in to start building with AI SaaS",
     "continueWith": "Continue with {provider}",
@@ -368,6 +370,10 @@
         "pending": "待生效",
         "available": "可用",
         "voided": "已作废"
+      },
+      "actionsFor": "管理 {email} 的佣金",
+      "sources": {
+        "order_payment": "订单支付"
       }
     },
     "affiliatePayouts": {
@@ -427,7 +433,8 @@
         "completed": "已完成",
         "rejected": "已拒绝",
         "failed": "失败"
-      }
+      },
+      "actionsFor": "管理 {email} 的提现"
     },
     "creditsManagement": {
       "title": "积分管理",
@@ -480,12 +487,18 @@
       "time": "时间",
       "operation": "操作",
       "loading": "加载中...",
-      "loadMore": "加载更多"
+      "loadMore": "加载更多",
+      "operations": {
+        "grant": "发放",
+        "consume": "消耗",
+        "freeze": "冻结",
+        "unfreeze": "解冻"
+      }
     },
     "userManagement": {
-      "title": "用户管理",
+      "title": "用户",
       "subtitleTotal": "{count} 个用户",
-      "subtitleEmpty": "管理用户",
+      "subtitleEmpty": "管理用户账号、访问权限与使用情况。",
       "searchPlaceholder": "按姓名、邮箱或 ID 搜索...",
       "filters": "筛选",
       "clearAll": "清除全部",
@@ -607,7 +620,18 @@
         "bounced": "已退信",
         "notBounced": "未退信",
         "complained": "有投诉",
-        "noComplaints": "无投诉"
+        "noComplaints": "无投诉",
+        "subscriptionStatuses": {
+          "undefined": "未设置",
+          "incomplete": "待完成",
+          "incomplete_expired": "未完成且已过期",
+          "trialing": "试用中",
+          "active": "生效中",
+          "past_due": "逾期",
+          "unpaid": "未支付",
+          "paused": "已暂停",
+          "canceled": "已取消"
+        }
       },
       "related": {
         "title": "关联用户（同一设备）",
@@ -618,7 +642,12 @@
         "primary": "主账号",
         "joined": "注册时间",
         "view": "查看"
-      }
+      },
+      "firstPage": "第一页",
+      "previousPage": "上一页",
+      "nextPage": "下一页",
+      "lastPage": "最后一页",
+      "backToUsers": "返回用户列表"
     },
     "orders": {
       "title": "订单",
@@ -699,7 +728,10 @@
         "timeline": "时间线",
         "created": "已创建",
         "lastUpdated": "最近更新"
-      }
+      },
+      "expandPayments": "展开支付记录",
+      "collapsePayments": "收起支付记录",
+      "backToOrders": "返回订单列表"
     },
     "credits": "Credits",
     "products": "Products",
@@ -708,13 +740,23 @@
       "subtitleTotal": "{count} 个促销码",
       "subtitleEmpty": "管理促销码",
       "searchPlaceholder": "搜索促销码...",
-      "create": "新建",
+      "create": "创建草稿",
       "all": "全部",
+      "allStatuses": "全部状态",
+      "allRewards": "全部奖励",
+      "statusFor": "{code} 的状态",
+      "actionsFor": "{code} 的操作",
+      "viewRedemptions": "查看兑换记录",
+      "viewRedemptionsFor": "查看 {code} 的兑换记录",
+      "viewNotes": "查看备注",
+      "delete": "删除促销码",
+      "previousPage": "上一页",
+      "nextPage": "下一页",
       "code": "促销码",
       "type": "类型",
-      "grant": "赠送",
+      "grant": "奖励",
       "status": "状态",
-      "usage": "使用/限制",
+      "usage": "已用 / 上限",
       "expiresAt": "过期时间",
       "notes": "备注",
       "actions": "操作",
@@ -730,7 +772,7 @@
       "createSuccess": "促销码创建成功",
       "deleteSuccess": "促销码已删除",
       "statusUpdated": "状态已更新",
-      "createTitle": "新建促销码",
+      "createTitle": "创建兑换码活动草稿",
       "grantTypeLabel": "赠送类型",
       "creditsAmountLabel": "积分数量",
       "usageLimitLabel": "总使用次数 (0=无限)",
@@ -743,37 +785,50 @@
         "active": "启用",
         "inactive": "停用",
         "expired": "过期",
-        "undefined": "未定义"
+        "undefined": "未定义",
+        "draft": "草稿"
       },
       "grantTypes": {
         "credits": "积分",
         "product": "产品",
         "undefined": "未定义"
-      }
+      },
+      "draftHelp": "新活动先保存为草稿。检查奖励和时间后，将状态改为生效以发布；全局活动功能也需要启用。",
+      "productId": "奖励商品 ID",
+      "startsAt": "开始时间"
     },
     "overview": "Overview",
     "nav": {
       "admin": "Admin",
       "console": "Console",
-      "backToApp": "← 返回应用",
+      "backToApp": "返回应用",
       "dashboard": "仪表盘",
       "usersContent": "用户 & 内容",
       "commerce": "商业",
-      "affiliate": "联盟",
-      "outreach": "触达",
+      "affiliate": "联盟推广",
+      "outreach": "客户触达",
       "marketing": "营销",
       "overviewItem": "概览",
       "usersItem": "用户",
-      "dialogs": "弹窗",
-      "productsItem": "产品",
+      "dialogs": "界面预览",
+      "productsItem": "商品",
       "ordersItem": "订单",
       "creditsItem": "积分",
-      "promoCodesItem": "促销码",
+      "promoCodesItem": "优惠码活动",
       "commissions": "佣金",
       "payouts": "提现",
       "scenes": "场景",
       "schedules": "计划",
-      "waitlist": "候补名单"
+      "waitlist": "候补名单",
+      "settings": "设置",
+      "features": "模块管理",
+      "connections": "服务连接",
+      "emailGroup": "邮件",
+      "inbox": "收件箱",
+      "sharing": "内容分享",
+      "activities": "活动",
+      "workspace": "工作区",
+      "growth": "增长"
     },
     "touches": {
       "title": "触达管理",
@@ -815,10 +870,10 @@
       "sceneChannelStatus": "场景 / 渠道 / 状态",
       "scheduledNext": "计划发送 / 下次尝试",
       "attemptCount": "尝试次数",
-      "records": "records（最近 50 条）",
-      "attempt": "attempt",
-      "time": "time",
-      "subjectError": "subject/error",
+      "records": "投递记录（最近 50 条）",
+      "attempt": "尝试次数",
+      "time": "时间",
+      "subjectError": "主题 / 错误",
       "noRecords": "暂无记录",
       "previewText": "预览邮件文本",
       "viewHtml": "查看 HTML（原文）",
@@ -829,7 +884,8 @@
         "sent": "已发送",
         "cancelled": "已取消",
         "superseded": "已替代",
-        "failed": "失败"
+        "failed": "失败",
+        "unknown": "结果不确定"
       },
       "scenes": {
         "sub_renewal_reminder_d1": "续订提醒 (D-1)"
@@ -844,7 +900,10 @@
         "today": "今天",
         "tomorrow": "明天",
         "daysLater": "{count} 天后"
-      }
+      },
+      "reference": "关联记录",
+      "dedupeKey": "去重标识",
+      "payload": "请求数据"
     },
     "scenes": {
       "title": "触达场景",
@@ -955,7 +1014,9 @@
         "scheduled": "定时触发",
         "event": "事件触发",
         "manual": "手动触发"
-      }
+      },
+      "backToScenes": "返回场景列表",
+      "loadFailed": "无法加载模板"
     },
     "dialogPreview": {
       "title": "Dialog Components",
@@ -1027,17 +1088,69 @@
       "defaultPrice": "默认价格 (USD)",
       "currentPrice": "现价",
       "originalPriceStrike": "原价 (划线价)",
-      "multiCurrencyPricing": "多币种定价 (ProductPrice)",
+      "multiCurrencyPricing": "多币种定价",
       "currency": "币种",
       "originalPrice": "原价",
-      "noLocalizedPricingMsg": "未配置本地化价格，将使用默认 USD 价格自动转换",
+      "noLocalizedPricingMsg": "未配置本地化价格，按 USD 显示基础价格。",
       "subscriptionPlan": "订阅计划",
       "interval": "周期",
       "intervalCount": "周期数",
       "perPeriodCredits": "周期赠送积分（每月免费额度）",
       "save": "保存",
-      "fullMetadata": "完整 Metadata"
+      "fullMetadata": "完整 Metadata",
+      "metadata": "元数据",
+      "planId": "方案 ID",
+      "intervals": {
+        "day": "天",
+        "week": "周",
+        "month": "月",
+        "year": "年"
+      }
+    },
+    "shell": {
+      "brand": "Harness",
+      "administration": "管理后台",
+      "administrator": "管理员",
+      "accountMenu": "打开账户菜单",
+      "profile": "个人资料",
+      "signOut": "退出登录",
+      "signingOut": "正在退出…",
+      "logoutError": "退出失败，请重试。",
+      "appearance": "外观",
+      "themes": {
+        "light": "浅色",
+        "dark": "深色",
+        "system": "跟随系统"
+      },
+      "language": "语言",
+      "changeLanguage": "切换语言",
+      "languages": {
+        "en": "English",
+        "zh": "中文"
+      },
+      "toggleNavigation": "切换导航栏",
+      "closeNavigation": "关闭导航栏",
+      "breadcrumb": "当前位置",
+      "details": "详情",
+      "skipToContent": "跳转到主要内容"
     }
+  },
+  "productCatalog": {
+    "enableToPublish": "请先在功能管理中开启商品，再发布商品。",
+    "edit": "编辑商品",
+    "editHelp": "维护商品信息和各币种价格。既有订单保留下单时记录的金额。",
+    "name": "商品名称",
+    "description": "商品描述",
+    "price": "价格",
+    "originalPrice": "原价（可选）",
+    "sortOrder": "展示顺序",
+    "localPrices": "其他币种价格",
+    "fallback": "留空时使用美元基础价格，显示币种也保持为 USD。",
+    "save": "保存修改",
+    "saving": "保存中…",
+    "invalid": "请检查必填项与价格。价格不得为负，最多保留两位小数。",
+    "conflict": "商品已被其他人修改。请关闭详情并重新加载商品后再编辑。",
+    "failed": "保存失败，请重新加载商品后重试。"
   },
   "product": {
     "platformHealth": {
@@ -1048,5 +1161,204 @@
       "error": "无法连接，请检查服务器后重试。",
       "refresh": "刷新"
     }
+  },
+  "modules": {
+    "title": "功能管理",
+    "intro": "这里展示当前部署包含的业务能力。完成所需服务配置后，即可启用。",
+    "loading": "加载中…",
+    "loadFailed": "加载失败，请重试。",
+    "saveFailed": "保存失败",
+    "capability": "业务能力",
+    "status": "状态",
+    "dependencies": "依赖能力",
+    "actions": "操作",
+    "none": "无",
+    "disable": "关闭",
+    "enable": "启用",
+    "configure": "配置",
+    "manage": "管理",
+    "absentHelp": "请开发者把此模块加入应用接入清单并重新部署。",
+    "disableHelp": "关闭后停止新的业务操作并隐藏用户入口，数据保留，依赖它的功能会暂不可用。退款、取消订阅和存量履约仍可处理。重新开启分享后，之前的公开链接会恢复访问，已单独撤销的链接除外。",
+    "connections": "服务连接",
+    "connectionsHelp": "连接为业务功能提供技术服务。配置连接不会自动启用业务能力。",
+    "overview": "概览",
+    "overviewHelp": "进入已启用的业务功能，或配置功能与服务连接。",
+    "sharingHelp": "分享开关控制所有公开链接。如需在重新开启后仍保持私密，请单独撤销该链接。",
+    "empty": "暂无记录。",
+    "untitled": "未命名",
+    "revoke": "撤销链接",
+    "firstPage": "第一页",
+    "nextPage": "下一页",
+    "names": {
+      "users": "用户管理",
+      "products": "商品与定价",
+      "payments": "订单与支付",
+      "subscriptions": "订阅与权益",
+      "credits": "积分",
+      "promo-codes": "兑换码活动",
+      "newcomer-offers": "新人优惠",
+      "daily-bonus": "每日奖励",
+      "sharing": "内容分享",
+      "email-management": "邮件管理",
+      "ai-support": "AI 客服",
+      "touch": "用户触达",
+      "affiliate": "分销",
+      "attribution": "归因",
+      "ai-chat": "AI 对话",
+      "image-generation": "图片生成",
+      "projects": "项目"
+    },
+    "descriptions": {
+      "users": "管理账号与访问权限。",
+      "products": "维护商品和价格。",
+      "payments": "接受新支付；关闭后仍处理已有订单、结算与退款。",
+      "subscriptions": "销售周期订阅；已有客户的取消和权益处理继续保留。",
+      "credits": "管理积分余额与使用记录。",
+      "promo-codes": "创建、发布并兑换奖励码。",
+      "newcomer-offers": "为符合条件的新用户提供限时优惠。",
+      "daily-bonus": "发放每日签到奖励。",
+      "sharing": "发布对话、查看公开链接并撤销分享。",
+      "email-management": "接收邮件、管理工单并人工回复。",
+      "ai-support": "为邮件管理增加模型辅助处理。",
+      "touch": "维护模板、发送计划与投递记录。",
+      "affiliate": "管理邀请佣金与提现。",
+      "attribution": "收集来源与转化事件。",
+      "ai-chat": "运行对话并管理智能体。",
+      "image-generation": "生成图片并管理任务。",
+      "projects": "组织文档和代码仓库。"
+    },
+    "mailbox": {
+      "title": "客服邮箱",
+      "intro": "配置 IMAP 与 SMTP，用于收信和回复，无需配置 AI。首次同步从当前时间开始接收新邮件。",
+      "loading": "加载邮箱中…",
+      "loadFailed": "无法加载邮箱配置。",
+      "address": "邮箱地址",
+      "password": "邮箱密码 / 应用专用密码",
+      "imapHost": "IMAP 服务器",
+      "imapPort": "IMAP 端口",
+      "smtpHost": "SMTP 服务器",
+      "smtpPort": "SMTP 端口",
+      "from": "发件人显示名称 / 地址",
+      "passwordHelp": "密码留空则保留现有凭据。保存的凭据会在服务端加密。",
+      "saving": "保存中…",
+      "save": "保存连接",
+      "failed": "保存失败，请检查必填配置。",
+      "saved": "已保存。请到功能管理启用邮件管理，开始使用收件箱。",
+      "check": "检查连接",
+      "checking": "检查中…",
+      "connected": "IMAP 与 SMTP 均连接成功。",
+      "connectionFailed": "连接失败，请检查服务器、TLS 端口与凭据。"
+    },
+    "states": {
+      "absent": "未包含",
+      "unconfigured": "待配置",
+      "disabled": "已关闭",
+      "blocked": "依赖不可用",
+      "enabled": "已启用"
+    },
+    "participation": "活动参与记录"
+  },
+  "mailManagement": {
+    "title": "收件箱",
+    "intro": "接收客户邮件、查看处理记录并人工回复。",
+    "configure": "邮箱配置",
+    "sync": "收取邮件",
+    "syncing": "收取中…",
+    "disabled": "邮件管理已关闭，历史记录仍可查看。",
+    "features": "进入功能管理",
+    "failed": "操作未完成，请重试或检查邮箱配置。",
+    "synced": "已接收 {count} 封邮件。",
+    "filter": "状态",
+    "loading": "加载中…",
+    "empty": "当前视图没有邮件。启用邮箱后可接收新邮件。",
+    "untitled": "无主题",
+    "firstPage": "第一页",
+    "nextPage": "下一页",
+    "select": "选择工单以查看和回复。",
+    "notFound": "未找到工单。",
+    "reopen": "重新打开",
+    "resolve": "标记解决",
+    "latest": "最新消息",
+    "older": "更早的消息",
+    "unknownHelp": "发送开始后连接中断或记录保存失败，请先核对邮箱的已发送记录或投递日志，再决定是否重发。",
+    "reply": "回复客户",
+    "sending": "发送中…",
+    "send": "发送回复",
+    "statuses": {
+      "OPEN": "待处理",
+      "NEEDS_APPROVAL": "待审核",
+      "WAITING": "等待客户",
+      "SOLVED": "已解决",
+      "ALL": "全部"
+    },
+    "actors": {
+      "USER": "客户",
+      "AI": "AI",
+      "AGENT": "人工",
+      "SYSTEM": "系统"
+    },
+    "deliveries": {
+      "PENDING": "等待发送",
+      "SENDING": "发送中",
+      "SENT": "已发送",
+      "UNKNOWN": "发送结果未知",
+      "CANCELED": "已取消"
+    },
+    "cancelPending": "取消待发送回复"
+  },
+  "outreach": {
+    "title": "邮件触达",
+    "intro": "管理场景与模板，为选定的用户安排发送时间。",
+    "legacyHistory": "全部投递历史",
+    "features": "功能管理",
+    "editScenes": "编辑已有场景",
+    "disabled": "触达已关闭，仍可管理草稿和查看历史。",
+    "failed": "操作失败",
+    "scenes": "场景",
+    "chooseScene": "选择场景",
+    "sceneKey": "场景标识",
+    "name": "名称",
+    "active": "允许此场景发送",
+    "saveScene": "保存场景",
+    "templates": "模板",
+    "subject": "邮件主题",
+    "text": "邮件正文",
+    "saveTemplate": "保存模板",
+    "schedule": "安排发送",
+    "snapshotHelp": "排期时会保存收件人与渲染后的正文，后续修改模板不会改变待发送内容。",
+    "searchUser": "通过邮箱查找用户",
+    "recipient": "收件人",
+    "when": "发送时间（当前设备时区）",
+    "deliveries": "投递历史",
+    "unknownHelp": "结果不确定的邮件可能已被服务器接收。再次排期前请核对邮件；系统不会自动重发。",
+    "process": "处理到期邮件",
+    "empty": "暂无投递记录",
+    "content": "已保存正文",
+    "cancel": "取消",
+    "next": "下一页",
+    "first": "第一页",
+    "variables": "模板变量（JSON）",
+    "invalidVariables": "请输入值为字符串的 JSON 对象。",
+    "statuses": {
+      "PENDING": "待发送",
+      "PROCESSING": "发送中",
+      "SENT": "已发送",
+      "CANCELLED": "已取消",
+      "UNKNOWN": "结果不确定"
+    }
+  },
+  "affiliateExchange": {
+    "title": "佣金兑换积分",
+    "description": "使用可用分销佣金兑换积分。",
+    "units": "兑换份数",
+    "summary": "使用 {amount} 美元兑换 {credits} 积分",
+    "pending": "有一笔兑换等待确认。继续同一请求即可完成，所需余额已经锁定。",
+    "resume": "继续兑换",
+    "confirm": "兑换",
+    "close": "关闭",
+    "processing": "处理中…",
+    "success": "积分已到账",
+    "insufficient": "可用余额不足，暂时无法发起新兑换。",
+    "affiliateDisabled": "新增推荐和佣金已暂停，既有余额、提现申请和历史记录仍可处理。"
   }
 }

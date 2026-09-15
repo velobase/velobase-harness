@@ -1,5 +1,8 @@
 import type { FrameworkModule } from "@/server/modules/registry";
-import type { WorkerContribution } from "@/workers/types";
+import type {
+  SchedulerContribution,
+  WorkerContribution,
+} from "@/workers/types";
 
 export const MODULE_MODES = ["off", "auto", "on"] as const;
 
@@ -40,7 +43,11 @@ export interface ModuleDefinition {
   config?: ModuleConfigRequirement[];
   dependencies?: ModuleDependencyRequirement[];
   loadFrameworkModule?: () => Promise<FrameworkModule>;
+  /** Keep reversal handlers for deployed business data when new operations are off. */
+  retainEventHandlersWhenDisabled?: boolean;
   loadWorkerContributions?: () => Promise<WorkerContribution[]>;
+  /** Cleanup must not import disabled processors or their SDKs. */
+  loadDisabledSchedulers?: () => Promise<SchedulerContribution[]>;
 }
 
 export interface ModuleState {
@@ -119,24 +126,48 @@ export function resolveModuleStates(
   });
 
   const stateById = new Map(initialStates.map((state) => [state.id, state]));
-  const states = initialStates.map((state) => {
-    if (state.mode === "off" || !state.configured) return state;
-
-    const definition = definitions.find((def) => def.id === state.id);
-    const missingDependencies = getMissingDependencies(
-      definition?.dependencies ?? [],
-      stateById,
+  const definitionById = new Map(
+    definitions.map((definition) => [definition.id, definition]),
+  );
+  if (definitionById.size !== definitions.length)
+    throw new Error("Duplicate module id");
+  const resolvedById = new Map<ModuleId, ModuleState>();
+  const visiting = new Set<ModuleId>();
+  const resolve = (id: ModuleId): ModuleState => {
+    const cached = resolvedById.get(id);
+    if (cached) return cached;
+    if (visiting.has(id)) throw new Error(`Circular module dependency: ${id}`);
+    const state = stateById.get(id);
+    if (!state) throw new Error(`Unknown module: ${id}`);
+    visiting.add(id);
+    const requirements = definitionById.get(id)?.dependencies ?? [];
+    const dependencies = requirements.flatMap((entry) =>
+      typeof entry === "string"
+        ? [entry]
+        : "anyOf" in entry
+          ? entry.anyOf
+          : entry.allOf,
     );
-
-    if (missingDependencies.length === 0) return state;
-
-    return {
-      ...state,
-      enabled: false,
-      missingDependencies,
-      reason: "missing_dependency",
-    } satisfies ModuleState;
-  });
+    for (const dependency of dependencies) {
+      if (stateById.has(dependency))
+        stateById.set(dependency, resolve(dependency));
+    }
+    const missingDependencies = getMissingDependencies(requirements, stateById);
+    const result: ModuleState =
+      state.mode === "off" || !state.configured || !missingDependencies.length
+        ? state
+        : {
+            ...state,
+            enabled: false,
+            missingDependencies,
+            reason: "missing_dependency",
+          };
+    visiting.delete(id);
+    resolvedById.set(id, result);
+    stateById.set(id, result);
+    return result;
+  };
+  const states = initialStates.map((state) => resolve(state.id));
 
   const resolved: ModuleState[] = states.map((state): ModuleState => {
     if (state.mode !== "on" || state.enabled) return state;

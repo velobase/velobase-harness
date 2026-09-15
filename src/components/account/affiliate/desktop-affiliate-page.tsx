@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useFeature } from "@/components/features/feature-gate";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -27,6 +28,9 @@ interface Props {
 
 export function DesktopAffiliatePage({ status }: Props) {
   const router = useRouter();
+  const enrollmentEnabled = useFeature("affiliate");
+  const creditsEnabled = useFeature("credits");
+  const canExchange = creditsEnabled || Boolean(status.pendingCreditExchange);
   const [withdrawOpen, setWithdrawOpen] = useState(false);
   const [exchangeOpen, setExchangeOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
@@ -38,7 +42,7 @@ export function DesktopAffiliatePage({ status }: Props) {
     },
     onError: (error) => {
       toast.error(error.message || "Failed to activate partner status");
-    }
+    },
   });
 
   const availableUsd = (status.balances.availableCents / 100).toFixed(2);
@@ -47,7 +51,7 @@ export function DesktopAffiliatePage({ status }: Props) {
 
   const progressPercent = Math.min(
     100,
-    (status.balances.availableCents / status.rules.minCashoutCents) * 100
+    (status.balances.availableCents / status.rules.minCashoutCents) * 100,
   );
 
   const isCashoutReady =
@@ -60,55 +64,55 @@ export function DesktopAffiliatePage({ status }: Props) {
     }
   };
 
-  const shareText = encodeURIComponent(
-    "Build with AI SaaS — join today!"
-  );
+  const shareText = encodeURIComponent("Build with AI SaaS — join today!");
   const shareUrl = encodeURIComponent(
-    status.referralLink || "https://example.com"
+    status.referralLink || "https://example.com",
   );
 
   const twitterShareUrl = `https://twitter.com/intent/tweet?text=${shareText}&url=${shareUrl}`;
   const telegramShareUrl = `https://t.me/share/url?url=${shareUrl}&text=${shareText}`;
 
   return (
-    <div className="w-full max-w-4xl mx-auto pt-24 pb-12 px-6">
-      <div className="flex items-center justify-between mb-8">
+    <div className="mx-auto w-full max-w-4xl px-6 pt-24 pb-12">
+      <div className="mb-8 flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight mb-2">Partner Program</h1>
+          <h1 className="mb-2 text-3xl font-bold tracking-tight">
+            Partner Program
+          </h1>
           <p className="text-muted-foreground">
             Share AI SaaS and earn 30% commission on every payment.
           </p>
         </div>
-        <Button 
-          variant="outline" 
+        <Button
+          variant="outline"
           onClick={() => setHistoryOpen(true)}
           className="gap-2"
         >
-          <History className="w-4 h-4" />
+          <History className="h-4 w-4" />
           Commission History
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
         {/* Left Column: Wallet & Balance */}
         <div className="space-y-6">
-          <Card className="bg-gradient-to-br from-zinc-900 via-zinc-900 to-amber-950/30 border-amber-500/20 shadow-xl overflow-hidden relative h-full">
-            <div className="absolute top-0 right-0 p-48 bg-amber-500/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3 pointer-events-none" />
+          <Card className="relative h-full overflow-hidden border-amber-500/20 bg-gradient-to-br from-zinc-900 via-zinc-900 to-amber-950/30 shadow-xl">
+            <div className="pointer-events-none absolute top-0 right-0 translate-x-1/3 -translate-y-1/2 rounded-full bg-amber-500/5 p-48 blur-3xl" />
 
-            <CardContent className="p-8 space-y-8 relative z-10">
+            <CardContent className="relative z-10 space-y-8 p-8">
               {/* Main Balance */}
               <div className="space-y-2">
-                <div className="text-sm font-medium text-zinc-400 uppercase tracking-wider flex items-center gap-2">
-                  <Wallet className="w-4 h-4" />
+                <div className="flex items-center gap-2 text-sm font-medium tracking-wider text-zinc-400 uppercase">
+                  <Wallet className="h-4 w-4" />
                   Wallet Balance
                 </div>
-                <div className="text-5xl font-bold text-white tracking-tight">
+                <div className="text-5xl font-bold tracking-tight text-white">
                   ${availableUsd}
                 </div>
                 {status.balances.pendingCents > 0 && (
-                  <div className="text-base font-medium text-amber-500 flex items-center gap-2 animate-in fade-in slide-in-from-left-2">
-                    <Clock className="w-4 h-4" />
-                    ${pendingUsd} pending settlement
+                  <div className="animate-in fade-in slide-in-from-left-2 flex items-center gap-2 text-base font-medium text-amber-500">
+                    <Clock className="h-4 w-4" />${pendingUsd} pending
+                    settlement
                   </div>
                 )}
               </div>
@@ -119,17 +123,17 @@ export function DesktopAffiliatePage({ status }: Props) {
                   <span>Withdrawal Progress</span>
                   <span>${minCashoutUsd} Minimum</span>
                 </div>
-                <div className="h-3 bg-zinc-800 rounded-full overflow-hidden">
+                <div className="h-3 overflow-hidden rounded-full bg-zinc-800">
                   <div
                     className={cn(
                       "h-full rounded-full transition-all duration-500 ease-out",
-                      isCashoutReady ? "bg-green-500" : "bg-amber-500"
+                      isCashoutReady ? "bg-green-500" : "bg-amber-500",
                     )}
                     style={{ width: `${progressPercent}%` }}
                   />
                 </div>
                 {!isCashoutReady && (
-                  <div className="text-sm text-amber-500/80 text-right">
+                  <div className="text-right text-sm text-amber-500/80">
                     $
                     {(
                       (status.rules.minCashoutCents -
@@ -139,22 +143,25 @@ export function DesktopAffiliatePage({ status }: Props) {
                     more to withdraw
                   </div>
                 )}
-            </div>
+              </div>
 
               {/* Actions */}
               <div className="grid grid-cols-2 gap-4">
                 <Button
                   className={cn(
-                    "w-full h-12 font-semibold text-lg",
+                    "h-12 w-full text-lg font-semibold",
                     isCashoutReady
-                      ? "bg-green-600 hover:bg-green-700 text-white"
-                      : "bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-zinc-300"
+                      ? "bg-green-600 text-white hover:bg-green-700"
+                      : "bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-zinc-300",
                   )}
                   onClick={() => {
                     if (isCashoutReady) {
                       setWithdrawOpen(true);
                     } else {
-                      const remaining = (status.rules.minCashoutCents - status.balances.availableCents) / 100;
+                      const remaining =
+                        (status.rules.minCashoutCents -
+                          status.balances.availableCents) /
+                        100;
                       toast.info(`You need $${minCashoutUsd} to withdraw.`, {
                         description: `Earn $${remaining.toFixed(2)} more to unlock cashout!`,
                         duration: 4000,
@@ -164,42 +171,51 @@ export function DesktopAffiliatePage({ status }: Props) {
                 >
                   Withdraw Cash
                 </Button>
-                <Button
-                  variant="outline"
-                  className="w-full h-12 bg-transparent border-zinc-700 text-zinc-300 hover:bg-white/5 hover:text-white"
-                  onClick={() => setExchangeOpen(true)}
-                >
-                  <Coins className="w-5 h-5 mr-2" />
-                  Get Credits
-                </Button>
-            </div>
+                {canExchange && (
+                  <>
+                    <Button
+                      variant="outline"
+                      className="h-12 w-full border-zinc-700 bg-transparent text-zinc-300 hover:bg-white/5 hover:text-white"
+                      onClick={() => setExchangeOpen(true)}
+                    >
+                      <Coins className="mr-2 h-5 w-5" />
+                      Get Credits
+                    </Button>
+                  </>
+                )}
+              </div>
 
               {/* Pending - REMOVED (moved to top) */}
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Right Column: Link & Info */}
         <div className="space-y-6">
           {/* Referral Link Card */}
-        <Card>
-            <CardContent className="p-6 space-y-4">
+          <Card>
+            <CardContent className="space-y-4 p-6">
               <div className="space-y-1">
-                <h3 className="font-semibold text-lg">Your Referral Link</h3>
-                <p className="text-sm text-muted-foreground">
-                  Share this link. Users who sign up via your link are permanently attributed to you.
+                <h3 className="text-lg font-semibold">Your Referral Link</h3>
+                <p className="text-muted-foreground text-sm">
+                  Share this link. Users who sign up via your link are
+                  permanently attributed to you.
                 </p>
               </div>
 
               {!status.referralCode ? (
-                <div className="p-6 bg-muted/30 rounded-xl border border-dashed flex flex-col items-center justify-center gap-4 text-center animate-in fade-in zoom-in-95 duration-300">
-                  <p className="text-sm text-muted-foreground">
+                <div className="bg-muted/30 animate-in fade-in zoom-in-95 flex flex-col items-center justify-center gap-4 rounded-xl border border-dashed p-6 text-center duration-300">
+                  <p className="text-muted-foreground text-sm">
                     Activate your account to generate your unique referral link.
                   </p>
                   <Button
                     onClick={() => activateMutation.mutate()}
-                    disabled={activateMutation.isPending}
-                    className="bg-amber-600 hover:bg-amber-700 text-white font-semibold"
+                    disabled={
+                      activateMutation.isPending ||
+                      !status.canActivate ||
+                      !enrollmentEnabled
+                    }
+                    className="bg-amber-600 font-semibold text-white hover:bg-amber-700"
                   >
                     {activateMutation.isPending
                       ? "Activating..."
@@ -208,12 +224,12 @@ export function DesktopAffiliatePage({ status }: Props) {
                 </div>
               ) : (
                 <>
-                  <div className="flex gap-2 p-2 bg-muted/50 rounded-xl border">
-                    <div className="flex-1 flex items-center px-3 font-mono text-sm text-muted-foreground truncate select-all">
+                  <div className="bg-muted/50 flex gap-2 rounded-xl border p-2">
+                    <div className="text-muted-foreground flex flex-1 items-center truncate px-3 font-mono text-sm select-all">
                       {status.referralLink}
                     </div>
                     <Button onClick={copyLink} className="shrink-0">
-                      <Copy className="w-4 h-4 mr-2" />
+                      <Copy className="mr-2 h-4 w-4" />
                       Copy
                     </Button>
                   </div>
@@ -223,56 +239,56 @@ export function DesktopAffiliatePage({ status }: Props) {
                       href={twitterShareUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center justify-center gap-2 bg-black text-white h-11 rounded-md font-medium text-sm hover:opacity-90 transition-opacity"
+                      className="flex h-11 items-center justify-center gap-2 rounded-md bg-black text-sm font-medium text-white transition-opacity hover:opacity-90"
                     >
-                      <XIcon className="w-4 h-4" />
+                      <XIcon className="h-4 w-4" />
                       Post to X
                     </a>
                     <a
                       href={telegramShareUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center justify-center gap-2 bg-[#229ED9] text-white h-11 rounded-md font-medium text-sm hover:opacity-90 transition-opacity"
+                      className="flex h-11 items-center justify-center gap-2 rounded-md bg-[#229ED9] text-sm font-medium text-white transition-opacity hover:opacity-90"
                     >
-                      <SendIcon className="w-4 h-4" />
+                      <SendIcon className="h-4 w-4" />
                       Share on TG
                     </a>
                   </div>
                 </>
               )}
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
 
           {/* How it works */}
-        <Card>
+          <Card>
             <CardContent className="p-6">
-              <h3 className="font-semibold mb-6">How it works</h3>
-              <div className="flex justify-between items-center px-4">
+              <h3 className="mb-6 font-semibold">How it works</h3>
+              <div className="flex items-center justify-between px-4">
                 <StepIcon
-                  icon={<Share2 className="w-6 h-6" />}
+                  icon={<Share2 className="h-6 w-6" />}
                   title="Share"
                   desc="Your Link"
                 />
-                <ArrowRightLeft className="w-5 h-5 text-muted-foreground/30" />
+                <ArrowRightLeft className="text-muted-foreground/30 h-5 w-5" />
                 <StepIcon
-                  icon={<User className="w-6 h-6" />}
+                  icon={<User className="h-6 w-6" />}
                   title="Refer"
                   desc="New Users"
                 />
-                <ArrowRightLeft className="w-5 h-5 text-muted-foreground/30" />
+                <ArrowRightLeft className="text-muted-foreground/30 h-5 w-5" />
                 <StepIcon
-                  icon={<Coins className="w-6 h-6" />}
+                  icon={<Coins className="h-6 w-6" />}
                   title="Earn"
                   desc="30% Cash"
                 />
-            </div>
-              <p className="text-sm text-center text-muted-foreground/60 mt-8">
+              </div>
+              <p className="text-muted-foreground/60 mt-8 text-center text-sm">
                 Crypto payouts are processed manually within 24-48 hours.
                 <br />
                 Card payments settle in 30 days due to chargeback risks.
               </p>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
         </div>
       </div>
 
@@ -283,17 +299,19 @@ export function DesktopAffiliatePage({ status }: Props) {
         minCashoutCents={status.rules.minCashoutCents}
         defaultWallet={status.payoutWallet}
       />
-      <ExchangeDrawer
-        open={exchangeOpen}
-        onOpenChange={setExchangeOpen}
-        availableCents={status.balances.availableCents}
-        exchangeUnitCents={status.rules.exchangeUnitCents}
-        exchangeUnitCredits={status.rules.exchangeUnitCredits}
-      />
-      <CommissionHistory
-        open={historyOpen}
-        onOpenChange={setHistoryOpen}
-      />
+      {canExchange && (
+        <>
+          {" "}
+          <ExchangeDrawer
+            open={exchangeOpen}
+            onOpenChange={setExchangeOpen}
+            availableCents={status.balances.availableCents}
+            exchangeUnitCents={status.rules.exchangeUnitCents}
+            exchangeUnitCredits={status.rules.exchangeUnitCredits}
+          />
+        </>
+      )}
+      <CommissionHistory open={historyOpen} onOpenChange={setHistoryOpen} />
     </div>
   );
 }
@@ -308,13 +326,13 @@ function StepIcon({
   desc: string;
 }) {
   return (
-    <div className="flex flex-col items-center text-center gap-2">
-      <div className="w-12 h-12 rounded-full bg-primary/10 text-primary flex items-center justify-center">
+    <div className="flex flex-col items-center gap-2 text-center">
+      <div className="bg-primary/10 text-primary flex h-12 w-12 items-center justify-center rounded-full">
         {icon}
       </div>
       <div>
         <div className="font-bold">{title}</div>
-        <div className="text-xs text-muted-foreground">{desc}</div>
+        <div className="text-muted-foreground text-xs">{desc}</div>
       </div>
     </div>
   );

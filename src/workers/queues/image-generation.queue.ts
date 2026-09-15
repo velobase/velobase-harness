@@ -24,6 +24,13 @@ export const imageGenerationQueue = new Queue<ImageGenerationJobData>(
 export async function enqueueImageGenerationTask(
   taskId: string,
 ): Promise<void> {
+  const existing = await imageGenerationQueue.getJob(taskId);
+  if (existing) {
+    const state = await existing.getState();
+    if (state === "failed" || state === "completed")
+      await existing.retry(state);
+    return;
+  }
   await imageGenerationQueue.add(
     `image-generation-${taskId}`,
     {

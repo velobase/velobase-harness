@@ -46,6 +46,24 @@
 
 ---
 
+## Try Harness locally
+
+Download or clone this repository, install Node.js and pnpm, open Docker Desktop, and run:
+
+```sh
+pnpm install && pnpm dev:local
+```
+
+Open [Harness](http://localhost:3003). Web and Worker run directly on your Mac / local machine, with source edits reflected through Fast Refresh. Docker runs only PostgreSQL and Redis. Open **Sign in** and choose **Explore as local administrator**. The command prepares the original schema and seed data; subsequent starts only need `pnpm dev:local`. No external service account is needed to explore the application. Model calls, real payments and mailbox access require their corresponding connections.
+
+Press `Ctrl+C` to stop the application; the databases keep running and retain their Docker volumes. Local authentication state is saved in the git-ignored `.harness-local/` directory. This development-only experience listens on your machine's loopback interface. Configure your own authentication for deployment.
+
+When switching from the all-Docker preview, `pnpm dev:local` stops that preview's Web container and retains its authentication secret and data. PostgreSQL is exposed only at `127.0.0.1:54333`, and Redis at `127.0.0.1:56380`.
+
+For a container-only preview without source editing, `docker compose -f compose.demo.yml up --build` remains available. Stop the native application first to free port `3003`.
+
+Continue in the same application: [module catalog](./docs/en/modules/catalog.md), [Admin operation and code composition](./docs/en/modules/composition.md), or [development setup](#quick-start).
+
 ## Build the product. Keep the SaaS infrastructure.
 
 AI coding tools make prototypes fast. Turning one into a reliable paid product

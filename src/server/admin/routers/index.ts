@@ -30,11 +30,7 @@ import {
 } from "./procedures/products";
 
 // Orders
-import {
-  listOrders,
-  getOrder,
-  getOrderStats,
-} from "./procedures/orders";
+import { listOrders, getOrder, getOrderStats } from "./procedures/orders";
 
 // Affiliate
 import {
@@ -47,6 +43,7 @@ import {
 // Promo Codes
 import {
   listPromoCodes,
+  listPromoRedemptions,
   createPromoCode,
   updatePromoCode,
   deletePromoCode,
@@ -107,6 +104,7 @@ export const adminRouter = createTRPCRouter({
 
   // Promo Codes
   listPromoCodes,
+  listPromoRedemptions,
   createPromoCode,
   updatePromoCode,
   deletePromoCode,
@@ -131,4 +129,3 @@ export const adminRouter = createTRPCRouter({
   cancelTouchSchedule,
   getTouchScheduleDetails,
 });
-
