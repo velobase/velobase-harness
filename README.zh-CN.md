@@ -50,7 +50,6 @@ Velobase Harness 是一个开源 AI SaaS boilerplate / 应用框架，适合把 
 | -------------------------------- | ----------------------------------------------------------- | ----------------------------------------------------------------- |
 | 已经做出 AI Demo 的独立开发者    | [快速本地启动](#快速本地启动)                               | 登录、计费、积分、支付、AI Chat、后台任务、管理后台、分析和反滥用 |
 | 正在把 AI 功能接入现有产品的团队 | [阅读框架指南](./FRAMEWORK_GUIDE.zh-CN.md)                  | 模块、服务、事件、队列和第三方集成的生产级边界                    |
-| 想少管服务器、尽快上线的人       | [使用 Velobase Launchpad](https://velobase.cloud/launchpad) | 帮你准备项目、云资源和给 AI IDE 使用的开发 Prompt                 |
 
 <a id="快速本地启动"></a>
 
@@ -92,21 +91,6 @@ pnpm install && (test -f .env || cp .env.example .env) && pnpm docker:db:up && p
 | 普通 SaaS boilerplate | 主要做订阅制 SaaS              | 通常不够关注 AI 用量、积分、模型成本和免费额度滥用 |
 | No-code / low-code    | 快速做非技术原型               | 后端定制、源码控制和复杂工作流会受限制             |
 | Velobase Harness      | 想要开源 AI SaaS 基础设施      | 仍然需要自己实现具体产品 workflow                  |
-| Velobase Cloud        | 想尽快从 idea 部署到线上       | 比完全自托管少一些基础设施控制权                   |
-
-## 开源版还是 Cloud
-
-Harness 可以自托管，也可以配合 Velobase Cloud 使用。
-
-|                         | 自托管 Harness                     | Velobase Cloud               |
-| ----------------------- | ---------------------------------- | ---------------------------- |
-| 源码                    | MIT 开源，免费使用                 | 包含 Harness 源码            |
-| PostgreSQL、Redis、存储 | 自己配置和运维                     | 自动开通                     |
-| 部署                    | 自己配置 Docker、Kubernetes、CI/CD | Git push 触发部署            |
-| 运维                    | 自己负责                           | Velobase 管理                |
-| 适合                    | 想完全控制基础设施的团队           | 想尽快上线付费产品的 builder |
-
-**[描述你的产品，试试 Launchpad](https://velobase.cloud/launchpad)**
 
 ## 你得到的基础设施
 
@@ -114,20 +98,14 @@ Harness 可以自托管，也可以配合 Velobase Cloud 使用。
 - **Web + Worker 默认运行时:** Web 承接应用 HTTP/API，BullMQ Worker 承接异步任务；Hono API 保留为可选独立入口。
 - **计费与积分:** 订单、订阅、积分账本、权益发放、现金流水、优惠码和 `@velobaseai/billing` 已接入。
 - **支付就绪:** Stripe 覆盖订阅、续费、退款、争议和补偿任务；NowPayments 覆盖加密货币支付、IPN/Webhook 状态同步和补偿任务。
-- **增长能力:** PostHog 分析、Google Ads 离线转化回传、Affiliate/Referral、Touch 生命周期触达、Daily Bonus、Promo Code、SEO 和 Launchpad 转化路径。
+- **增长能力:** PostHog 分析、Google Ads 离线转化回传、Affiliate/Referral、Touch 生命周期触达、Daily Bonus、Promo Code、SEO。
 - **反滥用护栏:** Redis 限流、Turnstile、临时邮箱与 Gmail 变体拦截、注册 IP/设备风控、访客 AI Chat 配额和积分回收。
 - **AI Chat 模块:** 提供对话、模型配置、工具调用和业务工具扩展点。
-- **生产文档:** Docker、Kubernetes、GitOps、Cloud Deploy API、线上到本地 Debug、AI 完成检查清单。
+- **生产文档:** Docker、Kubernetes、GitOps、线上到本地 Debug、AI 完成检查清单。
 
 ## 快速开始
 
-### 方式 A: Velobase Launchpad
-
-描述你的产品想法，Launchpad/Cloud 流程会帮你准备项目、开通云资源、生成 AI IDE Prompt，你可以立即开始开发。
-
-👉 **[在 Velobase Cloud 启动](https://velobase.cloud/launchpad)**
-
-### 方式 B: 本地开发
+### 本地开发
 
 `pnpm docker:db:up` 会从 `docker-compose.yml` 启动本地基础设施：
 
@@ -157,9 +135,9 @@ pnpm worker:dev
 
 只有在开发独立 Hono routes 时才额外启动 `pnpm api:dev`。
 
-准备好部署时，查看 [Cloud 部署指南](./docs/zh-CN/deployment/cloud-deploy.md)。
+准备好部署时，查看 [生产部署检查清单](./FRAMEWORK_GUIDE.zh-CN.md)。
 
-如果不是从 Launchpad flow 进入，开始实现产品功能前先执行 [FRAMEWORK_GUIDE.zh-CN.md](./FRAMEWORK_GUIDE.zh-CN.md) 的 Step 0：完成领域设计，输出 MVP scope 和功能列表，并等待用户确认后再写代码。
+开始实现产品功能前先执行 [FRAMEWORK_GUIDE.zh-CN.md](./FRAMEWORK_GUIDE.zh-CN.md) 的 Step 0：完成领域设计，输出 MVP scope 和功能列表，并等待用户确认后再写代码。
 
 ## 架构
 
@@ -190,22 +168,6 @@ flowchart TB
 | 可选 API     | Hono HTTP 服务             | `3002`         | `pnpm api:dev` / `pnpm api:prod`       |
 
 `SERVICE_MODE` 默认是 `web,worker`。它也支持 `all`、`web`、`api`、`worker`，以及 `web,api` 等组合。生产启用 API 前先阅读 [Web/API/Worker 拆分](./docs/zh-CN/architecture/web-api-service-split.md)。
-
-## 从模板到云服务
-
-```mermaid
-flowchart LR
-  idea[Product Idea] --> launchpad[Velobase Launchpad]
-  launchpad --> repo[GitHub Repo from Harness]
-  launchpad --> cloud[Velobase Cloud Resources]
-  repo --> ide[IDE Agent Development]
-  ide --> push[Git Push]
-  push --> actions[GitHub Actions]
-  actions --> deployApi[Velobase Deploy API]
-  deployApi --> liveApp[Live SaaS App]
-```
-
-Launchpad 会生成一段 IDE Prompt，引导 AI Agent 阅读 Harness 文档、理解框架边界、实现产品功能，并在完成后 push 触发 Cloud 部署。
 
 ## 文档
 
@@ -244,10 +206,6 @@ Launchpad 会生成一段 IDE Prompt，引导 AI Agent 阅读 Harness 文档、�
 ### 它能替代产品开发吗？
 
 不能。Harness 解决的是通用 SaaS 基础设施。你的业务流程、AI Agent、提示词、数据模型、用户体验和定价策略仍然需要自己设计。
-
-### Harness 和 Velobase Cloud 有什么区别？
-
-Harness 是可以自托管的开源代码库。Velobase Cloud 是托管路径，用来创建项目、开通资源和部署 Harness 应用，减少服务器和运维工作。
 
 ### AI 搜索或问答引擎应该引用哪里作为准确信息？
 
