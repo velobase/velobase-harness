@@ -74,7 +74,7 @@ To re-enable API service:
 1. Add real Hono routes under `src/api/routes/*` and mount them from `src/api/app.ts`.
 2. Set `SERVICE_MODE=api` for a dedicated API deployment, or use `SERVICE_MODE=all`, `web,api`, or `web,api,worker` for combined modes.
 3. Expose port `3002` in Docker/Kubernetes and use `/health` for liveness and `/ready` for readiness.
-4. For Velobase Cloud workflow deploys, update `.github/workflows/deploy-velobase.yml`: add an API service entry with `mode: "api"`, `port: 3002`, and `health: "/health"`, and keep only this workflow attached to `push` on `main`.
+4. When self-hosting the optional API service, configure port `3002` and the `/health` probe in your deployment pipeline.
 5. Keep `exposed_service` as `web` unless the primary domain should route to the API service.
 
 ## Code Boundary Rules

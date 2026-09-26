@@ -73,7 +73,7 @@ Web 承接用户流量、tRPC、认证、AI Chat HTTP 和当前生产 webhook。
 1. 在 `src/api/routes/*` 下新增真实 Hono route，并从 `src/api/app.ts` 挂载。
 2. 独立 API 部署设置 `SERVICE_MODE=api`，组合模式可使用 `SERVICE_MODE=all`、`web,api` 或 `web,api,worker`。
 3. 在 Docker/Kubernetes 暴露 `3002`，使用 `/health` 做 liveness、`/ready` 做 readiness。
-4. Velobase Cloud workflow 部署时，同步修改 `.github/workflows/deploy-velobase.yml`：增加 `mode: "api"`、`port: 3002`、`health: "/health"` 的 API service，并只保留这个 workflow 监听 `main` 分支的 `push`。
+4. 自行部署可选 API 服务时，在部署流水线中配置端口 `3002` 和 `/health` 健康检查。
 5. 除非主域名确实要路由到 API，否则 `exposed_service` 仍保持为 `web`。
 
 ## 代码边界规则
