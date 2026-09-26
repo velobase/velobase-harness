@@ -1,5 +1,5 @@
 import type { StripePaidSubscriptionInvoice } from "@velobase/subscriptions-stripe";
-import { SubscriptionsError } from "@velobase/subscriptions";
+import { jsonValueSchema, SubscriptionsError } from "@velobase/subscriptions";
 import { db } from "@/server/db";
 import { appEvents } from "@/server/events/bus";
 import {
@@ -76,7 +76,7 @@ export async function fulfillStripeSubscriptionRenewal(
           amountCents: invoice.amountPaid,
           currency: invoice.currency,
           invoiceId: invoice.invoiceId,
-          productSnapshot: current.planSnapshot,
+          productSnapshot: jsonValueSchema.parse(current.planSnapshot),
         },
         effects:
           credits > 0

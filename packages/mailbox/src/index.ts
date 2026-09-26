@@ -29,7 +29,8 @@ export interface IncomingEmail {
 }
 
 async function openInbox(config: MailboxConfig) {
-  const connection = new Imap({
+  // imap supports socketTimeout, but @types/imap omits it from Config.
+  const connectionConfig = {
     user: config.address,
     password: config.password,
     host: config.imapHost,
@@ -39,7 +40,8 @@ async function openInbox(config: MailboxConfig) {
     connTimeout: 15000,
     authTimeout: 15000,
     socketTimeout: 30000,
-  });
+  } satisfies Imap.Config & { socketTimeout: number };
+  const connection = new Imap(connectionConfig);
   const box = await new Promise<Imap.Box>((resolve, reject) => {
     connection.once("error", reject);
     connection.once("end", () => reject(new Error("IMAP connection closed")));
