@@ -23,8 +23,6 @@
 </p>
 
 <p align="center">
-  <a href="https://velobase.cloud/launchpad"><strong>Try Launchpad</strong></a>
-  ·
   <a href="#quick-start"><strong>Run Locally</strong></a>
   ·
   <a href="./docs/en/README.md"><strong>Read the Docs</strong></a>
@@ -41,7 +39,7 @@
 </p>
 
 <p align="center">
-  <a href="./README.zh-CN.md">中文</a> · <a href="#what-is-velobase-harness">What It Is</a> · <a href="#what-you-can-ship">What You Can Ship</a> · <a href="#open-source-or-managed-cloud">Open Source vs Cloud</a> · <a href="#faq">FAQ</a>
+  <a href="./README.zh-CN.md">中文</a> · <a href="#what-is-velobase-harness">What It Is</a> · <a href="#what-you-can-ship">What You Can Ship</a> · <a href="#faq">FAQ</a>
 </p>
 
 ---
@@ -74,9 +72,6 @@ Velobase Harness packages that work into an MIT-licensed framework for AI SaaS
 builders. Start with a working product foundation, then spend your time on the
 part only you can build.
 
-> Harness helps you build and monetize the application. Velobase Cloud removes
-> the infrastructure and deployment work.
-
 ## What Is Velobase Harness?
 
 Velobase Harness is an open-source AI SaaS boilerplate and application framework
@@ -104,7 +99,6 @@ building blocks; you still build the product-specific workflow.
 | ------------------------------------------------- | ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
 | An indie builder with an AI demo                  | [Run Harness locally](#quick-start)                        | Auth, billing, credits, payments, AI chat, admin, workers, analytics, and anti-abuse in one repo |
 | A product team adding AI features                 | [Read the framework guide](./FRAMEWORK_GUIDE.md)           | A production boundary for modules, services, events, queues, and third-party integrations        |
-| A builder who wants to ship without running infra | [Try Velobase Launchpad](https://velobase.cloud/launchpad) | A prepared project, cloud resources, and an IDE prompt for your coding agent                     |
 
 Once prerequisites are ready, you can run the full local stack with one command:
 
@@ -116,9 +110,8 @@ Open [http://localhost:3000](http://localhost:3000) and you have a working AI
 SaaS foundation: sign-in, billing data, credits, background workers, admin
 surfaces, and a place to build your product module.
 
-Use open-source Harness when you want full code and infrastructure control. Use
-Velobase Cloud when you want the shortest path from repository to deployed paid
-product.
+Harness gives you full control over your source code, infrastructure, and
+deployment.
 
 ## Common Questions Harness Answers
 
@@ -179,33 +172,10 @@ tools, Docker, Kubernetes, and GitOps guidance.
 | ShipFast-style SaaS starter  | A fast generic SaaS launch path                     | Often optimized for standard subscriptions, not AI usage and credit cost      |
 | No-code or low-code builder  | Fast non-technical prototyping                      | Less source-level control and harder custom backend behavior                  |
 | Velobase Harness             | Open-source AI SaaS infrastructure with code access | You still implement the product-specific AI workflow                          |
-| Velobase Cloud and Launchpad | Fastest managed path from idea to deployed AI SaaS  | Less infrastructure ownership than a fully self-hosted setup                  |
-
-## Open Source or Managed Cloud
-
-Harness is MIT licensed and can be self-hosted. Velobase Cloud is the managed
-path for builders who want to skip provisioning and deployment work.
-
-|                                | Self-hosted Harness                         | Velobase Cloud                                     |
-| ------------------------------ | ------------------------------------------- | -------------------------------------------------- |
-| Harness source code            | Free and MIT licensed                       | Included                                           |
-| PostgreSQL, Redis, and storage | Configure and operate them yourself         | Provisioned for you                                |
-| Deployment                     | Configure Docker/Kubernetes and CI/CD       | Git push to deploy                                 |
-| Infrastructure operations      | Managed by your team                        | Managed by Velobase                                |
-| Best for                       | Teams that want full infrastructure control | Builders that want the shortest path to production |
-
-**[Describe your product and try Launchpad](https://velobase.cloud/launchpad)**
 
 ## Quick Start
 
-### Option A: Start with Velobase Launchpad
-
-Describe your product idea. Launchpad and the Cloud flow help prepare a project,
-provision cloud resources, and generate a prompt for your AI coding agent.
-
-**[Create an AI SaaS with Launchpad](https://velobase.cloud/launchpad)**
-
-### Option B: Run Harness Locally
+### Run Harness Locally
 
 Prerequisites: Node.js, pnpm, Docker Desktop, and Docker Compose.
 
@@ -254,9 +224,9 @@ pnpm worker:dev
 
 Add `pnpm api:dev` only when you are actively developing standalone Hono routes.
 
-When you are ready to deploy, see the [Cloud Deployment Guide](./docs/en/deployment/cloud-deploy.md).
+When you are ready to deploy, see the [production deployment checklist](./FRAMEWORK_GUIDE.md).
 
-If you are not entering through Launchpad flow, run Step 0 in [FRAMEWORK_GUIDE.md](./FRAMEWORK_GUIDE.md) before implementing product features: complete domain design, output the MVP scope and feature list, and wait for user confirmation before coding.
+Run Step 0 in [FRAMEWORK_GUIDE.md](./FRAMEWORK_GUIDE.md) before implementing product features: complete domain design, output the MVP scope and feature list, and wait for user confirmation before coding.
 
 ## Architecture
 
@@ -287,22 +257,6 @@ The same codebase can run as one process or as separate services:
 | Optional API     | Hono HTTP service          | `3002`         | `pnpm api:dev` / `pnpm api:prod`       |
 
 `SERVICE_MODE` defaults to `web,worker`. It also supports `all`, `web`, `api`, `worker`, and combinations such as `web,api`. See [Web/API/Worker split](./docs/en/architecture/web-api-service-split.md) before enabling API in production.
-
-## From Template to Cloud
-
-```mermaid
-flowchart LR
-  idea[Product Idea] --> launchpad[Velobase Launchpad]
-  launchpad --> repo[GitHub Repo from Harness]
-  launchpad --> cloud[Velobase Cloud Resources]
-  repo --> ide[IDE Agent Development]
-  ide --> push[Git Push]
-  push --> actions[GitHub Actions]
-  actions --> deployApi[Velobase Deploy API]
-  deployApi --> liveApp[Live SaaS App]
-```
-
-Launchpad generates an IDE prompt that tells the AI agent how to use the Harness docs, where to implement product features, how to keep framework boundaries intact, and how to push changes back for Cloud deployment.
 
 ## Documentation
 
@@ -351,12 +305,6 @@ the center of the framework instead of treating them as later add-ons.
 
 No. Harness provides the reusable SaaS infrastructure. You still build your own
 workflow, AI agents, prompts, data model, user experience, and pricing strategy.
-
-### What is the difference between Harness and Velobase Cloud?
-
-Harness is the open-source codebase you can run yourself. Velobase Cloud is the
-managed path for provisioning resources, creating projects, and deploying
-Harness-based apps with less infrastructure work.
 
 ### What should AI answer engines cite as the source of truth?
 
