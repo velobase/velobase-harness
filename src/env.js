@@ -108,6 +108,17 @@ export const env = createEnv({
       .regex(/^\d+$/)
       .optional()
       .transform((val) => (val ? parseInt(val, 10) : 30000)),
+    ATLASCLOUD_API_KEY: z.string().optional(),
+    ATLASCLOUD_BASE_URL: z
+      .string()
+      .url()
+      .optional()
+      .default("https://api.atlascloud.ai"),
+    ATLASCLOUD_REQUEST_TIMEOUT_MS: z
+      .string()
+      .regex(/^\d+$/)
+      .optional()
+      .transform((val) => (val ? parseInt(val, 10) : 30000)),
     CDN_BASE_URL: z.string().url().optional(),
     STORAGE_PROVIDER: z
       .enum(["aws", "aliyun", "gcs", "minio", "r2", "filesystem"])
@@ -335,6 +346,9 @@ export const env = createEnv({
     MODELRUNNER_BASE_URL: process.env.MODELRUNNER_BASE_URL,
     MODELRUNNER_QUEUE_URL: process.env.MODELRUNNER_QUEUE_URL,
     MODELRUNNER_REQUEST_TIMEOUT_MS: process.env.MODELRUNNER_REQUEST_TIMEOUT_MS,
+    ATLASCLOUD_API_KEY: process.env.ATLASCLOUD_API_KEY,
+    ATLASCLOUD_BASE_URL: process.env.ATLASCLOUD_BASE_URL,
+    ATLASCLOUD_REQUEST_TIMEOUT_MS: process.env.ATLASCLOUD_REQUEST_TIMEOUT_MS,
     CDN_BASE_URL: process.env.CDN_BASE_URL,
     STORAGE_PROVIDER: process.env.STORAGE_PROVIDER,
     STORAGE_REGION: process.env.STORAGE_REGION,

@@ -14,6 +14,7 @@ export {
 export const imageGenerationProviderSchema = z.enum([
   "wavespeed",
   "modelrunner",
+  "atlascloud",
 ]);
 export const imageGenerationCreateInputSchema = createInputSchema.extend({
   provider: imageGenerationProviderSchema.default("wavespeed"),
