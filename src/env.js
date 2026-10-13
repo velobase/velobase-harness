@@ -35,6 +35,13 @@ export const env = createEnv({
     NEXTAUTH_URL: z.string().url().optional(),
     APP_URL: z.string().url().optional(),
     SERVICE_MODE: serviceModeSchema,
+    OTEL_ENABLED: z.enum(["true", "false"]).default("false"),
+    OTEL_SERVICE_NAME: z.string().min(1).optional(),
+    OTEL_EXPORTER_OTLP_ENDPOINT: z.string().url().optional(),
+    OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: z.string().url().optional(),
+    OTEL_EXPORTER_OTLP_HEADERS: z.string().optional(),
+    OTEL_TRACES_SAMPLER_ARG: z.coerce.number().min(0).max(1).default(1),
+
     PORT: port.optional().default("3000"),
     WEB_HOST: z.string().optional().default("0.0.0.0"),
     API_PORT: port.optional().default("3002"),
@@ -294,6 +301,14 @@ export const env = createEnv({
     NEXTAUTH_URL: process.env.NEXTAUTH_URL,
     APP_URL: appUrl,
     SERVICE_MODE: process.env.SERVICE_MODE,
+    OTEL_ENABLED: process.env.OTEL_ENABLED,
+    OTEL_SERVICE_NAME: process.env.OTEL_SERVICE_NAME,
+    OTEL_EXPORTER_OTLP_ENDPOINT: process.env.OTEL_EXPORTER_OTLP_ENDPOINT,
+    OTEL_EXPORTER_OTLP_TRACES_ENDPOINT:
+      process.env.OTEL_EXPORTER_OTLP_TRACES_ENDPOINT,
+    OTEL_EXPORTER_OTLP_HEADERS: process.env.OTEL_EXPORTER_OTLP_HEADERS,
+    OTEL_TRACES_SAMPLER_ARG: process.env.OTEL_TRACES_SAMPLER_ARG,
+
     PORT: process.env.PORT,
     WEB_HOST: process.env.WEB_HOST,
     API_PORT: process.env.API_PORT,

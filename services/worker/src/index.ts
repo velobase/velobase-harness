@@ -6,6 +6,7 @@
  * directly instead of this file.
  */
 import "dotenv/config";
+import { shutdownTelemetry } from "@/server/telemetry";
 
 import { startWorker } from "../../../src/workers/start";
 import { redis } from "@/server/redis";
@@ -26,6 +27,7 @@ async function shutdown(signal: string) {
     await workerHandle?.shutdown();
     await redis.quit();
     log.info("Redis connection closed");
+    await shutdownTelemetry();
     process.exit(0);
   } catch (error) {
     log.error({ error }, "Error during shutdown");

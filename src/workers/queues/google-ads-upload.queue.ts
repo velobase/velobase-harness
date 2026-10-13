@@ -1,3 +1,4 @@
+import { queueTelemetry } from "@/server/telemetry/queue";
 /**
  * Google Ads Upload Queue
  *
@@ -16,6 +17,7 @@ export const googleAdsUploadQueue = new Queue<GoogleAdsUploadJobData>(
   GOOGLE_ADS_UPLOAD_QUEUE_NAME,
   {
     connection: redis,
+    telemetry: queueTelemetry(),
     defaultJobOptions: {
       // flush 任务固定周期触发；失败时交给下一轮触发或少量重试即可
       attempts: 3,
@@ -23,6 +25,5 @@ export const googleAdsUploadQueue = new Queue<GoogleAdsUploadJobData>(
       removeOnComplete: { count: 1000, age: 7 * 24 * 3600 },
       removeOnFail: { count: 5000, age: 14 * 24 * 3600 },
     },
-  }
+  },
 );
-

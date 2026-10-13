@@ -7,6 +7,7 @@
  *
  * Returns a `shutdown` function for graceful termination.
  */
+import { initTelemetry } from "@/server/telemetry";
 import { serve } from "@hono/node-server";
 import type { ServerType } from "@hono/node-server";
 import { createApiApp } from "./app";
@@ -21,6 +22,7 @@ export interface ApiHandle {
 }
 
 export async function startApi(): Promise<ApiHandle> {
+  await initTelemetry("api");
   const port = env.API_PORT;
   const app = createApiApp();
 

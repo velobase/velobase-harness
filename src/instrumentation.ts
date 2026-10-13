@@ -8,6 +8,10 @@
  */
 export async function register() {
   if (process.env.NEXT_RUNTIME === "nodejs") {
+    const { initTelemetry, registerWebTelemetryShutdown } =
+      await import("./server/telemetry");
+    await initTelemetry("web");
+    registerWebTelemetryShutdown();
     const { initRuntime } = await import("./server/init");
     await initRuntime();
   }

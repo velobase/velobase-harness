@@ -40,6 +40,14 @@ const config = {
   // Load server SDKs through Node: their generated clients do not need Webpack
   // transforms, which otherwise make even the first page expensive to compile.
   serverExternalPackages: [
+    "@opentelemetry/api",
+    "@opentelemetry/sdk-trace-node",
+    "@opentelemetry/sdk-trace-base",
+    "@opentelemetry/resources",
+    "@opentelemetry/core",
+    "@opentelemetry/exporter-trace-otlp-http",
+    "@opentelemetry/instrumentation-undici",
+    "bullmq-otel",
     "sharp",
     "posthog-node",
     "google-ads-api",

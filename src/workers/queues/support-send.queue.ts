@@ -1,3 +1,4 @@
+import { queueTelemetry } from "@/server/telemetry/queue";
 /**
  * Support Send Queue
  *
@@ -25,6 +26,7 @@ export const supportSendQueue = new Queue<SupportSendJobData>(
   SUPPORT_SEND_QUEUE_NAME,
   {
     connection: redis,
+    telemetry: queueTelemetry(),
     defaultJobOptions: {
       attempts: 5,
       backoff: { type: "exponential", delay: 10000 },

@@ -3,6 +3,7 @@
  *
  * 封装 BullMQ Worker 创建，统一事件处理
  */
+import { queueTelemetry } from "@/server/telemetry/queue";
 import { Worker } from "bullmq";
 import type { Job, WorkerOptions } from "bullmq";
 import { redis } from "@/server/redis";
@@ -31,6 +32,7 @@ export function createWorkerInstance<T>(
 
   const worker = new Worker<T>(queueName, processor, {
     connection: redis,
+    telemetry: queueTelemetry(),
     ...mergedOptions,
   });
 

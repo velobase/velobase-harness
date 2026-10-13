@@ -7,6 +7,7 @@
  *
  * Returns a `shutdown` function for graceful termination.
  */
+import { initTelemetry } from "@/server/telemetry";
 import {
   collectDisabledSchedulerContributions,
   collectEnabledWorkerContributions,
@@ -26,6 +27,7 @@ export interface WorkerHandle {
 }
 
 export async function startWorker(): Promise<WorkerHandle> {
+  await initTelemetry("worker");
   const port = env.WORKER_PORT;
 
   const registry = new WorkerRegistry();
