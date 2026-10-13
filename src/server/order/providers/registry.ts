@@ -4,6 +4,6 @@ import {
 } from "@velobase/payments/providers";
 
 const providers = createPaymentProviderRegistry<PaymentProvider>();
-export const registerProvider = providers.register;
-export const hasProvider = providers.has;
-export const getProvider = providers.get;
+export const registerProvider = providers.register.bind(providers);
+export const hasProvider = providers.has.bind(providers);
+export const getProvider = providers.get.bind(providers);

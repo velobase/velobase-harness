@@ -75,10 +75,10 @@ async function handleStripeRefundOrDispute(params: {
 }
 
 export const stripeProvider: PaymentProvider = {
-  createPayment: stripeOneOffProvider.createPayment,
-  confirmPayment: stripeOneOffProvider.confirmPayment,
-  queryPaymentStatus: stripeOneOffProvider.queryPaymentStatus,
-  expireCheckoutSession: stripeOneOffProvider.expireCheckoutSession,
+  createPayment: stripeOneOffProvider.createPayment.bind(stripeOneOffProvider),
+  confirmPayment: stripeOneOffProvider.confirmPayment?.bind(stripeOneOffProvider),
+  queryPaymentStatus: stripeOneOffProvider.queryPaymentStatus?.bind(stripeOneOffProvider),
+  expireCheckoutSession: stripeOneOffProvider.expireCheckoutSession?.bind(stripeOneOffProvider),
 
   async createSubscription({ payment, order }: { payment: ProviderPayment; order: ProviderOrder }) {
     const stripe = getStripe();

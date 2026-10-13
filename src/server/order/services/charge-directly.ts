@@ -1,3 +1,4 @@
+import { z } from "zod";
 import { db } from "@/server/db";
 import { paymentRecords } from "@/modules/payments/server/service";
 import { getStripeClient } from "../providers/stripe";
@@ -134,7 +135,7 @@ export async function chargeDirectly(
           gateway: "STRIPE",
           status: "SUCCEEDED",
           gatewayTransactionId: paymentIntent.id,
-          rawData: JSON.parse(JSON.stringify(paymentIntent)),
+          rawData: z.record(z.unknown()).parse(JSON.parse(JSON.stringify(paymentIntent))),
         });
         if (!recorded.applied)
           return { success: true, orderId: order.id, paymentId: payment.id };

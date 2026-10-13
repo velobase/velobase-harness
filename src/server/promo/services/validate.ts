@@ -1,7 +1,6 @@
 import { campaignEligibility } from "@velobase/activities";
 import { db } from "@/server/db";
 import type { ValidateCodeParams, ValidateCodeResult } from "../types";
-import type { PromoCodeStatus } from "@prisma/client";
 
 export async function validateCode(
   params: ValidateCodeParams,
@@ -47,7 +46,7 @@ export async function validateCode(
 
   return {
     valid: true,
-    status: promo.status as PromoCodeStatus,
+    status: promo.status,
     grantType: promo.grantType,
     creditsAmount: promo.creditsAmount ?? undefined,
     productId: promo.productId ?? undefined,

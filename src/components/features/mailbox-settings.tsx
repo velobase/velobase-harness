@@ -1,5 +1,7 @@
 "use client";
 
+import { formText } from "@/lib/form-data";
+
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { api } from "@/trpc/react";
@@ -34,13 +36,13 @@ export function MailboxSettings() {
           event.preventDefault();
           const data = new FormData(event.currentTarget);
           save.mutate({
-            address: String(data.get("address")),
-            password: String(data.get("password")) || undefined,
-            imapHost: String(data.get("imapHost")),
+            address: formText(data, "address"),
+            password: formText(data, "password") || undefined,
+            imapHost: formText(data, "imapHost"),
             imapPort: Number(data.get("imapPort")),
-            smtpHost: String(data.get("smtpHost")),
+            smtpHost: formText(data, "smtpHost"),
             smtpPort: Number(data.get("smtpPort")),
-            from: String(data.get("from")) || undefined,
+            from: formText(data, "from") || undefined,
           });
         }}
       >

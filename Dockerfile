@@ -29,6 +29,7 @@ RUN corepack enable pnpm
 
 # Install dependencies (layer cache: only re-run when lock file changes)
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY patches ./patches
 COPY packages ./packages
 COPY prisma ./prisma
 RUN pnpm --filter velobase-harness... install --frozen-lockfile --ignore-scripts && \
@@ -56,6 +57,7 @@ ENV NODE_ENV=production
 
 # Install production dependencies + tsx (for API/Worker runtime)
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY patches ./patches
 COPY packages ./packages
 COPY prisma ./prisma
 RUN corepack enable pnpm && \

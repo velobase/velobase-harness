@@ -116,14 +116,17 @@ export const subscriptionFulfiller: Fulfiller = {
       // Older orders did not store plan relations. Freeze the retained subscription terms, or the
       // legacy catalog fallback, ONCE in the new receipt; new orders always carry full plan terms.
       const retained = oldCycle?.subscription.planSnapshot;
-      const fallback =
-        retained && subscriptionProductSchema.safeParse(retained).success
-          ? retained
-          : JSON.parse(
-              JSON.stringify(
-                await getProduct({ productId: ctx.order.productId }),
+      const fallback = z
+        .record(z.unknown())
+        .parse(
+          retained && subscriptionProductSchema.safeParse(retained).success
+            ? retained
+            : JSON.parse(
+                JSON.stringify(
+                  await getProduct({ productId: ctx.order.productId }),
+                ),
               ),
-            );
+        );
       const original = ctx.order.productSnapshot;
       snapshot = jsonValueSchema.parse({
         ...fallback,

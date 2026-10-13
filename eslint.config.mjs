@@ -22,8 +22,8 @@ export default tseslint.config(
   },
   ...compat.extends("next/core-web-vitals"),
   {
-    // This is the actual App Router root layout behind src/app/layout.tsx.
-    files: ["apps/web/src/composition/layout.tsx"],
+    // Root layout and standalone email HTML legitimately render a native <head>.
+    files: ["apps/web/src/composition/layout.tsx", "src/server/email/templates/magic-link.tsx"],
     rules: { "@next/next/no-head-element": "off" },
   },
   {

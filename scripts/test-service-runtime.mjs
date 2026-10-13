@@ -87,6 +87,7 @@ try {
     "package.json",
     "pnpm-lock.yaml",
     "pnpm-workspace.yaml",
+    "patches",
     "packages",
     "prisma",
   ])

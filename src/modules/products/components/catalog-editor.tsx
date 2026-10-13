@@ -21,7 +21,7 @@ export function CatalogEditor({
   onSaved,
 }: {
   product: Product;
-  onSaved(): void;
+  onSaved: () => void;
 }) {
   const t = useTranslations("productCatalog");
   const [invalid, setInvalid] = useState(false);

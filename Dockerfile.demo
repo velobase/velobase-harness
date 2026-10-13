@@ -6,6 +6,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends openssl ca-cert
     && npm install --global pnpm@10.12.1
 
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY patches ./patches
 COPY apps ./apps
 COPY packages ./packages
 COPY services ./services
