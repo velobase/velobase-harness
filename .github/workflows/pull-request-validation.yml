@@ -27,6 +27,8 @@ jobs:
         run: pnpm check:env
       - name: Test environment behavior
         run: pnpm test:env
+      - name: Test text form fields
+        run: node --import tsx --test src/lib/form-data.test.ts
       - run: pnpm lint
       - run: pnpm typecheck
       - run: pnpm check:architecture

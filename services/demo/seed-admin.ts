@@ -1,8 +1,11 @@
+import { createLogger } from "../../src/lib/logger";
 import { createHash } from "node:crypto";
 import type { Prisma } from "@prisma/client";
 import { db } from "../../src/server/db";
 import { env } from "../../src/env";
 import { localDemoEnabled, localDemoEmail } from "../../src/server/auth/local-demo";
+
+const log = createLogger("demo-seed");
 
 // These records belong only to the existing, isolated Harness preview database.
 const target = new URL(env.DATABASE_URL);
@@ -246,9 +249,9 @@ async function main() {
     })) })).count;
     return counts;
   }, { timeout: 60000 });
-  console.log("Admin demo data inserted:", JSON.stringify(inserted));
-  console.log("Open http://localhost:3003/admin/users — search demo.user01@example.test for a populated detail page.");
-  console.log("Credit balances use the external Velobase ledger and are not included in this database seed.");
+  log.info({ inserted }, "Admin demo data inserted");
+  log.info("Open http://localhost:3003/admin/users — search demo.user01@example.test for a populated detail page.");
+  log.info("Credit balances use the external Velobase ledger and are not included in this database seed.");
 }
 
 try {

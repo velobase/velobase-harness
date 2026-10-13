@@ -120,7 +120,7 @@ export class ImageGenerationService extends Service<ImageGenerationProviderId> {
           where: { id: projectId },
           select: { userId: true },
         });
-        if (!project || project.userId !== userId)
+        if (project?.userId !== userId)
           throw new Error("Project access denied");
       },
       provider: getImageGenerationProvider,

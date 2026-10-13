@@ -8,6 +8,7 @@ ENV NODE_ENV=production
 
 # Install dependencies
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY patches ./patches
 COPY packages ./packages
 COPY prisma ./prisma
 RUN corepack enable pnpm && \

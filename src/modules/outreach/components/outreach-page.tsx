@@ -1,4 +1,6 @@
 "use client";
+
+import { formText } from "@/lib/form-data";
 import { useState } from "react";
 import { z } from "zod";
 import Link from "next/link";
@@ -108,8 +110,8 @@ export function OutreachPage() {
             event.preventDefault();
             const data = new FormData(event.currentTarget);
             saveScene.mutate({
-              key: String(data.get("key")),
-              name: String(data.get("name")),
+              key: formText(data, "key"),
+              name: formText(data, "name"),
               description: "",
               isActive: data.get("active") === "on",
             });
@@ -139,9 +141,9 @@ export function OutreachPage() {
               const data = new FormData(event.currentTarget);
               saveTemplate.mutate({
                 sceneKey: scene,
-                name: String(data.get("name")),
-                subject: String(data.get("subject")),
-                text: String(data.get("text")),
+                name: formText(data, "name"),
+                subject: formText(data, "subject"),
+                text: formText(data, "text"),
               });
             }}
           >
@@ -181,15 +183,15 @@ export function OutreachPage() {
               try {
                 const variables = z
                   .record(z.string())
-                  .parse(JSON.parse(String(data.get("variables") || "{}")));
+                  .parse(JSON.parse(formText(data, "variables") || "{}"));
                 setFormError(undefined);
                 schedule.mutate({
                   sceneKey: scene,
-                  templateId: String(data.get("templateId")),
-                  recipientId: String(data.get("recipientId")),
+                  templateId: formText(data, "templateId"),
+                  recipientId: formText(data, "recipientId"),
                   requestId,
                   scheduledAt: new Date(
-                    String(data.get("scheduledAt")),
+                    formText(data, "scheduledAt"),
                   ).toISOString(),
                   variables,
                 });

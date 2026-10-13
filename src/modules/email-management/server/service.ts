@@ -94,8 +94,7 @@ export async function queueManualReply(
     where: { id: input.ticketId },
   });
   if (
-    !ticket ||
-    ticket.channel !== "email" ||
+    ticket?.channel !== "email" ||
     !z.string().email().safeParse(ticket.contact).success
   )
     throw new TRPCError({ code: "NOT_FOUND" });

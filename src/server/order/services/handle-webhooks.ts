@@ -2,7 +2,7 @@ import { db } from "@/server/db";
 import { paymentRecords } from "@/modules/payments/server/service";
 import { ENABLE_PAYMENT_GATEWAY_PREFERENCE_AUTO_SYNC } from "../config";
 import { getProvider } from "../providers/registry";
-import type { Payment, Prisma } from "@prisma/client";
+import type { Payment } from "@prisma/client";
 import { logger } from "@/server/shared/telemetry/logger";
 import { appEvents } from "@/server/events/bus";
 import {

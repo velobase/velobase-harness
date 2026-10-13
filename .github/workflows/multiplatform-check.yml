@@ -30,7 +30,8 @@ jobs:
           node-version: "22"
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm audit --prod --audit-level high
+      - run: pnpm test:security
+      - run: pnpm audit:prod
       - run: pnpm check:architecture
       - run: pnpm check:packages
       - run: pnpm test:services

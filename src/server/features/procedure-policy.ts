@@ -13,10 +13,10 @@ export function featureForProcedure(path: string): FeatureId | undefined {
     )
   )
     return "subscriptions";
-  if (/^promo\./.test(path)) return "promo-codes";
+  if (path.startsWith("promo.")) return "promo-codes";
   if (path === "product.hitPaywall") return "newcomer-offers";
   if (path === "product.list") return undefined;
-  if (/^product\./.test(path)) return "products";
+  if (path.startsWith("product.")) return "products";
   if (
     /^order\.(checkout|create|createOrder|quickPurchase|createSetupIntent|createCryptoInvoice|getCryptoCheckoutPreview|getCryptoCurrencies|getEstimate)$/.test(
       path,
@@ -56,13 +56,13 @@ export function includedFeatureForProcedure(
   };
   if (namespace && namespaces[namespace]) return namespaces[namespace];
   if (path.startsWith("admin.")) {
-    if (/Promo/.test(path)) return "promo-codes";
-    if (/Touch/.test(path)) return "touch";
-    if (/Affiliate/.test(path)) return "affiliate";
-    if (/Product/.test(path)) return "products";
-    if (/Order/.test(path)) return "payments";
+    if (path.includes("Promo")) return "promo-codes";
+    if (path.includes("Touch")) return "touch";
+    if (path.includes("Affiliate")) return "affiliate";
+    if (path.includes("Product")) return "products";
+    if (path.includes("Order")) return "payments";
     if (/Credits|BillingRecords/.test(path)) return "credits";
-    if (/NewUserOffer/.test(path)) return "newcomer-offers";
+    if (path.includes("NewUserOffer")) return "newcomer-offers";
   }
   return undefined;
 }

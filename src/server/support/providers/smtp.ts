@@ -3,7 +3,7 @@
  */
 
 import nodemailer from "nodemailer";
-import type { Transporter } from "nodemailer";
+import type { Transporter, SendMailOptions } from "nodemailer";
 import { env } from "@/env";
 import { logger } from "@/lib/logger";
 import { APP_NAME, SUPPORT_EMAIL } from "@/config/brand";
@@ -64,7 +64,7 @@ export async function sendEmail(params: SendEmailParams): Promise<SendEmailResul
   try {
     const transport = getTransporter();
 
-    const mailOptions: nodemailer.SendMailOptions = {
+    const mailOptions: SendMailOptions = {
       from: FROM_ADDRESS,
       to: params.to,
       subject: params.subject,
@@ -80,11 +80,9 @@ export async function sendEmail(params: SendEmailParams): Promise<SendEmailResul
       mailOptions.references = params.references;
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const info = await transport.sendMail(mailOptions);
 
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-    const messageId = info.messageId as string;
+    const messageId = info.messageId;
 
     logger.info(
       { to: params.to, messageId },

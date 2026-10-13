@@ -8,7 +8,7 @@
   },
   "dependencies": {
     "imap": "^0.8.19",
-    "mailparser": "^3.9.20",
+    "mailparser": "^3.9.38",
     "@velobase/email-transport": "workspace:*"
   },
   "devDependencies": {
