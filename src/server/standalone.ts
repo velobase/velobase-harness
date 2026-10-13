@@ -15,6 +15,7 @@
  * process tears them all down gracefully.
  */
 import "dotenv/config";
+import { initTelemetry, shutdownTelemetry } from "@/server/telemetry";
 
 import { env } from "@/env";
 import { createLogger } from "@/lib/logger";
@@ -32,7 +33,7 @@ function shouldStart(service: string): boolean {
 const shutdowns: Array<() => Promise<void>> = [];
 
 function logResourceStatus() {
-  const mask = (v?: string) => v ? "configured" : "NOT SET";
+  const mask = (v?: string) => (v ? "configured" : "NOT SET");
   const resources = {
     DATABASE_URL: mask(env.DATABASE_URL),
     REDIS: env.REDIS_URL
@@ -50,6 +51,11 @@ function logResourceStatus() {
 }
 
 async function start() {
+  await initTelemetry(
+    modes.includes("all")
+      ? "api-worker"
+      : modes.filter((mode) => mode !== "web").join("-") || "launcher",
+  );
   log.info({ SERVICE_MODE, modes }, "Starting services...");
   logResourceStatus();
 
@@ -87,6 +93,7 @@ async function shutdown(signal: string) {
     await redis.quit();
     log.info("Redis connection closed");
   } catch {}
+  await shutdownTelemetry();
   process.exit(0);
 }
 

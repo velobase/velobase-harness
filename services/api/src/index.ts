@@ -6,6 +6,7 @@
  * instead of this file.
  */
 import "dotenv/config";
+import { shutdownTelemetry } from "@/server/telemetry";
 
 import { startApi } from "../../../src/api/start";
 import { createLogger } from "@/lib/logger";
@@ -23,6 +24,7 @@ async function shutdown(signal: string) {
   log.info({ signal }, "Received shutdown signal");
   try {
     await apiHandle?.shutdown();
+    await shutdownTelemetry();
     process.exit(0);
   } catch (err) {
     log.error({ error: err }, "Error during shutdown");

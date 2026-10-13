@@ -1,3 +1,4 @@
+import { queueTelemetry } from "@/server/telemetry/queue";
 /**
  * Support Process Queue
  *
@@ -17,12 +18,12 @@ export const supportProcessQueue = new Queue<SupportProcessJobData>(
   SUPPORT_PROCESS_QUEUE_NAME,
   {
     connection: redis,
+    telemetry: queueTelemetry(),
     defaultJobOptions: {
       attempts: 3,
       backoff: { type: "exponential", delay: 10000 },
       removeOnComplete: { count: 100, age: 24 * 3600 },
       removeOnFail: { count: 500, age: 7 * 24 * 3600 },
     },
-  }
+  },
 );
-

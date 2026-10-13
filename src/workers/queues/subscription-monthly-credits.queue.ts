@@ -1,3 +1,4 @@
+import { queueTelemetry } from "@/server/telemetry/queue";
 /**
  * Subscription Monthly Credits Queue
  *
@@ -13,6 +14,7 @@ export interface SubscriptionMonthlyCreditsJobData {
 export const subscriptionMonthlyCreditsQueue =
   new Queue<SubscriptionMonthlyCreditsJobData>("subscription-monthly-credits", {
     connection: redis,
+    telemetry: queueTelemetry(),
     defaultJobOptions: {
       attempts: 3,
       backoff: {
@@ -29,5 +31,3 @@ export const subscriptionMonthlyCreditsQueue =
       },
     },
   });
-
-

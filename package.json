@@ -54,7 +54,8 @@
     "check:api": "pnpm --filter @velobase/api-service check",
     "check:worker": "pnpm --filter @velobase/worker-service check",
     "test:services": "SKIP_ENV_VALIDATION=true NEXT_PHASE=phase-production-build node --import tsx --test services/*/tests/*.test.ts",
-    "test:runtime": "node scripts/test-service-runtime.mjs"
+    "test:runtime": "node scripts/test-service-runtime.mjs",
+    "test:telemetry": "node --import tsx --test src/server/telemetry/*.test.ts"
   },
   "dependencies": {
     "@ai-sdk/openai": "^2.0.53",
@@ -199,7 +200,15 @@
     "@velobase/image-generation-wavespeed": "workspace:*",
     "@velobase/image-generation-modelrunner": "workspace:*",
     "@velobase/ai-chat": "workspace:*",
-    "@velobase/ai-chat-openrouter": "workspace:*"
+    "@velobase/ai-chat-openrouter": "workspace:*",
+    "@opentelemetry/api": "^1.9.1",
+    "@opentelemetry/core": "^2.12.0",
+    "@opentelemetry/exporter-trace-otlp-http": "^0.223.0",
+    "@opentelemetry/instrumentation-undici": "^0.33.0",
+    "@opentelemetry/resources": "^2.12.0",
+    "@opentelemetry/sdk-trace-base": "^2.12.0",
+    "@opentelemetry/sdk-trace-node": "^2.12.0",
+    "bullmq-otel": "^1.3.1"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.1",

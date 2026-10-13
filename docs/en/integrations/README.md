@@ -31,6 +31,8 @@ This directory contains the English canonical documentation for third-party inte
 | ----------- | -------------------- | ------------------------------- | -------------------------------- |
 | Security    | Cloudflare Turnstile | CAPTCHA and anti-abuse boundary | [security](./security/README.md) |
 
+| Telemetry | OpenTelemetry + OTLP | Web/API/Worker distributed traces | [telemetry](./telemetry/README.md) |
+
 ## Rules
 
 - Product code calls framework abstractions, not provider SDKs directly.

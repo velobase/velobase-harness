@@ -1,3 +1,4 @@
+import { queueTelemetry } from "@/server/telemetry/queue";
 import { Queue } from "bullmq";
 import { redis } from "@/server/redis";
 import { createLogger } from "@/lib/logger";
@@ -12,6 +13,7 @@ export const conversionAlertQueue = new Queue<ConversionAlertJobData>(
   CONVERSION_ALERT_QUEUE_NAME,
   {
     connection: redis,
+    telemetry: queueTelemetry(),
     defaultJobOptions: {
       attempts: 1,
       removeOnComplete: {
@@ -22,7 +24,7 @@ export const conversionAlertQueue = new Queue<ConversionAlertJobData>(
         age: 7 * 24 * 3600,
       },
     },
-  }
+  },
 );
 
 const logger = createLogger("queue:conversion-alert");
@@ -30,4 +32,3 @@ const logger = createLogger("queue:conversion-alert");
 conversionAlertQueue.on("error", (err) => {
   logger.error({ err }, "Conversion alert queue error");
 });
-

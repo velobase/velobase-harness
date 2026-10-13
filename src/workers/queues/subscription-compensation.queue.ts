@@ -1,3 +1,4 @@
+import { queueTelemetry } from "@/server/telemetry/queue";
 /**
  * Subscription Compensation Queue
  *
@@ -19,6 +20,7 @@ export interface SubscriptionCompensationJobData {
 export const subscriptionCompensationQueue =
   new Queue<SubscriptionCompensationJobData>("subscription-compensation", {
     connection: redis,
+    telemetry: queueTelemetry(),
     defaultJobOptions: {
       attempts: 3,
       backoff: {
@@ -35,6 +37,3 @@ export const subscriptionCompensationQueue =
       },
     },
   });
-
-
-

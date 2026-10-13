@@ -1,6 +1,7 @@
+import { queueTelemetry } from "@/server/telemetry/queue";
 /**
  * Order Compensation Queue
- * 
+ *
  * 订单回调补偿队列，处理 webhook 丢失的情况
  */
 import { Queue } from "bullmq";
@@ -15,6 +16,7 @@ export const orderCompensationQueue = new Queue<OrderCompensationJobData>(
   "order-compensation",
   {
     connection: redis,
+    telemetry: queueTelemetry(),
     defaultJobOptions: {
       attempts: 3,
       backoff: {
@@ -30,6 +32,5 @@ export const orderCompensationQueue = new Queue<OrderCompensationJobData>(
         age: 7 * 24 * 3600, // 7 days
       },
     },
-  }
+  },
 );
-

@@ -1,3 +1,4 @@
+import { queueTelemetry } from "@/server/telemetry/queue";
 import { Queue } from "bullmq";
 import { redis } from "@/server/redis";
 
@@ -11,6 +12,7 @@ export interface ExampleJobData {
 
 export const exampleQueue = new Queue<ExampleJobData>(EXAMPLE_QUEUE_NAME, {
   connection: redis,
+  telemetry: queueTelemetry(),
   defaultJobOptions: {
     attempts: 3,
     backoff: {
