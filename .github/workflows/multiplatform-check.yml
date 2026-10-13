@@ -66,6 +66,8 @@ jobs:
       - name: Exercise real Expo CLI without native TypeScript support
         run: pnpm --filter @velobase/mobile exec node --import tsx --test tests/expo-cli.test.ts
       - run: sudo apt-get update && sudo apt-get install -y redis-server
+      - name: Verify OTel export and cross-process queue tracing
+        run: pnpm test:telemetry
       - name: Test isolated production install and service lifecycle with disposable Redis
         run: pnpm test:runtime
       - name: Build Web with the production Node version
