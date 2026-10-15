@@ -94,7 +94,8 @@ token 签发。需要登录时，应增加经过设计的服务端协议和平�
 完整本地依赖图中的 Next 专属引用。中立包只使用 ES 类型库，禁用 Node/DOM ambient
 types；桌面构建还检查实际打包依赖，防止服务端代码泄漏。
 
-PR 继续以 Web 生产构建作为门禁，部署前校验 Web。
-`multiplatform-check.yml` 在 Linux 检查共享包、后台入口、Electron 打包和两端 Expo
-导出。Docker 先复制中立包再冻结安装，只安装根服务端依赖闭包；`tsx`、Prisma 已成为
+PR CI 只保留一个任务，检查环境声明、Lint 和 TypeScript；纯文档改动跳过 CI。
+平台构建、自动化测试、依赖审计和运行时矩阵保留为按需执行的命令，不在 PR 或
+`main` 推送时自动运行。发布分支仍构建并部署镜像。
+Docker 先复制中立包再冻结安装，只安装根服务端依赖闭包；`tsx`、Prisma 已成为
 锁定的运行时依赖，镜像构建不再执行 `pnpm add`。
