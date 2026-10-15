@@ -140,7 +140,7 @@ this on Node 20 and 22.18.0, builds the three split images on Node 20, and runs
 This does not verify database migrations or every optional integration; some
 existing dependencies, including React Email, declare Node 22 minimum engines.
 
-Expo 57.0.28 and expo-constants 57.0.21 are aligned with the SDK 57 dependency check.
+Expo 57.0.29 and expo-constants 57.0.22 are aligned with the SDK 57 dependency check.
 Exact parent-scoped overrides pin compatible `picomatch` 2.3.2 patches under
 `jest-util` and `micromatch`, and `js-yaml` 4.3.2 under `@expo/xcpretty` to address
 [picomatch](https://github.com/advisories/GHSA-c2c7-rcm5-vvqj) and
