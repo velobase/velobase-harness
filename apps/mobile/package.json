@@ -18,8 +18,8 @@
   "dependencies": {
     "@velobase/api-client": "workspace:*",
     "@velobase/contracts": "workspace:*",
-    "expo": "~57.0.28",
-    "expo-constants": "~57.0.21",
+    "expo": "~57.0.29",
+    "expo-constants": "~57.0.22",
     "react": "19.2.3",
     "react-native": "0.86.3",
     "react-native-safe-area-context": "~5.7.0",

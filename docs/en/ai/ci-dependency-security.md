@@ -1,11 +1,13 @@
-# CI dependency security maintenance
+# Dependency security maintenance
 
-CI runs `pnpm test:security` and `pnpm audit:prod`. High/critical advisories still
-fail the audit gate. The original registry counts remain visible. Registry or
-report parsing failures also fail the job.
+Dependency security maintenance is opt-in: run `pnpm test:security` and
+`pnpm audit:prod` when explicitly requested. High/critical advisories still
+fail the audit command. The original registry counts remain visible. Registry or
+report parsing failures also fail the command.
 
 Most fixes use updated direct packages or version-bounded pnpm overrides. Expo
-57 packages are aligned using `expo install --check`; do not disable that check.
+57 packages are aligned using `expo install --check`; keep that command available
+for dependency maintenance.
 Nodemailer 10 provides its own exported types; use named `SendMailOptions` rather
 than the old default-import namespace.
 

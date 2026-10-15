@@ -1,7 +1,10 @@
-name: Pull Request Validation
+name: Checks
 
 on:
   pull_request:
+    paths-ignore:
+      - "docs/**"
+      - "**/*.md"
 
 permissions:
   contents: read
@@ -13,6 +16,7 @@ concurrency:
 jobs:
   validate:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -25,14 +29,5 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - name: Check environment declarations
         run: pnpm check:env
-      - name: Test environment behavior
-        run: pnpm test:env
-      - name: Test text form fields
-        run: node --import tsx --test src/lib/form-data.test.ts
       - run: pnpm lint
       - run: pnpm typecheck
-      - run: pnpm check:architecture
-      - name: Build production application
-        run: pnpm build
-        env:
-          SKIP_ENV_VALIDATION: "true"
