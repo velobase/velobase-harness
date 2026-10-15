@@ -1,1 +1,1 @@
-export { updateHostProduct as adminUpdateProduct } from "@/modules/products/server/service";
+export { updateHostProduct as adminUpdateProduct } from "@/server/product/catalog";

@@ -17,7 +17,7 @@ import {
   findSubscriptionDelivery,
   prepareDeliveryCycle,
   recordFirstCreditAnchor,
-} from "@/modules/subscriptions/server/delivery";
+} from "@/server/membership/delivery";
 import {
   subscriptionProductSchema,
   savedPeriodContextSchema,
@@ -25,7 +25,7 @@ import {
   addDays,
   addMonths,
   periodEnd,
-} from "@/modules/subscriptions/server/fulfillment-plan";
+} from "@/server/membership/fulfillment-plan";
 
 const log = createLogger("subscription-fulfillment");
 const metadataSchema = z

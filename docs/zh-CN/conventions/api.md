@@ -46,7 +46,7 @@
 
 ### 自由区：产品 API
 
-产品特定 API 放在 `src/modules/<name>/`。
+API 路由调用 `src/server/<capability>/` 下的服务，私有产品 API 留在私有产品仓库。
 
 规则：
 

@@ -1,4 +1,4 @@
-import { credits, creditOperation } from "@/modules/credits/server/service";
+import { credits, creditOperation } from "@/server/billing/credits";
 import type {
   GetRecordsParams,
   GetRecordsOutput,

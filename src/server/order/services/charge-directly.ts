@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { db } from "@/server/db";
-import { paymentRecords } from "@/modules/payments/server/service";
+import { paymentRecords } from "@/server/order/records";
 import { getStripeClient } from "../providers/stripe";
 import { logger } from "@/server/shared/telemetry/logger";
 import { processFulfillmentByPayment } from "@/server/fulfillment/manager";

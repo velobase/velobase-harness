@@ -7,7 +7,7 @@ import {
 import {
   productCatalog,
   productOperation,
-} from "@/modules/products/server/service";
+} from "@/server/product/catalog";
 import {
   getProductSchema,
   hitPaywallSchema,

@@ -1,4 +1,4 @@
-import { subscriptions } from "@/modules/subscriptions/server/service";
+import { subscriptions } from "@/server/membership/subscriptions";
 import type { CreateSubscriptionParams } from "../types";
 
 /** Trusted fulfillment for accepted payment. New Admin enrollment uses subscriptions.create. */

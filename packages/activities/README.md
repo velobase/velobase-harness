@@ -32,7 +32,7 @@ The host must atomically claim capacity and retain a stable reward identity befo
 
 The complete example retains its existing one-redemption-per-user ledger identity and product fulfillment adapters.
 
-The complete example binds the package in `src/modules/activities/server/promo-admin.ts`, uses its schemas in the Admin router, and uses its eligibility policy in redemption.
+The complete example binds the package in `src/server/promo/admin.ts`, uses its schemas in the Admin router, and uses its eligibility policy in redemption.
 
 Existing `PromoCode` / `PromoCodeRedemption` tables and routes remain.
 

@@ -28,8 +28,8 @@ English is canonical. Simplified Chinese mirrors should stay path-compatible wit
 | Analytics | `docs/en/integrations/analytics/README.md` | `docs/zh-CN/integrations/analytics/README.md` |
 | Ads | `docs/en/integrations/ads/README.md` | `docs/zh-CN/integrations/ads/README.md` |
 | Security | `docs/en/integrations/security/README.md` | `docs/zh-CN/integrations/security/README.md` |
-| Product modules | `docs/en/modules/README.md` | `docs/zh-CN/modules/README.md` |
-| AI Chat module | `docs/en/modules/ai-chat/README.md` | `docs/zh-CN/modules/ai-chat/README.md` |
+| Capability registration | `docs/en/modules/README.md` | `docs/zh-CN/modules/README.md` |
+| AI Chat | `docs/en/features/ai-chat/README.md` | `docs/zh-CN/features/ai-chat/README.md` |
 | Features | `docs/en/features/README.md` | `docs/zh-CN/features/README.md` |
 | Daily bonus | `docs/en/features/daily-bonus/README.md` | `docs/zh-CN/features/daily-bonus/README.md` |
 | Anti-abuse | `docs/en/features/anti-abuse/README.md` | `docs/zh-CN/features/anti-abuse/README.md` |

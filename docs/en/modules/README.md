@@ -1,24 +1,13 @@
-# Product Modules
+# Capability registration
 
-**Language:** English | [Simplified Chinese](../../zh-CN/modules/README.md)
+**Language:** English | [简体中文](../../zh-CN/modules/README.md)
 
-Product modules live under `src/modules/<name>/`. They are the right place for product-specific behavior, reusable UI, product services, and module-local docs.
-
-## Optional capabilities
+The registry declares capabilities, enablement and contributions. It does not require a matching source directory or package. Implementation stays with its UI, service and Worker owners.
 
 - [Start Harness](./getting-started.md)
-- [Business and technical capability catalog](./catalog.md)
-- [Add and operate a module](./composition.md)
+- [Capability catalog](./catalog.md)
+- [Composition and operation](./composition.md)
+- [AI Chat](../features/ai-chat/README.md)
+- [Adding a capability](../ai/new-module.md)
 
-## Modules
-
-| Module                                                   | Purpose                                                                      |
-| -------------------------------------------------------- | ---------------------------------------------------------------------------- |
-| [AI Chat](./ai-chat/README.md)                           | Streaming chat, agent configuration, tool execution, and chat UI foundations |
-| [Example module](../../../src/modules/example/README.md) | Reference layout for adding product-specific modules                         |
-
-## Rules
-
-- Keep framework-wide services in `src/server/**`.
-- Keep product behavior in `src/modules/<name>/`.
-- Use module docs for local implementation details and `docs/en/modules/**` for framework-facing module capabilities.
+Use `src/config/modules.ts` and `src/server/modules` for registration. Keep private product behavior in its private repository. Extract packages only when a real dependency boundary is needed.

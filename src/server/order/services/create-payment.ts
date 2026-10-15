@@ -1,7 +1,7 @@
 import {
   paymentRecords,
   paymentOperation,
-} from "@/modules/payments/server/service";
+} from "@/server/order/records";
 
 interface CreatePaymentParams {
   orderId: string;

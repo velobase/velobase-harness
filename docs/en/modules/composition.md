@@ -4,8 +4,8 @@ Harness remains one product, with its existing routes, UI and database. Code sel
 
 | Layer | Entry | Responsibility |
 | --- | --- | --- |
-| Business package | `packages/<module>` | Business rules and explicit repository/provider ports |
-| Existing application binding | `src/modules/<module>`, existing services and routes | Connect those ports to Harness data and existing UI |
+| Optional shared library | Existing `packages/*` | Extract only when independent consumers need a stable boundary; registration does not require a package |
+| Existing application binding | `src/server`, `src/components`, existing services and routes | Connect those ports to Harness data and existing UI |
 | Deployment membership | `packages/example-composition/src/index.ts` | Declare included business capabilities and dependencies |
 | Admin operation | `/admin/features`, `/admin/connections` | Configure included capabilities and switch new operations on or off |
 | Service adapters | `src/config/modules.ts`, selected provider packages | External credentials and protocol configuration |

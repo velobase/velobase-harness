@@ -113,7 +113,7 @@ export const featureCatalog = [
     category: "business",
     dependencies: [],
     defaultEnabled: false,
-    href: "/admin/dialogs",
+    href: "/chat",
     connection: "ai",
   },
   {

@@ -16,6 +16,7 @@
 | [AI 测试指南](./ai/testing.md)                                 | 测试策略、分层模式（单元 / 集成 / E2E）、AI 生成测试规范                          |
 | [AI 完成检查清单](./ai/completion-checklist.md)                | commit、push 或部署前的必要自检                                                   |
 | [Web/API/Worker 拆分](./architecture/web-api-service-split.md) | 运行时拆分、`SERVICE_MODE`、Docker、Kubernetes 和部署模式                         |
+| [Agent 运行机制设计](./architecture/agent-runtime.md) | 设计提案：执行契约、工具、触发、恢复及可选观察界面 |
 | [AI Agent 规则](../../AGENTS.zh-CN.md)                         | AI Agent 修改代码前必须阅读的稳定规则                                             |
 
 ## 参考区域
@@ -27,9 +28,8 @@
 | Debug 流程   | [./debugging/online-local-debug.md](./debugging/online-local-debug.md)     |
 | 第三方集成   | [./integrations/](./integrations/)                                         |
 | 内置功能     | [./features/](./features/)                                                 |
-| 产品模块     | [./modules/README.md](./modules/README.md)                                 |
-| 模块示例     | [../../src/modules/example/README.md](../../src/modules/example/README.md) |
-| AI Chat 模块 | [./modules/ai-chat/README.md](./modules/ai-chat/README.md)                 |
+| 能力注册     | [./modules/README.md](./modules/README.md)                                 |
+| AI Chat | [./features/ai-chat/README.md](features/ai-chat/README.md)                 |
 
 ## 文档规则
 

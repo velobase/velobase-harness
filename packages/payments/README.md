@@ -14,7 +14,7 @@ Add this package as a `workspace:*` dependency to the selected host, then:
 
 Supply a `PaymentRepository` to `createPaymentRecords`, including the transaction and cursor-query operations.
 
-The [complete-example adapter](../../src/modules/payments/README.md) shows the existing Prisma-table implementation.
+The [complete-example adapter](../../docs/en/features/payments/implementation.md) shows the existing Prisma-table implementation.
 
 Other hosts use their own schema/migration and authentication.
 2.

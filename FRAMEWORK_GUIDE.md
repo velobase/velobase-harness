@@ -11,7 +11,7 @@ Before writing product code:
 1. Read [`AGENTS.md`](./AGENTS.md).
 2. Complete Phase 0 in [`docs/en/ai/design.md`](./docs/en/ai/design.md).
 3. Wait for the user to confirm MVP scope.
-4. Implement product-specific behavior under `src/modules/<name>/`.
+4. Place implementation with its existing UI, service or Worker owner; keep private product behavior in its private repository.
 5. Run [`docs/en/ai/completion-checklist.md`](./docs/en/ai/completion-checklist.md) before final response, commit, push, or deploy.
 
 ## Architecture
@@ -62,7 +62,7 @@ Start `pnpm api:dev` only when working on optional standalone Hono routes.
 
 ## Code Ownership Boundaries
 
-Framework code should remain generic. Product behavior belongs in `src/modules/<name>/` unless an existing extension point is the correct owner.
+Framework code should remain generic. Use existing UI, service and Worker directories. Capability registration does not require a separate package.
 
 | Area | Ownership |
 | --- | --- |
@@ -73,7 +73,7 @@ Framework code should remain generic. Product behavior belongs in `src/modules/<
 | `src/server/billing`, `src/server/order`, `src/server/membership` | Framework commerce |
 | `src/server/features` | Built-in reusable features |
 | `src/server/modules` | Pluggable event-driven modules |
-| `src/modules/<name>` | Product-specific modules |
+| `src/server/<capability>` | Services owned by the capability |
 | `src/workers` | Queue and processor runtime |
 | `src/api` | Optional standalone Hono API runtime |
 

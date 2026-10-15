@@ -2,7 +2,12 @@ import type { FeatureId } from "@velobase/module-runtime";
 
 /** New business operations. Settlement, refunds, cancellation and history stay available. */
 export function featureForProcedure(path: string): FeatureId | undefined {
-  if (path === "conversation.unshare") return undefined;
+  if (
+    /^conversation\.(get|getMessages|list|delete|unshare|archive|unarchive|updateTitle)$/.test(
+      path,
+    )
+  )
+    return undefined;
   if (/^conversation\.(share|fork)$/.test(path)) return "sharing";
   if (/^(conversation|agent|userAgent)\./.test(path)) return "ai-chat";
   if (/^(project|repository|github)\./.test(path)) return "projects";

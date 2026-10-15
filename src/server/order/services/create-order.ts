@@ -3,7 +3,7 @@ import { requireFeature } from "@/server/features/state";
 import {
   paymentRecords,
   paymentOperation,
-} from "@/modules/payments/server/service";
+} from "@/server/order/records";
 import type { OrderType } from "../types";
 import { checkSubscriptionEligibility } from "./check-subscription-eligibility";
 import { logger } from "@/server/shared/telemetry/logger";

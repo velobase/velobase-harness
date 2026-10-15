@@ -1,5 +1,5 @@
 import { db } from "@/server/db";
-import { subscriptions } from "@/modules/subscriptions/server/service";
+import { subscriptions } from "@/server/membership/subscriptions";
 import type {
   GetSubscriptionStatusParams,
   SubscriptionStatusResult,

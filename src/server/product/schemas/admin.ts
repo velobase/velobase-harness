@@ -27,7 +27,7 @@ export const adminCreateProductSchema = z.object({
 });
 
 // Admin product update schema
-export { updateHostProductSchema as adminUpdateProductSchema } from "@/modules/products/server/schema";
+export { updateHostProductSchema as adminUpdateProductSchema } from "@/server/product/schemas/catalog";
 
 // Admin product delete schema
 export const adminDeleteProductSchema = z.object({

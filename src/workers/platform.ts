@@ -1,4 +1,9 @@
 import type { WorkerContribution } from "./types";
+import { agentExecutionQueue } from "./queues/agent-execution.queue";
+import {
+  processAgentExecution,
+  agentRecoveryScheduler,
+} from "./processors/agent-execution";
 import { staleJobCleanupQueue } from "./queues/stale-job-cleanup.queue";
 import { subscriptionMonthlyCreditsQueue } from "./queues/subscription-monthly-credits.queue";
 import {
@@ -12,6 +17,13 @@ import {
 
 export function getPlatformWorkerContributions(): WorkerContribution[] {
   return [
+    {
+      id: "platform.agent-execution",
+      queue: agentExecutionQueue,
+      processor: processAgentExecution,
+      options: { concurrency: 4, lockDuration: 60_000 },
+      scheduler: agentRecoveryScheduler,
+    },
     {
       id: "platform.subscription-monthly-credits",
       queue: subscriptionMonthlyCreditsQueue,

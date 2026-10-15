@@ -9,7 +9,7 @@
 1. 阅读 [`AGENTS.zh-CN.md`](./AGENTS.zh-CN.md) 或英文 canonical [`AGENTS.md`](./AGENTS.md)。
 2. 完成 [`docs/zh-CN/ai/design.md`](./docs/zh-CN/ai/design.md) 中的 Phase 0。
 3. 等用户确认 MVP scope。
-4. 在 `src/modules/<name>/` 下实现产品特定行为。
+4. 按职责在已有界面、服务和 Worker 目录实现，私有产品行为留在私有仓库。
 5. 最终回复、commit、push 或部署前执行 [`docs/zh-CN/ai/completion-checklist.md`](./docs/zh-CN/ai/completion-checklist.md)。
 
 ## 架构
@@ -60,7 +60,7 @@ pnpm worker:dev
 
 ## 代码边界
 
-框架代码保持通用。产品行为放在 `src/modules/<name>/`，除非已有扩展点更合适。
+框架代码保持通用。实现按职责放在现有目录。能力注册不要求独立目录或拆包。
 
 | 区域 | 归属 |
 | --- | --- |
@@ -71,7 +71,7 @@ pnpm worker:dev
 | `src/server/billing`、`src/server/order`、`src/server/membership` | 框架商业化能力 |
 | `src/server/features` | 内置可复用功能 |
 | `src/server/modules` | 事件驱动可插拔模块 |
-| `src/modules/<name>` | 产品特定模块 |
+| `src/server/<capability>` | 能力对应的服务 |
 | `src/workers` | 队列和 processor runtime |
 | `src/api` | 可选独立 Hono API runtime |
 

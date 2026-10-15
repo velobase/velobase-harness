@@ -1,7 +1,7 @@
 import {
   productCatalog,
   productOperation,
-} from "@/modules/products/server/service";
+} from "@/server/product/catalog";
 export async function adminDeleteProduct(productId: string) {
   return productOperation(() => productCatalog.archive(productId));
 }

@@ -24,7 +24,7 @@ Call `isPublic` before returning any private content to a non-owner and before c
 
 Revocation intentionally remains available when new publication is disabled.
 
-The complete example's real adapter is `src/modules/sharing/server/service.ts`; its conversation router and moderation screen use this package.
+The complete example's real adapter is `src/server/sharing/service.ts`; its conversation router and moderation screen use this package.
 
 It retains existing URLs and the conversation's `isShared` / `sharedAt` fields, so no content migration is needed.
 

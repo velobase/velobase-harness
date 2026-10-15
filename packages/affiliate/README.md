@@ -64,7 +64,7 @@ Uncertain external results must keep their reservation and be resumed with that 
 
 ## Complete example
 
-`src/modules/affiliate/server/service.ts` binds existing tables without copying or replacing financial records.
+`src/server/affiliate/program.ts` binds existing tables without copying or replacing financial records.
 
 The existing account/Admin pages use the package through compatibility service entry points.
 
@@ -72,7 +72,7 @@ The existing account/Admin pages use the package through compatibility service e
 
 The complete example adds Payments as a dependency for **new commissions** in its own deployment catalog; this is not a package-wide dependency.
 
-Credit exchange lives in `src/modules/affiliate/server/credits-extension.ts` and is composed by that host's API.
+Credit exchange lives in `src/server/affiliate/credits-extension.ts` and is composed by that host's API.
 
 Its provider request is outside the database transaction; uncertain attempts retain a durable reservation and can be resumed from the user's exchange page.
 

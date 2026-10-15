@@ -1,5 +1,5 @@
 import { db } from "@/server/db";
-import { paymentRecords } from "@/modules/payments/server/service";
+import { paymentRecords } from "@/server/order/records";
 import { ENABLE_PAYMENT_GATEWAY_PREFERENCE_AUTO_SYNC } from "../config";
 import { getProvider } from "../providers/registry";
 import type { Payment } from "@prisma/client";
@@ -10,7 +10,7 @@ import {
 } from "@/lib/lark";
 import type { PaymentWebhookResult } from "../providers/types";
 import { normalizeStripePaidSubscriptionInvoice } from "@velobase/subscriptions-stripe";
-import { fulfillStripeSubscriptionRenewal } from "@/modules/subscriptions/server/renewal";
+import { fulfillStripeSubscriptionRenewal } from "@/server/membership/renewal";
 import { NEW_USER_UNLOCK_OFFER } from "@/server/offers/constants";
 import { consumeNewUserUnlockOffer } from "@/server/offers/services/consume-new-user-unlock-offer";
 import type { NormalizedSubscriptionWebhookData } from "../providers/types";

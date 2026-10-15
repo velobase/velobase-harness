@@ -1,7 +1,8 @@
+import { guestOwnerHash } from "@/server/ai-chat/http-auth";
 import {
   conversationSharing,
   sharingOperation,
-} from "@/modules/sharing/server/service";
+} from "@/server/sharing/service";
 import { z } from "zod";
 import {
   createTRPCRouter,
@@ -12,7 +13,7 @@ import { TRPCError } from "@trpc/server";
 import { Prisma } from "@prisma/client";
 
 // Import services from ai-chat module
-import { buildUIProjection, loadUIInteractions } from "@/modules/ai-chat";
+import { buildUIProjection, loadUIInteractions } from "@/server/ai-chat";
 
 export const conversationRouter = createTRPCRouter({
   // List conversations (can filter by projectId)
@@ -20,7 +21,8 @@ export const conversationRouter = createTRPCRouter({
     .input(
       z.object({
         projectId: z.string().optional(),
-        limit: z.number().min(1).max(100).default(50),
+        limit: z.number().int().min(1).max(100).default(20),
+        cursor: z.string().optional(),
         // archived filter: undefined = all, true = only archived, false = only active
         archived: z.boolean().optional(),
       }),
@@ -47,6 +49,7 @@ export const conversationRouter = createTRPCRouter({
           updatedAt: "desc",
         },
         take: input.limit,
+        ...(input.cursor && { cursor: { id: input.cursor }, skip: 1 }),
         select: {
           id: true,
           title: true,
@@ -107,27 +110,16 @@ export const conversationRouter = createTRPCRouter({
       const conversationIsShared =
         await conversationSharing.isPublic(conversation);
 
-      if (isGuest) {
-        // Guest can access: guest conversations OR shared conversations
-        if (!conversationIsGuest && !conversationIsShared) {
-          throw new TRPCError({
-            code: "UNAUTHORIZED",
-            message: "You don't have permission to access this conversation.",
-          });
-        }
-      } else {
-        // Logged-in user can access:
-        // - Their own conversations
-        // - Shared conversations (from others)
-        const isOwner = conversation.userId === session.user.id;
-
-        if (!isOwner && !conversationIsShared) {
-          throw new TRPCError({
-            code: "UNAUTHORIZED",
-            message: "You don't have permission to access this conversation.",
-          });
-        }
-      }
+      const guestHash = conversationIsGuest
+        ? await guestOwnerHash()
+        : undefined;
+      const isOwner =
+        (conversationIsGuest &&
+          !!guestHash &&
+          guestHash === conversation.guestOwnerHash) ||
+        (!isGuest && conversation.userId === session.user.id);
+      if (!isOwner && !conversationIsShared)
+        throw new TRPCError({ code: "UNAUTHORIZED" });
 
       // Transform interactions to UI messages on the server
       // Pass activeInteractionId to build the correct branch/path
@@ -146,6 +138,7 @@ export const conversationRouter = createTRPCRouter({
         isShared: conversationIsShared,
         sharedAt: conversation.sharedAt ?? null,
         isGuest: conversation.isGuest ?? false,
+        isOwner,
         userId: conversation.userId,
         owner: conversation.user
           ? {
@@ -168,6 +161,13 @@ export const conversationRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ ctx, input }) => {
+      if (
+        input.projectId &&
+        !(await ctx.db.project.count({
+          where: { id: input.projectId, userId: ctx.session.user.id },
+        }))
+      )
+        throw new TRPCError({ code: "NOT_FOUND" });
       return ctx.db.conversation.create({
         data: {
           userId: ctx.session.user.id,
@@ -189,12 +189,14 @@ export const conversationRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ ctx }) => {
+      const guestHash = await guestOwnerHash(true);
       return ctx.db.conversation.create({
         data: {
           userId: null,
           isGuest: true,
-          title: "New conversation",
+          guestOwnerHash: guestHash,
         },
+        select: { id: true },
       });
     }),
 
@@ -428,31 +430,35 @@ export const conversationRouter = createTRPCRouter({
         });
       }
 
-      // 4. Create new conversation for current user
-      const forked = await ctx.db.conversation.create({
-        data: {
-          userId: ctx.session.user.id,
-          title: original.title
-            ? `${original.title} (forked)`
-            : "Forked conversation",
-          isGuest: false,
-          isShared: false,
-          metadata: original.metadata as Prisma.InputJsonValue,
-        },
-      });
-
-      // 5. Copy all interactions
-      // Note: userAgentId is set to undefined, will be populated when user continues the conversation
-      await ctx.db.interaction.createMany({
-        data: original.interactions.map((int) => ({
-          conversationId: forked.id,
-          type: int.type,
-          parts: int.parts as Prisma.InputJsonValue,
-          metadata: int.metadata as Prisma.InputJsonValue,
-          correlationId: int.correlationId,
-          parentId: int.parentId,
-          userAgentId: undefined, // Clear userAgentId for forked conversation
-        })),
+      const ids = new Map(
+        original.interactions.map((row) => [row.id, crypto.randomUUID()]),
+      );
+      const forked = await ctx.db.$transaction(async (tx) => {
+        const conversation = await tx.conversation.create({
+          data: {
+            userId: ctx.session.user.id,
+            title: original.title,
+            isGuest: false,
+            isShared: false,
+            activeInteractionId: original.activeInteractionId
+              ? ids.get(original.activeInteractionId)
+              : undefined,
+          },
+        });
+        await tx.interaction.createMany({
+          data: original.interactions.map((row) => ({
+            id: ids.get(row.id)!,
+            conversationId: conversation.id,
+            type: row.type,
+            parts: row.parts as Prisma.InputJsonValue,
+            parentId: row.parentId ? ids.get(row.parentId) : undefined,
+            correlationId: row.correlationId
+              ? ids.get(row.correlationId)
+              : undefined,
+            createdAt: row.createdAt,
+          })),
+        });
+        return conversation;
       });
 
       return {

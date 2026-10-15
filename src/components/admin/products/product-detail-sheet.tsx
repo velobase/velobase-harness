@@ -13,7 +13,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useLocale, useTranslations } from "next-intl";
 import { formatPrice } from "./product-price-cell";
 import type { RouterOutputs } from "@/trpc/react";
-import { CatalogEditor } from "@/modules/products/components/catalog-editor";
+import { CatalogEditor } from "@/components/admin/products/catalog-editor";
 
 // Product type returned by the API
 type Product = RouterOutputs["admin"]["listProducts"]["items"][number];

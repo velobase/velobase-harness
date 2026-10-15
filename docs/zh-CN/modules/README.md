@@ -1,24 +1,13 @@
-# 产品模块
+# 能力注册
 
-**语言:** [English](../../en/modules/README.md) | 简体中文
+**语言：** [English](../../en/modules/README.md) | 简体中文
 
-产品模块位于 `src/modules/<name>/`。这里适合放产品特定行为、可复用 UI、产品 service 和模块本地文档。
-
-## 可选业务能力
+注册机制声明能力、启停条件和贡献项，不要求每项能力都有对应目录或独立包。实现留在已有界面、服务和 Worker 职责目录。
 
 - [启动 Harness](./getting-started.md)
-- [业务与技术能力目录](./catalog.md)
-- [接入和运营模块](./composition.md)
+- [能力目录](./catalog.md)
+- [组合与运维](./composition.md)
+- [AI Chat](../features/ai-chat/README.md)
+- [添加能力](../ai/new-module.md)
 
-## 模块
-
-| 模块                                               | 用途                                         |
-| -------------------------------------------------- | -------------------------------------------- |
-| [AI Chat](./ai-chat/README.md)                     | 流式聊天、Agent 配置、工具调用和聊天 UI 底座 |
-| [示例模块](../../../src/modules/example/README.md) | 添加产品特定模块时可参考的目录结构           |
-
-## 规则
-
-- 框架级通用服务放在 `src/server/**`。
-- 产品特定行为放在 `src/modules/<name>/`。
-- 模块本地文档说明实现细节，`docs/zh-CN/modules/**` 说明面向框架使用者的模块能力。
+注册继续使用 `src/config/modules.ts` 和 `src/server/modules`。私有产品行为留在私有仓库，只有实际需要独立依赖边界时才拆包。

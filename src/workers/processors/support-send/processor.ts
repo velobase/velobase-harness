@@ -1,7 +1,7 @@
 import type { Job } from "bullmq";
 import { db } from "@/server/db";
 import type { SupportSendJobData } from "../../queues/support-send.queue";
-import { sendQueuedReply } from "@/modules/email-management/server/service";
+import { sendQueuedReply } from "@/server/mailbox/service";
 
 export async function processSupportSendJob(
   job: Job<SupportSendJobData>,

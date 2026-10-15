@@ -4,7 +4,7 @@ import { TRPCError } from "@trpc/server";
 import { SALES_PAUSED } from "@/config/decommission";
 import { chargeWithSavedCard } from "@/server/order/services/stripe/charge-saved-card";
 import { db } from "@/server/db";
-import { paymentRecords } from "@/modules/payments/server/service";
+import { paymentRecords } from "@/server/order/records";
 import { createOrder } from "@/server/order/services/create-order";
 import { createPayment } from "@/server/order/services/create-payment";
 import { processFulfillmentByPayment } from "@/server/fulfillment/manager";

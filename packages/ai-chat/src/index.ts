@@ -15,7 +15,7 @@ export const aiChatFeature = {
   category: "business",
   dependencies: [],
   defaultEnabled: false,
-  href: "/admin/dialogs",
+  href: "/chat",
   connection: "ai",
 } as const;
 
@@ -28,6 +28,8 @@ export interface ChatStreamOptions {
   maxSteps?: number;
   maxOutputTokens?: number;
   abortSignal?: AbortSignal;
+  prepareStep?: Parameters<typeof streamText>[0]["prepareStep"];
+  onStepFinish?: Parameters<typeof streamText>[0]["onStepFinish"];
   providerOptions?: Parameters<typeof streamText>[0]["providerOptions"];
 }
 
@@ -55,5 +57,7 @@ export function streamChat(options: ChatStreamOptions) {
     providerOptions: options.providerOptions,
     abortSignal: options.abortSignal,
     maxRetries: 0,
+    prepareStep: options.prepareStep,
+    onStepFinish: options.onStepFinish,
   });
 }
