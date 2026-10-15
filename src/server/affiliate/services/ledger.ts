@@ -4,7 +4,7 @@ import { db } from "@/server/db";
 import {
   affiliate,
   affiliateOperation,
-} from "@/modules/affiliate/server/service";
+} from "@/server/affiliate/program";
 
 const COMMISSION_RATE_BPS = 3000;
 const HOLD_MS = 30 * 24 * 60 * 60 * 1000;

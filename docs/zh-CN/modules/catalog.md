@@ -7,7 +7,7 @@
 | 用户管理 | 基础 | 账号、权限、原 Admin | `/admin/users` |
 | 商品 | 业务 | 商品目录、定价、发布 | `/admin/products` |
 | 订单与支付 | 业务 | 订单、支付与退款；支付连接 | `/admin/orders` |
-| 订阅 | 业务 | 原会员周期与权益；支付 | `src/modules/subscriptions` |
+| 订阅 | 业务 | 原会员周期与权益；支付 | `src/server/membership` |
 | 积分 | 业务 | 余额、发放、预扣和流水；账本连接 | `/admin/credits` |
 | 兑换码活动 | 业务 | 活动、奖励、兑换记录 | `/admin/promo-codes` |
 | 新人优惠 | 业务 | 资格、限时优惠；支付 | `newcomer-offers` |

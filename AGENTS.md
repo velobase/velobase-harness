@@ -11,7 +11,7 @@ IF the user asks to build a new product from scratch:
 - MUST read `docs/en/ai/design.md`.
 - MUST complete domain design before writing product code.
 
-IF you are about to create a new business module under `src/modules/`:
+IF you are about to add a new capability:
 
 - MUST read `docs/en/ai/new-module.md` first.
 
@@ -64,12 +64,20 @@ IF you touch anti-abuse, captcha, rate limiting, IP, country, or security bounda
 
 ## Core Rules
 
+### Public Repository Boundary
+
+- Treat all repository files, examples, fixtures, comments, commit messages, and pull request descriptions as public material.
+- Do not copy non-public product specifications, business rules, strategy, roadmaps, prompts, implementation status, customer data, internal conversations, or local workspace details into this repository.
+- Access to a private source for analysis does not authorize publishing it. Private product implementation and documentation belong in an explicitly authorized private destination, not anywhere in this repository, including ignored files.
+- Public framework designs must stand on their own and use independently constructed generic examples. Removing names or replacing domain nouns does not make a private workflow public.
+- Before delivery, review the entire change for private provenance as well as credentials. Keep private source paths and identifiers out of public text.
+
 ### General
 
 - For cross-platform work, read `docs/en/architecture/multiplatform.md`. New host composition belongs in `apps/*`; process launchers in `services/*`; neutral schemas/clients in `packages/*`.
 - Desktop and Mobile must never import legacy `src` or Web/server packages. Platform environment configuration uses its own validated adapter, never `src/env.js`.
 
-- Keep framework code generic. Put product-specific behavior in `src/modules/<name>/` unless an existing framework extension point is the correct owner.
+- Keep framework code generic. Place code with its existing owner: UI in `src/components`, client behavior in `src/hooks`, services in `src/server`, and queue entry points in `src/workers`. Private product behavior belongs in its private repository. Do not require a parallel module directory or a package per capability.
 - Validate all user input with Zod or an equivalent schema.
 - Paginate list queries with cursor-based pagination; default page size should be 20.
 - Use `createLogger("module-name")` for structured logs.
@@ -131,9 +139,10 @@ IF you touch anti-abuse, captcha, rate limiting, IP, country, or security bounda
 - Core flows emit domain events through `appEvents.emit()` from `@/server/events/bus`.
 - Do not call pluggable modules such as PostHog, Google Ads, Lark, or Telegram directly from core flows.
 
-### Modules
+### Capability Registration
 
 - Module enablement belongs in `src/config/modules.ts`.
+- Registration controls activation and contribution discovery; it does not prescribe source folders or package boundaries.
 - Pluggable modules implement `FrameworkModule` from `@/server/modules/registry`.
 - Disabled modules must not expose routers or webhook endpoints.
 - Modules communicate through the event bus, not direct imports between modules.

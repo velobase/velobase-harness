@@ -1,1 +1,1 @@
-export { OutreachPage as default } from "@/modules/outreach/components/outreach-page";
+export { OutreachPage as default } from "@/components/admin/touches/outreach-page";

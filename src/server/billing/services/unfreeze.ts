@@ -1,4 +1,4 @@
-import { credits, creditOperation } from "@/modules/credits/server/service";
+import { credits, creditOperation } from "@/server/billing/credits";
 import type { UnfreezeParams, UnfreezeOutput } from "@velobase/credits/types";
 export async function unfreeze(
   params: UnfreezeParams,

@@ -53,7 +53,7 @@ export function createGenerateImageTool(context?: ToolContext) {
             },
             providerOptions: input.providerOptions,
           },
-          { timeoutMs: 300000 },
+          { timeoutMs: 1000 },
         );
 
         return {
@@ -123,7 +123,7 @@ export function createEditImageTool(context?: ToolContext) {
             },
             providerOptions: input.providerOptions,
           },
-          { timeoutMs: 300000 },
+          { timeoutMs: 1000 },
         );
 
         return {

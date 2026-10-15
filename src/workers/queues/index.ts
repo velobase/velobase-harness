@@ -3,6 +3,7 @@
  * 
  * 所有队列定义导出
  */
+export { agentExecutionQueue, enqueueAgentRun, type AgentExecutionJob } from "./agent-execution.queue";
 export {
   orderCompensationQueue,
   type OrderCompensationJobData,

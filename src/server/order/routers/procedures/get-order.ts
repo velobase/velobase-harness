@@ -3,7 +3,7 @@ import { getOrderSchema } from "../../schemas/order";
 import {
   paymentRecords,
   paymentOperation,
-} from "@/modules/payments/server/service";
+} from "@/server/order/records";
 
 export const getOrderProcedure = protectedProcedure
   .input(getOrderSchema)

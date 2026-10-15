@@ -2,7 +2,7 @@ import { createCampaignInput, updateCampaignInput } from "@velobase/activities";
 import {
   createPromoDraft,
   updatePromoActivity,
-} from "@/modules/activities/server/promo-admin";
+} from "@/server/promo/admin";
 import { z } from "zod";
 import { adminProcedure } from "@/server/api/trpc";
 import type { Prisma, PromoCodeStatus, PromoGrantType } from "@prisma/client";

@@ -143,7 +143,7 @@ entities:
     indexes: string[]
 modules:
   - name: string
-    path: src/modules/<name>
+    path: src/server/<capability>
     router:
       - procedure: string
         type: query | mutation

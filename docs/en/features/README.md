@@ -6,7 +6,7 @@ They are different from:
 
 - Third-party integrations, which wrap external APIs or SDKs.
 - Pluggable modules, which subscribe to events and can be enabled or disabled.
-- Product modules, which live under `src/modules/<name>/`.
+- Application capabilities, whose UI, services and workers live with their respective owners.
 
 ## Feature List
 

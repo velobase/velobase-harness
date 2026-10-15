@@ -63,7 +63,7 @@ Velobase Harness 是一个开源 AI SaaS boilerplate / 应用框架，适合把 
 pnpm install && (test -f .env || cp .env.example .env) && pnpm docker:db:up && pnpm db:push && pnpm db:seed && pnpm dev:all
 ```
 
-打开 [http://localhost:3000](http://localhost:3000)，你会得到一套可继续开发的 AI SaaS 基础工程：登录、计费数据、积分、后台任务、管理入口和产品模块扩展点都已经在同一个仓库里。
+打开 [http://localhost:3000](http://localhost:3000)，你会得到一套可继续开发的 AI SaaS 基础工程：登录、计费数据、积分、后台任务、管理入口和能力注册扩展点都已经在同一个仓库里。
 
 ## 常见问题入口
 
@@ -100,7 +100,7 @@ pnpm install && (test -f .env || cp .env.example .env) && pnpm docker:db:up && p
 - **支付就绪:** Stripe 覆盖订阅、续费、退款、争议和补偿任务；NowPayments 覆盖加密货币支付、IPN/Webhook 状态同步和补偿任务。
 - **增长能力:** PostHog 分析、Google Ads 离线转化回传、Affiliate/Referral、Touch 生命周期触达、Daily Bonus、Promo Code、SEO。
 - **反滥用护栏:** Redis 限流、Turnstile、临时邮箱与 Gmail 变体拦截、注册 IP/设备风控、访客 AI Chat 配额和积分回收。
-- **AI Chat 模块:** 提供对话、模型配置、工具调用和业务工具扩展点。
+- **AI Chat:** 提供对话、模型配置、工具调用和业务工具扩展点。
 - **生产文档:** Docker、Kubernetes、GitOps、线上到本地 Debug、AI 完成检查清单。
 
 ## 快速开始
@@ -176,8 +176,8 @@ flowchart TB
 | 文档中心            | [docs/en/README.md](./docs/en/README.md)                                                         | [docs/zh-CN/README.md](./docs/zh-CN/README.md)                                                         |
 | 框架指南            | [FRAMEWORK_GUIDE.md](./FRAMEWORK_GUIDE.md)                                                       | [FRAMEWORK_GUIDE.zh-CN.md](./FRAMEWORK_GUIDE.zh-CN.md)                                                 |
 | 集成指南            | [docs/en/integrations/README.md](./docs/en/integrations/README.md)                               | [docs/zh-CN/integrations/README.md](./docs/zh-CN/integrations/README.md)                               |
-| 产品模块            | [docs/en/modules/README.md](./docs/en/modules/README.md)                                         | [docs/zh-CN/modules/README.md](./docs/zh-CN/modules/README.md)                                         |
-| AI Chat 模块        | [docs/en/modules/ai-chat/README.md](./docs/en/modules/ai-chat/README.md)                         | [docs/zh-CN/modules/ai-chat/README.md](./docs/zh-CN/modules/ai-chat/README.md)                         |
+| 能力注册            | [docs/en/modules/README.md](./docs/en/modules/README.md)                                         | [docs/zh-CN/modules/README.md](./docs/zh-CN/modules/README.md)                                         |
+| AI Chat        | [docs/en/features/ai-chat/README.md](docs/en/features/ai-chat/README.md)                         | [docs/zh-CN/features/ai-chat/README.md](docs/zh-CN/features/ai-chat/README.md)                         |
 | AI 任务指南         | [docs/en/ai/](./docs/en/ai/)                                                                     | [docs/zh-CN/ai/](./docs/zh-CN/ai/)                                                                     |
 | AI 完成检查清单     | [docs/en/ai/completion-checklist.md](./docs/en/ai/completion-checklist.md)                       | [docs/zh-CN/ai/completion-checklist.md](./docs/zh-CN/ai/completion-checklist.md)                       |
 | Web/API/Worker 拆分 | [docs/en/architecture/web-api-service-split.md](./docs/en/architecture/web-api-service-split.md) | [docs/zh-CN/architecture/web-api-service-split.md](./docs/zh-CN/architecture/web-api-service-split.md) |
@@ -222,7 +222,7 @@ src/
 ├── app/              # Next.js 页面和 API routes
 ├── api/              # 可选独立 Hono API 入口
 ├── config/           # 模块配置
-├── modules/          # 产品模块和示例模板
+├── modules/          # 能力注册和示例模板
 ├── server/           # Auth、billing、order、events、modules、features
 ├── workers/          # BullMQ 队列和处理器
 ├── components/       # 共享 UI 组件

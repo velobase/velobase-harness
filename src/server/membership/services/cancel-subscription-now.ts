@@ -1,4 +1,4 @@
-import { subscriptions } from "@/modules/subscriptions/server/service";
+import { subscriptions } from "@/server/membership/subscriptions";
 import { appEvents } from "@/server/events/bus";
 
 interface CancelSubscriptionNowParams {

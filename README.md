@@ -265,8 +265,8 @@ The same codebase can run as one process or as separate services:
 | Documentation hub       | [docs/en/README.md](./docs/en/README.md)                                                         | [docs/zh-CN/README.md](./docs/zh-CN/README.md)                                                         |
 | Framework guide         | [FRAMEWORK_GUIDE.md](./FRAMEWORK_GUIDE.md)                                                       | [FRAMEWORK_GUIDE.zh-CN.md](./FRAMEWORK_GUIDE.zh-CN.md)                                                 |
 | Integration guide       | [docs/en/integrations/README.md](./docs/en/integrations/README.md)                               | [docs/zh-CN/integrations/README.md](./docs/zh-CN/integrations/README.md)                               |
-| Product modules         | [docs/en/modules/README.md](./docs/en/modules/README.md)                                         | [docs/zh-CN/modules/README.md](./docs/zh-CN/modules/README.md)                                         |
-| AI Chat module          | [docs/en/modules/ai-chat/README.md](./docs/en/modules/ai-chat/README.md)                         | [docs/zh-CN/modules/ai-chat/README.md](./docs/zh-CN/modules/ai-chat/README.md)                         |
+| Capability registration         | [docs/en/modules/README.md](./docs/en/modules/README.md)                                         | [docs/zh-CN/modules/README.md](./docs/zh-CN/modules/README.md)                                         |
+| AI Chat          | [docs/en/features/ai-chat/README.md](docs/en/features/ai-chat/README.md)                         | [docs/zh-CN/features/ai-chat/README.md](docs/zh-CN/features/ai-chat/README.md)                         |
 | AI task guides          | [docs/en/ai/](./docs/en/ai/)                                                                     | [docs/zh-CN/ai/](./docs/zh-CN/ai/)                                                                     |
 | AI completion checklist | [docs/en/ai/completion-checklist.md](./docs/en/ai/completion-checklist.md)                       | [docs/zh-CN/ai/completion-checklist.md](./docs/zh-CN/ai/completion-checklist.md)                       |
 | Web/API/Worker split    | [docs/en/architecture/web-api-service-split.md](./docs/en/architecture/web-api-service-split.md) | [docs/zh-CN/architecture/web-api-service-split.md](./docs/zh-CN/architecture/web-api-service-split.md) |
@@ -323,7 +323,7 @@ src/
 ├── app/              # Next.js pages and API routes
 ├── api/              # Optional standalone Hono API entry
 ├── config/           # Module configuration
-├── modules/          # Product modules and templates
+├── modules/          # Capability registration and templates
 ├── server/           # Auth, billing, order, events, modules, features
 ├── workers/          # BullMQ queues and processors
 ├── components/       # Shared UI components

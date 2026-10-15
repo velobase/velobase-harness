@@ -1,4 +1,4 @@
-import { subscriptions } from "@/modules/subscriptions/server/service";
+import { subscriptions } from "@/server/membership/subscriptions";
 import type { CreateSubscriptionCycleParams } from "../types";
 
 /** Accepted paid/trial period. A stable identity survives retries and downstream delivery failures. */

@@ -1,5 +1,5 @@
 import { db } from "@/server/db";
-import { paymentRecords } from "@/modules/payments/server/service";
+import { paymentRecords } from "@/server/order/records";
 import { getNowPaymentsPaymentStatus } from "../providers/nowpayments";
 import { processFulfillmentByPayment } from "@/server/fulfillment/manager";
 import { ENABLE_PAYMENT_GATEWAY_PREFERENCE_AUTO_SYNC } from "../config";

@@ -1,3 +1,4 @@
+import { registerToolRecovery } from "@/server/agents/tools";
 import { MODULES } from "@/config/modules";
 import { toolRegistry } from "./registry";
 import { createDocumentTools } from "./document-tools";
@@ -10,6 +11,15 @@ import { createImageGenerationTools } from "./image-generation-tools";
  * 而非模块顶层执行，避免 next build 期间触发 import 链上的副作用。
  */
 export function registerBuiltinTools() {
+  for (const name of [
+    "list_documents",
+    "read_document",
+    "list_project_images",
+    "get_image_task",
+  ])
+    registerToolRecovery(name, "read");
+  for (const name of ["generate_image", "edit_image"])
+    registerToolRecovery(name, "idempotent");
   if (!toolRegistry.has("document_tools")) {
     toolRegistry.register({
       name: "document_tools",

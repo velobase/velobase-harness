@@ -1,4 +1,4 @@
-import { credits, creditOperation } from "@/modules/credits/server/service";
+import { credits, creditOperation } from "@/server/billing/credits";
 import type { GrantParams, GrantOutput } from "@velobase/credits/types";
 export async function grant(params: GrantParams): Promise<GrantOutput> {
   return creditOperation(() => credits.grant(params));

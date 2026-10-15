@@ -1,5 +1,5 @@
-import { outreachRouter } from "@/modules/outreach/server/router";
-import { emailManagementRouter } from "@/modules/email-management/server/router";
+import { outreachRouter } from "@/server/touch/outreach-router";
+import { emailManagementRouter } from "@/server/mailbox/router";
 import { sharingAdminRouter } from "@/server/features/sharing";
 import { featuresRouter } from "@/server/features/router";
 import { storageRouter } from "@/server/api/routers/storage";
@@ -11,7 +11,6 @@ import { promoRouter } from "@/server/promo/routers";
 import { adminRouter } from "@/server/admin/routers";
 import { accountRouter } from "@/server/api/routers/account";
 import { notificationRouter } from "@/server/api/routers/notification";
-import { exampleRouter } from "@/modules/example/server/router";
 import { agentRouter } from "@/server/api/routers/agent";
 import { userAgentRouter } from "@/server/api/routers/user-agent";
 import { conversationRouter } from "@/server/api/routers/conversation";
@@ -45,7 +44,6 @@ export const appRouter = createTRPCRouter({
   promo: promoRouter,
   notification: notificationRouter,
   account: accountRouter,
-  example: exampleRouter,
 
   // AI Chat module
   agent: agentRouter,

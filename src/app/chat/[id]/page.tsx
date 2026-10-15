@@ -1,5 +1,5 @@
 import { auth } from "@/server/auth";
-import { ChatPanel, ChatHeader } from "@/modules/ai-chat/components";
+import { ChatPanel, ChatHeader } from "@/components/ai-chat";
 import { ConversationSidebar } from "@/components/conversation-sidebar";
 
 /**

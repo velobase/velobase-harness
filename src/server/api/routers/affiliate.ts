@@ -15,7 +15,7 @@ import {
   exchangeInput,
   exchangeAffiliateCredits,
   pendingExchange,
-} from "@/modules/affiliate/server/credits-extension";
+} from "@/server/affiliate/credits-extension";
 
 const MIN_ELIGIBLE_TOTAL_PAID_CENTS = 499; // $4.99
 const MIN_CASHOUT_CENTS = 5000; // $50.00

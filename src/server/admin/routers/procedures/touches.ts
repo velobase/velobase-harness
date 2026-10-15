@@ -1,4 +1,4 @@
-import { outreach, outreachOperation } from "@/modules/outreach/server/service";
+import { outreach, outreachOperation } from "@/server/touch/outreach";
 import { z } from "zod";
 import { adminProcedure } from "@/server/api/trpc";
 import type { Prisma, TouchScheduleStatus, TouchChannel } from "@prisma/client";

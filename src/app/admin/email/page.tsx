@@ -1,4 +1,4 @@
-import { Inbox } from "@/modules/email-management/components/inbox";
+import { Inbox } from "@/components/admin/email/inbox";
 export default function EmailPage() {
   return <Inbox />;
 }

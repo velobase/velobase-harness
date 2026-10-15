@@ -1,4 +1,4 @@
-import { subscriptions } from "@/modules/subscriptions/server/service";
+import { subscriptions } from "@/server/membership/subscriptions";
 import { SubscriptionsError } from "@velobase/subscriptions";
 import { logger } from "@/server/shared/telemetry/logger";
 

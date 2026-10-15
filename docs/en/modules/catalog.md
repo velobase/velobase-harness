@@ -7,7 +7,7 @@ These capabilities belong to the existing Harness product and UI. Admin operates
 | Users | Foundation | Accounts, permissions, existing Admin | `/admin/users` |
 | Products | Business | Catalog, prices and publication | `/admin/products` |
 | Orders and payments | Business | Orders, payments and refunds; payment connection | `/admin/orders` |
-| Subscriptions | Business | Existing membership periods and entitlements; payments | `src/modules/subscriptions` |
+| Subscriptions | Business | Existing membership periods and entitlements; payments | `src/server/membership` |
 | Credits | Business | Balances, grants, reservations and ledger history | `/admin/credits` |
 | Promo campaigns | Business | Campaigns, rewards and redemption records | `/admin/promo-codes` |
 | Newcomer offers | Business | Eligibility and timed offers; payments | `newcomer-offers` |

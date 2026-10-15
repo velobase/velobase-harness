@@ -7,7 +7,7 @@ import {
 import {
   subscriptions,
   subscriptionOperation,
-} from "@/modules/subscriptions/server/service";
+} from "@/server/membership/subscriptions";
 import { appEvents } from "@/server/events/bus";
 import {
   CreateSubscriptionParamsSchema,

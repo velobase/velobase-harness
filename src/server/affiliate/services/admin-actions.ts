@@ -1,7 +1,7 @@
 import {
   affiliate,
   affiliateOperation,
-} from "@/modules/affiliate/server/service";
+} from "@/server/affiliate/program";
 
 export async function adminForceMatureEarning(
   earningId: string,

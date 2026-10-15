@@ -226,8 +226,8 @@ export const MODULE_DEFINITIONS = [
     modeEnv: "AI_CHAT_MODE",
     config: [
       {
-        anyOf: ["ANTHROPIC_API_KEY", "OPENROUTER_API_KEY", "OPENAI_API_KEY"],
-        name: "AI provider key",
+        anyOf: ["OPENROUTER_API_KEY"],
+        name: "OpenRouter chat provider key",
       },
     ],
     loadFrameworkModule: async () =>

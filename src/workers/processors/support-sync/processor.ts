@@ -4,7 +4,7 @@ import { isFeatureEnabled } from "@/server/features/state";
 import {
   dispatchPendingReplies,
   synchronizeMailbox,
-} from "@/modules/email-management/server/service";
+} from "@/server/mailbox/service";
 export async function processSupportSyncJob(job: Job<SupportSyncJobData>) {
   if (
     job.data.type !== "scheduled-scan" ||

@@ -46,7 +46,7 @@ Worker 变更：
 测试放在源码旁边：
 
 ```text
-src/modules/<name>/server/
+src/server/<capability>/
 ├── service.ts
 └── service.test.ts
 ```

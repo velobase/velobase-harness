@@ -46,7 +46,7 @@ Rules:
 
 ### Free Zone: Product APIs
 
-Product-specific APIs belong in `src/modules/<name>/`.
+API routes call services in `src/server/<capability>/`. Private product APIs belong in the private product repository.
 
 Rules:
 

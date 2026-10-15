@@ -24,7 +24,7 @@ It also protects the provider identity across customers and each period's unique
 
 Its `update` compares the persisted revision and changes subscription state plus any immediate cycle closure atomically.
 
-The [complete-example binding](../../src/modules/subscriptions/README.md) uses the existing Prisma tables and transaction-scoped advisory locks.
+The [complete-example binding](../../docs/en/features/subscriptions/implementation.md) uses the existing Prisma tables and transaction-scoped advisory locks.
 
 | Operation                      | Purpose                                             | New-subscription switch |
 | ------------------------------ | --------------------------------------------------- | ----------------------- |

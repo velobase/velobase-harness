@@ -12,7 +12,7 @@ export const affiliateModule: FrameworkModule = {
     bus.on("user:signup", async ({ userId, referralCode }) => {
       if (!referralCode) return;
       const { bindNewUserReferral } =
-        await import("@/modules/affiliate/server/referrals");
+        await import("@/server/affiliate/referrals");
       await bindNewUserReferral(userId, referralCode);
     });
 

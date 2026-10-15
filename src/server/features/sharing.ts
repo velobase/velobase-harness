@@ -3,7 +3,7 @@ import { adminProcedure, createTRPCRouter } from "@/server/api/trpc";
 import {
   conversationSharing,
   sharingOperation,
-} from "@/modules/sharing/server/service";
+} from "@/server/sharing/service";
 
 /** Keep moderation available after disabling publication. */
 export const sharingAdminRouter = createTRPCRouter({

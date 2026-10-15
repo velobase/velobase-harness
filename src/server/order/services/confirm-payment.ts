@@ -1,5 +1,5 @@
 import { db } from "@/server/db";
-import { paymentRecords } from "@/modules/payments/server/service";
+import { paymentRecords } from "@/server/order/records";
 import { processFulfillmentByPayment } from "@/server/fulfillment/manager";
 import { logger } from "@/server/shared/telemetry/logger";
 import { getProvider } from "../providers/registry";

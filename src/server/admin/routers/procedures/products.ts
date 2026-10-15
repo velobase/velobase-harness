@@ -3,7 +3,7 @@ import {
   updateHostProductSchema,
   updateHostProduct,
   toggleHostProductAvailability,
-} from "@/modules/products/server/service";
+} from "@/server/product/catalog";
 import { adminProcedure } from "@/server/api/trpc";
 import type { Prisma, ProductType, ProductStatus } from "@prisma/client";
 

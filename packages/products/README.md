@@ -42,7 +42,7 @@ It does not perform foreign exchange conversion or combine original/discount pri
 
 Changing a base currency requires the administrator to enter the intended amounts.
 
-For the complete example's existing Product tables, see [its adapter](../../src/modules/products/README.md).
+For the complete example's existing Product tables, see [its adapter](../../docs/en/features/products/implementation.md).
 
 Checkout and fulfillment are separate host capabilities and must use trusted server-side product data when taking an order; accepting a catalog ID is not enough to define what a buyer receives.
 

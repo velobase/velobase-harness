@@ -1,4 +1,4 @@
-import { outreach } from "@/modules/outreach/server/service";
+import { outreach } from "@/server/touch/outreach";
 import type { Job } from "bullmq";
 import { createLogger } from "@/lib/logger";
 import type { TouchDeliveryJobData } from "../../queues/touch-delivery.queue";

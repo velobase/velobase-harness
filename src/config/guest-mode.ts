@@ -31,14 +31,14 @@ export const GUEST_MODE_CONFIG = {
   MAX_REPLIES_PER_CONVERSATION: 3,
   
   /**
-   * Maximum messages per day per guest ID (tracked by localStorage)
+   * Maximum messages per day per guest ID (derived from the HTTP-only ownership cookie)
    * This is the primary rate limit
    */
   MAX_MESSAGES_PER_GUEST_ID_PER_DAY: 3,
   
   /**
    * Maximum messages per day per IP address
-   * Secondary rate limit to prevent abuse by clearing localStorage
+   * Secondary rate limit to prevent abuse by clearing cookies
    * Should be higher than MAX_MESSAGES_PER_GUEST_ID_PER_DAY to allow multiple devices
    */
   MAX_MESSAGES_PER_IP_PER_DAY: 10,

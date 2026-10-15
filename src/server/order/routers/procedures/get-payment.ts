@@ -4,7 +4,7 @@ import { getPayment } from "../../services/get-payment";
 import {
   paymentRecords,
   paymentOperation,
-} from "@/modules/payments/server/service";
+} from "@/server/order/records";
 
 export const getPaymentProcedure = protectedProcedure
   .input(getPaymentSchema)

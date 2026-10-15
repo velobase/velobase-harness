@@ -108,6 +108,7 @@ model Conversation {
   userId              String?         @map("user_id")
   projectId           String?         @map("project_id")
   isGuest             Boolean         @default(false) @map("is_guest")
+  guestOwnerHash      String?         @map("guest_owner_hash")
   isArchived          Boolean         @default(false) @map("is_archived")
   isShared            Boolean         @default(false) @map("is_shared")
   sharedAt            DateTime?       @map("shared_at")
@@ -1628,4 +1629,84 @@ model SupportReply {
   @@index([status, createdAt])
   @@index([ticketId, createdAt])
   @@map("support_replies")
+}
+
+// Durable execution is independent of the HTTP observer and business state.
+enum AgentRunStatus {
+  QUEUED
+  RUNNING
+  SUSPENDED
+  SUCCEEDED
+  FAILED
+  CANCELLED
+}
+
+enum AgentOperationStatus {
+  WAITING
+  PREPARED
+  RUNNING
+  SUCCEEDED
+  UNKNOWN
+}
+
+model AgentRun {
+  id              String         @id @default(cuid())
+  executor        String
+  serialKey       String         @map("serial_key")
+  actorKey        String         @map("actor_key")
+  requestKey      String         @unique @map("request_key")
+  requestHash     String         @map("request_hash")
+  input           Json
+  status          AgentRunStatus @default(QUEUED)
+  epoch           Int            @default(0)
+  attempts        Int            @default(0)
+  steps           Int            @default(0)
+  inputTokens     Int            @default(0) @map("input_tokens")
+  outputTokens    Int            @default(0) @map("output_tokens")
+  usageUncertain  Boolean        @default(false) @map("usage_uncertain")
+  leaseUntil      DateTime?      @map("lease_until")
+  nextAttemptAt   DateTime       @default(now()) @map("next_attempt_at")
+  errorCode       String?        @map("error_code")
+  settledAt       DateTime?      @map("settled_at")
+  createdAt       DateTime       @default(now()) @map("created_at")
+  updatedAt       DateTime       @updatedAt @map("updated_at")
+  attemptsLog     AgentAttempt[]
+  operations      AgentToolOperation[]
+
+  @@index([status, nextAttemptAt, createdAt])
+  @@index([status, leaseUntil])
+  @@index([serialKey, createdAt, id])
+  @@index([actorKey, createdAt])
+  @@map("agent_runs")
+}
+
+model AgentAttempt {
+  id          String    @id @default(cuid())
+  runId       String    @map("run_id")
+  epoch       Int
+  startedAt   DateTime  @default(now()) @map("started_at")
+  finishedAt  DateTime? @map("finished_at")
+  errorCode   String?   @map("error_code")
+  run         AgentRun  @relation(fields: [runId], references: [id], onDelete: Cascade)
+
+  @@unique([runId, epoch])
+  @@map("agent_attempts")
+}
+
+model AgentToolOperation {
+  id          String               @id @default(cuid())
+  runId       String               @map("run_id")
+  toolCallId  String               @map("tool_call_id")
+  toolName    String               @map("tool_name")
+  executionEpoch Int              @default(0) @map("execution_epoch")
+  input       Json
+  output      Json?
+  status      AgentOperationStatus @default(PREPARED)
+  createdAt   DateTime             @default(now()) @map("created_at")
+  updatedAt   DateTime             @updatedAt @map("updated_at")
+  run         AgentRun             @relation(fields: [runId], references: [id], onDelete: Cascade)
+
+  @@unique([runId, toolCallId])
+  @@index([runId, status])
+  @@map("agent_tool_operations")
 }

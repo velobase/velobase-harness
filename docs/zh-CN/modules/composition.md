@@ -5,7 +5,7 @@
 | 层次 | 入口 | 负责什么 |
 | --- | --- | --- |
 | 业务包 | `packages/<module>` | 业务规则，以及明确的数据和服务接口 |
-| 原应用接入 | `src/modules/<module>`、原有服务与页面 | 接回 Harness 原数据、权限和界面 |
+| 原应用接入 | `src/server`、`src/components`、原有服务与页面 | 接回 Harness 原数据、权限和界面 |
 | 部署清单 | `packages/example-composition/src/index.ts` | 声明包含的模块及其依赖 |
 | Admin 运营 | `/admin/features`、`/admin/connections` | 配置已装模块，控制新业务操作 |
 | 技术适配 | `src/config/modules.ts`、供应商包 | 凭据和外部协议 |

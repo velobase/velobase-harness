@@ -16,6 +16,7 @@ This directory is the English canonical documentation entry for Velobase Harness
 | [AI Testing Guide](./ai/testing.md)                             | Test strategy, layered patterns (unit / integration / E2E), and AI test generation rules                        |
 | [AI Completion Checklist](./ai/completion-checklist.md)         | Required self-check before commit, push, or deployment                                                          |
 | [Web/API/Worker Split](./architecture/web-api-service-split.md) | Runtime split, `SERVICE_MODE`, Docker, Kubernetes, and deployment modes                                         |
+| [Agent Runtime Design](./architecture/agent-runtime.md) | Proposal for execution contracts, tools, triggers, recovery and optional observation UI |
 | [AI Agent Rules](../../AGENTS.md)                               | Stable rules that AI agents must read before editing code                                                       |
 
 ## Reference Areas
@@ -27,9 +28,8 @@ This directory is the English canonical documentation entry for Velobase Harness
 | Debugging workflow | [./debugging/online-local-debug.md](./debugging/online-local-debug.md)     |
 | Integrations       | [./integrations/](./integrations/)                                         |
 | Built-in features  | [./features/](./features/)                                                 |
-| Product modules    | [./modules/README.md](./modules/README.md)                                 |
-| Module examples    | [../../src/modules/example/README.md](../../src/modules/example/README.md) |
-| AI Chat module     | [./modules/ai-chat/README.md](./modules/ai-chat/README.md)                 |
+| Capability registration    | [./modules/README.md](./modules/README.md)                                 |
+| AI Chat     | [./features/ai-chat/README.md](features/ai-chat/README.md)                 |
 
 ## Documentation Rules
 
