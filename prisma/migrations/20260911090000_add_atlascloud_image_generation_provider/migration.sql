@@ -1,0 +1,1 @@
+ALTER TYPE "ImageGenerationProvider" ADD VALUE IF NOT EXISTS 'ATLASCLOUD';
