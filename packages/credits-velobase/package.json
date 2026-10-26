@@ -4,11 +4,15 @@
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./src/index.ts",
-    "./details": "./src/details.ts"
+    ".": "./src/index.ts"
   },
   "dependencies": {
     "@velobase/credits": "workspace:*",
-    "@velobaseai/billing": "^1.1.0"
+    "@velobase/billing": "https://github.com/velobase/velobase/releases/download/v0.1.1/velobase-billing-0.1.1.tgz",
+    "pg": "^8.23.0",
+    "zod": "3"
+  },
+  "devDependencies": {
+    "@types/pg": "^8.23.1"
   }
 }

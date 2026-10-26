@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 export const GetBalanceInputSchema = z.object({
-  wallet: z.string().min(1).optional(),
+  wallet: z.string().trim().min(1).max(255).optional(),
 });
 
 const AccountSummarySchema = z.object({

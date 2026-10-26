@@ -1,6 +1,6 @@
 # Velobase Gateway Integration
 
-Velobase Gateway is an optional OpenAI-compatible model gateway integration for Velobase Harness. It is separate from the existing Velobase billing ledger integration: the ledger SDK manages credits for work the app prices itself, while the gateway routes LLM calls and meters each call to an end-customer wallet.
+Velobase Gateway is an optional OpenAI-compatible model gateway integration for Velobase Harness. It is separate from the existing Velobase billing ledger integration: the local PostgreSQL ledger manages credits for work the app prices itself, while the gateway routes LLM calls and meters each call to an end-customer wallet.
 
 Harness does not become a gateway or reverse proxy. Product code gets a server-side wrapper for calling Velobase Gateway as a third-party provider, similar to how an app would wrap Bedrock, OpenRouter, or another model platform.
 
@@ -24,18 +24,14 @@ Business modules should call `@/server/ai/velobase-gateway` and should not const
 
 ## Configuration
 
-The gateway can reuse the existing billing key:
-
-```env
-VELOBASE_API_KEY=vb_live_...
-VELOBASE_GATEWAY_MODE=auto
-```
-
-Use a dedicated key only when the gateway should not share `VELOBASE_API_KEY`:
+The optional remote gateway accepts its own API key:
 
 ```env
 VELOBASE_GATEWAY_API_KEY=vb_live_...
+VELOBASE_GATEWAY_MODE=auto
 ```
+
+Local credit billing requires no API key. The gateway also accepts `VELOBASE_API_KEY` as a gateway credential.
 
 Required for module enablement:
 
@@ -87,7 +83,7 @@ Use `listVelobaseGatewayModels()` to validate credentials and inspect routeable 
 
 Velobase Gateway model calls are metered by Velobase and return billing details through response headers such as `x-velobase-cost-cents`, `x-velobase-cost-credits`, `x-velobase-balance-credits`, and `x-velobase-transaction-id`.
 
-Do not also run an app-side `postConsume()` for the same model call unless you intentionally want a separate product charge. When adapting AI Chat to use Velobase Gateway, choose one billing path for that turn: gateway metering or explicit Harness ledger deduction.
+The gateway wallet and the local Harness ledger are separate stores. Do not also run an app-side `postConsume()` for the same model call unless you intentionally want a separate product charge. When adapting AI Chat to use Velobase Gateway, choose one billing path for that turn: gateway metering or explicit Harness ledger deduction.
 
 ## Dashboard Smoke Test
 

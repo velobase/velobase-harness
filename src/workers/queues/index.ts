@@ -4,6 +4,7 @@
  * 所有队列定义导出
  */
 export { agentExecutionQueue, enqueueAgentRun, type AgentExecutionJob } from "./agent-execution.queue";
+export { billingSettlementQueue } from "./billing-settlement.queue";
 export {
   orderCompensationQueue,
   type OrderCompensationJobData,

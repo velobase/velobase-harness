@@ -2,9 +2,9 @@ import { z } from "zod";
 
 export const GetRecordsInputSchema = z.object({
   limit: z.number().int().min(1).max(100).optional(),
-  cursor: z.string().optional(),
+  cursor: z.string().min(1).max(512).optional(),
   operationType: z.string().optional(),
-  transactionId: z.string().optional(),
+  transactionId: z.string().trim().min(1).max(255).optional(),
 });
 
 const RecordSummarySchema = z.object({

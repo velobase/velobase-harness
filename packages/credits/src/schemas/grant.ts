@@ -2,11 +2,11 @@ import { z } from "zod";
 import { BillingBusinessTypeSchema, BillingSourceSchema } from "./shared";
 
 export const GrantInputSchema = z.object({
-  userId: z.string().min(1),
-  wallet: z.string().min(1).optional(),
+  userId: z.string().trim().min(1).max(255),
+  wallet: z.string().trim().min(1).max(255).optional(),
   source: BillingSourceSchema.optional(),
   amount: z.number().int().positive().max(Number.MAX_SAFE_INTEGER),
-  outerBizId: z.string().min(1),
+  outerBizId: z.string().trim().min(1).max(255),
   businessType: BillingBusinessTypeSchema.optional(),
   referenceId: z.string().optional(),
   description: z.string().optional(),

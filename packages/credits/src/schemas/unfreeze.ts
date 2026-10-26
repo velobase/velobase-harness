@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 export const UnfreezeInputSchema = z.object({
-  businessId: z.string().min(1),
+  businessId: z.string().trim().min(1).max(255),
 });
 
 const UnfreezeDetailSchema = z.object({

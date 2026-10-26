@@ -27,6 +27,10 @@ Update `.env.example` and `src/env.js` when configuration changes.
 - Required fields need a safe migration plan for existing data.
 - Seed scripts should be idempotent.
 
+## Credit ledger schema
+
+The `velobase_billing` schema is owned by the pinned `@velobase/billing` engine and installed by the committed Prisma SQL migration. Its tables are intentionally outside `schema.prisma` so local `db:push` does not manage or remove them. The engine uses a shared, bounded `pg` pool configured by `src/server/billing/database.ts`; product code still uses `db` for application data. After a local `db:push`, run `pnpm billing:migrate` to install this schema without applying the full application migration history.
+
 ## AI Rules
 
 - Do not modify framework-reserved tables unless the user explicitly requests it.

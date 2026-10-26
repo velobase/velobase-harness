@@ -6,16 +6,16 @@
  * 2. 管理员扣减 — 使用 SDK 支持的 ADMIN_GRANT businessType 记录人工操作
  * 3. 初始积分全额可用 — 不存在 PENDING 锁定
  *
- * 前置条件：Velobase Billing 可用，.env 配置完成
+ * 前置条件：本地 PostgreSQL 账本已迁移、credits 功能已启用，.env 配置完成
  *
  * Usage: npx tsx scripts/tests/integrations/payment/test-billing.ts
  */
 
 import 'dotenv/config'
 
-if (!process.env.VELOBASE_API_KEY) {
-  console.error('❌ VELOBASE_API_KEY not configured in .env')
-  console.error('   Velobase Billing is not usable in this environment. Test failed.\n')
+if (!process.env.DATABASE_URL) {
+  console.error('❌ DATABASE_URL not configured in .env')
+  console.error('   Local billing database is not usable in this environment. Test failed.\n')
   process.exit(1)
 }
 

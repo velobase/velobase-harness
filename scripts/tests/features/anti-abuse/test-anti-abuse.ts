@@ -8,7 +8,7 @@
  *
  * 前置条件：
  * - 本地 PostgreSQL 运行中（docker:up）
- * - Velobase Billing 可用
+ * - 本地积分账本已迁移、credits 功能已启用
  * - .env 配置完成
  *
  * Usage: npx tsx scripts/tests/features/anti-abuse/test-anti-abuse.ts
@@ -20,12 +20,6 @@ import { PrismaClient } from '@prisma/client'
 if (!process.env.DATABASE_URL) {
   console.error('❌ DATABASE_URL not configured in .env')
   console.error('   Database is not usable in this environment. Test failed.\n')
-  process.exit(1)
-}
-
-if (!process.env.VELOBASE_API_KEY) {
-  console.error('❌ VELOBASE_API_KEY not configured in .env')
-  console.error('   Velobase Billing is not usable in this environment. Test failed.\n')
   process.exit(1)
 }
 

@@ -27,7 +27,7 @@ export async function getFeatureStates() {
     settings.map((row) => [row.id, row.enabled]),
   );
   const configuration: Record<string, string[]> = {};
-  if (!env.VELOBASE_API_KEY) configuration.credits = ["VELOBASE_API_KEY"];
+  if (!env.DATABASE_URL) configuration.credits = ["DATABASE_URL"];
   if (!env.RESEND_API_KEY && !env.SENDGRID_API_KEY)
     configuration.touch = ["RESEND_API_KEY / SENDGRID_API_KEY"];
   for (const [id, legacy] of Object.entries(legacyModules)) {

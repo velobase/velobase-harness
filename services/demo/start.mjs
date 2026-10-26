@@ -111,6 +111,7 @@ if (native) run(["exec", "prisma", "generate"]);
 // The original schema is applied only to this isolated local preview database.
 // No reset or accept-data-loss flag: incompatible existing data fails visibly.
 run(["exec", "prisma", "db", "push", "--skip-generate"]);
+run(["billing:migrate"]);
 const seededPath = `${demoStateDirectory}/harness-preview-seeded`;
 if (!existsSync(seededPath)) {
   run(["exec", "tsx", "services/demo/seed.ts"]);

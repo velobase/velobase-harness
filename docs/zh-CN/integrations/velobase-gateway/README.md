@@ -1,6 +1,6 @@
 # Velobase Gateway 集成
 
-Velobase Gateway 是 Velobase Harness 的可选 OpenAI-compatible 大模型中转站集成。它和已有的 Velobase billing ledger 集成是两层能力：ledger SDK 用于应用自己定价的积分记账，gateway 用于转发 LLM 调用并把每次模型调用计量到终端客户钱包。
+Velobase Gateway 是 Velobase Harness 的可选 OpenAI-compatible 大模型中转站集成。它和已有的 Velobase billing ledger 集成是两层能力：本地 PostgreSQL 账本用于应用自己定价的积分记账，gateway 用于转发 LLM 调用并把每次模型调用计量到终端客户钱包。
 
 Harness 本身不会变成中转站或反向代理。产品代码获得的是服务端 provider 封装，用法接近 Bedrock、OpenRouter 或其他模型平台的接入封装。
 
@@ -9,6 +9,8 @@ Harness 本身不会变成中转站或反向代理。产品代码获得的是服
 - [Introduction](https://docs.velobase.io/)
 - [Quickstart](https://docs.velobase.io/quickstart)
 - [OpenAI-compatible Gateway](https://docs.velobase.io/integration/openai-compatible)
+
+本地积分计费已使用 `velobase/velobase` PostgreSQL 引擎，无需 API Key。下面的远程模型网关是独立的可选集成，其钱包与本地积分账本分开管理。
 
 ## 架构
 
@@ -24,18 +26,14 @@ Harness 本身不会变成中转站或反向代理。产品代码获得的是服
 
 ## 配置
 
-Gateway 默认可以复用已有 billing key：
-
-```env
-VELOBASE_API_KEY=vb_live_...
-VELOBASE_GATEWAY_MODE=auto
-```
-
-只有当 Gateway 需要和 billing 使用不同 key 时，才配置独立 key：
+远程模型 Gateway 使用独立的 API Key：
 
 ```env
 VELOBASE_GATEWAY_API_KEY=vb_live_...
+VELOBASE_GATEWAY_MODE=auto
 ```
+
+本地积分计费不需要 API Key；Gateway 也接受 `VELOBASE_API_KEY` 作为网关凭证。
 
 模块启用所需配置：
 

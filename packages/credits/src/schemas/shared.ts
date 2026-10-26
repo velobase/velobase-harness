@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const BillingSourceSchema = z.string().min(1);
+export const BillingSourceSchema = z.string().trim().min(1).max(255);
 
 export const BillingBusinessTypeSchema = z.enum([
   "UNDEFINED",

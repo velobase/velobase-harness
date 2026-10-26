@@ -101,7 +101,6 @@ export type ConsumeDetail = {
 export type ConsumeOutput = {
   totalAmount: number;
   returnedAmount?: number;
-  overageAmount?: number;
   consumeDetails: ConsumeDetail[];
   consumedAt: string;
   isIdempotentReplay: boolean;
