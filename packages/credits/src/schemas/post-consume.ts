@@ -2,10 +2,10 @@ import { z } from "zod";
 import { BillingBusinessTypeSchema } from "./shared";
 
 export const PostConsumeInputSchema = z.object({
-  userId: z.string().min(1),
-  wallet: z.string().min(1).optional(),
-  amount: z.number().finite().positive().max(Number.MAX_SAFE_INTEGER),
-  businessId: z.string().min(1),
+  userId: z.string().trim().min(1).max(255),
+  wallet: z.string().trim().min(1).max(255).optional(),
+  amount: z.number().int().positive().max(Number.MAX_SAFE_INTEGER),
+  businessId: z.string().trim().min(1).max(255),
   businessType: BillingBusinessTypeSchema.optional(),
   referenceId: z.string().optional(),
   description: z.string().optional(),

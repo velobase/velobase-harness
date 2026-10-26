@@ -96,7 +96,7 @@ pnpm install && (test -f .env || cp .env.example .env) && pnpm docker:db:up && p
 
 - **现代 T3 基础:** Next.js 15、React 19、TypeScript、tRPC、Prisma、NextAuth、Tailwind CSS、pnpm。
 - **Web + Worker 默认运行时:** Web 承接应用 HTTP/API，BullMQ Worker 承接异步任务；Hono API 保留为可选独立入口。
-- **计费与积分:** 订单、订阅、积分账本、权益发放、现金流水、优惠码和 `@velobaseai/billing` 已接入。
+- **计费与积分:** 订单、订阅、积分账本、权益发放、现金流水、优惠码和 `velobase/velobase` 本地 PostgreSQL 计费引擎已接入，无需外部计费服务。
 - **支付就绪:** Stripe 覆盖订阅、续费、退款、争议和补偿任务；NowPayments 覆盖加密货币支付、IPN/Webhook 状态同步和补偿任务。
 - **增长能力:** PostHog 分析、Google Ads 离线转化回传、Affiliate/Referral、Touch 生命周期触达、Daily Bonus、Promo Code、SEO。
 - **反滥用护栏:** Redis 限流、Turnstile、临时邮箱与 Gmail 变体拦截、注册 IP/设备风控、访客 AI Chat 配额和积分回收。

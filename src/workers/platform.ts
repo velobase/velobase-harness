@@ -1,4 +1,9 @@
 import type { WorkerContribution } from "./types";
+import { billingSettlementQueue } from "./queues/billing-settlement.queue";
+import {
+  processBillingSettlement,
+  billingSettlementScheduler,
+} from "./processors/billing-settlement";
 import { agentExecutionQueue } from "./queues/agent-execution.queue";
 import {
   processAgentExecution,
@@ -17,6 +22,13 @@ import {
 
 export function getPlatformWorkerContributions(): WorkerContribution[] {
   return [
+    {
+      id: "platform.billing-settlement",
+      queue: billingSettlementQueue,
+      processor: processBillingSettlement,
+      options: { concurrency: 1, lockDuration: 60_000 },
+      scheduler: billingSettlementScheduler,
+    },
     {
       id: "platform.agent-execution",
       queue: agentExecutionQueue,

@@ -1,0 +1,11 @@
+Velobase
+Copyright 2026 Velobase contributors
+
+This product includes software developed by Velobase contributors.
+
+Velobase and its logos are trademarks of their respective owners. The Apache
+License does not grant permission to use those trademarks except for reasonable
+and customary use in describing the origin of the software.
+
+Harness adapts the v0.1.1 schema by applying allocation_order in the initial
+creation, making creation idempotent, and isolating tables in velobase_billing.

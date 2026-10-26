@@ -1,26 +1,36 @@
 import { z } from "zod";
 import { BillingBusinessTypeSchema } from "./shared";
 
-export const FreezeInputSchema = z.object({
-  userId: z.string().min(1),
-  wallet: z.string().min(1).optional(),
-  businessId: z.string().min(1),
-  businessType: BillingBusinessTypeSchema,
-  amount: z.number().int().positive().max(Number.MAX_SAFE_INTEGER),
-  description: z.string().optional(),
-  unfreezeAfterSeconds: z
-    .number()
-    .int()
-    .positive()
-    .max(Number.MAX_SAFE_INTEGER)
-    .optional(),
-  consumeAfterSeconds: z
-    .number()
-    .int()
-    .positive()
-    .max(Number.MAX_SAFE_INTEGER)
-    .optional(),
-});
+export const FreezeInputSchema = z
+  .object({
+    userId: z.string().trim().min(1).max(255),
+    wallet: z.string().trim().min(1).max(255).optional(),
+    businessId: z.string().trim().min(1).max(255),
+    businessType: BillingBusinessTypeSchema,
+    amount: z.number().int().positive().max(Number.MAX_SAFE_INTEGER),
+    description: z.string().optional(),
+    unfreezeAfterSeconds: z
+      .number()
+      .int()
+      .positive()
+      .max(30 * 24 * 60 * 60)
+      .optional(),
+    consumeAfterSeconds: z
+      .number()
+      .int()
+      .positive()
+      .max(30 * 24 * 60 * 60)
+      .optional(),
+  })
+  .refine(
+    (input) =>
+      input.unfreezeAfterSeconds === undefined ||
+      input.consumeAfterSeconds === undefined,
+    {
+      message: "Choose either automatic release or automatic settlement",
+      path: ["consumeAfterSeconds"],
+    },
+  );
 
 const FreezeDetailSchema = z.object({
   freezeId: z.string(),

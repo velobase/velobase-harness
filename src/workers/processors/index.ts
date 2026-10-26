@@ -4,6 +4,7 @@
  * 导出所有任务处理器
  */
 export { processAgentExecution, agentRecoveryScheduler } from "./agent-execution";
+export { processBillingSettlement, billingSettlementScheduler } from "./billing-settlement";
 export {
   orderCompensationScheduler,
   processOrderCompensationJob,

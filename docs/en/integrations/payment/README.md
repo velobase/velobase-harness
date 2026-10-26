@@ -12,6 +12,14 @@ Supported providers:
 - LemonSqueezy for optional hosted checkout payments and subscriptions.
 - NowPayments for optional crypto payments.
 
+## Local credit billing
+
+Credits use the in-process [`velobase/velobase`](https://github.com/velobase/velobase) engine through `@velobase/credits-velobase`, backed by `DATABASE_URL`. No external billing service or API key is required. Stripe and other payment providers collect money; credit accounting runs locally.
+
+Run `pnpm db:migrate` before deployment. When using local `db:push`, also run `pnpm billing:migrate` (`pnpm dev:local` does this automatically). Ledger tables live in the separate `velobase_billing` schema. Optional `BILLING_TENANT_ID` and `BILLING_PROJECT_ID` select a stable ledger scope; both default to `default`.
+
+Run Worker for automatic reservation settlement/release and interrupted deduction recovery. Amounts are integer credits; settlement cannot exceed the reservation. Remote balances are not imported or deleted by this change. See the [ledger adapter](../../../../packages/credits-velobase/README.md) for persistence and operation details.
+
 ## Rules
 
 - Get Stripe through `getStripe()` from `@/server/order/services/stripe/client`.

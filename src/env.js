@@ -210,6 +210,9 @@ export const env = createEnv({
     // Cloudflare Turnstile
     TURNSTILE_SECRET_KEY: z.string().optional(),
     // Velobase Billing
+    BILLING_TENANT_ID: z.string().trim().min(1).max(255).default("default"),
+    BILLING_PROJECT_ID: z.string().trim().min(1).max(255).default("default"),
+    // Optional model gateway credential; local credit billing does not use it.
     VELOBASE_API_KEY: z.string().optional(),
     // Velobase Gateway (OpenAI-compatible model routing)
     VELOBASE_GATEWAY_API_KEY: z.string().optional(),
@@ -413,6 +416,8 @@ export const env = createEnv({
     TELEGRAM_BOT_TOKEN: process.env.TELEGRAM_BOT_TOKEN,
     TELEGRAM_WEBHOOK_SECRET: process.env.TELEGRAM_WEBHOOK_SECRET,
     TURNSTILE_SECRET_KEY: process.env.TURNSTILE_SECRET_KEY,
+    BILLING_TENANT_ID: process.env.BILLING_TENANT_ID,
+    BILLING_PROJECT_ID: process.env.BILLING_PROJECT_ID,
     VELOBASE_API_KEY: process.env.VELOBASE_API_KEY,
     VELOBASE_GATEWAY_API_KEY: process.env.VELOBASE_GATEWAY_API_KEY,
     VELOBASE_GATEWAY_BASE_URL: process.env.VELOBASE_GATEWAY_BASE_URL,

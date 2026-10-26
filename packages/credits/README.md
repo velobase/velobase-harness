@@ -21,13 +21,13 @@ A user-facing API should expose their balance/history; grants and deductions are
 
 Use a stable `outerBizId` for grants and `businessId` for reservations/deductions.
 
-Preserve those IDs before the external call, and reuse both identity and payload on retry.
+Preserve those IDs before the ledger call, and reuse both identity and payload on retry.
 
 The provider must enforce idempotency and own its atomic ledger.
 
 Zero final consumption is allowed for a reservation that used nothing.
 
-Grants and freezes use integer credits; direct consumption may use fractional credits for token pricing.
+All credit amounts are safe integers; settlement may be zero and cannot exceed the reservation. Convert token pricing to integer credits before calling the service.
 
 The package exports `creditsFeature`, neutral schemas and TypeScript result types.
 
@@ -35,6 +35,4 @@ Its history defaults to 20 rows and uses provider cursors.
 
 `CreditLedgerError` lets an adapter identify an attempt rejected before applying it; an uncertain earlier attempt must still be reconciled, even if a later attempt is rejected.
 
-Choose `@velobase/credits-velobase` for the existing Velobase ledger, or supply another adapter.
-
-Source implementation only: no tests, builds or ledger requests were executed.
+Choose `@velobase/credits-velobase` for the in-process PostgreSQL engine from `velobase/velobase`, or supply another adapter.

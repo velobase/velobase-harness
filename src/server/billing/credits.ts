@@ -1,31 +1,20 @@
-import {
-  createCredits,
-  CreditsError,
-  type CreditLedger,
-} from "@velobase/credits";
+import { createCredits, CreditsError } from "@velobase/credits";
 import { TRPCError } from "@trpc/server";
 import { ZodError } from "zod";
-import { env } from "@/env";
+import { getCreditLedger } from "./ledger";
+import { createLogger } from "@/lib/logger";
 import { isFeatureEnabled } from "@/server/features/state";
 
-let ledger: CreditLedger | undefined;
+const logger = createLogger("billing");
 export const credits = createCredits({
   isEnabled: () => isFeatureEnabled("credits"),
-  async ledger() {
-    if (ledger) return ledger;
-    if (!env.VELOBASE_API_KEY)
-      throw new TRPCError({
-        code: "PRECONDITION_FAILED",
-        message: "Configure the credit ledger",
-      });
-    const { createVelobaseLedger } = await import("@velobase/credits-velobase");
-    return (ledger = createVelobaseLedger(env.VELOBASE_API_KEY));
-  },
+  ledger: getCreditLedger,
 });
 export async function creditOperation<T>(work: () => Promise<T>): Promise<T> {
   try {
     return await work();
   } catch (error) {
+    logger.error({ err: error }, "Credit operation failed");
     if (error instanceof CreditsError)
       throw new TRPCError({
         code: "FORBIDDEN",

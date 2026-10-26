@@ -8,6 +8,14 @@
 - LemonSqueezy：可选托管 Checkout 支付和订阅。
 - NowPayments：可选加密货币支付。
 
+## 本地积分计费
+
+积分账本使用 [`velobase/velobase`](https://github.com/velobase/velobase) 的 `@velobase/billing` 引擎，在应用进程内执行并写入现有 `DATABASE_URL` 的 `velobase_billing` schema，不需要外部计费服务或 API Key。支付渠道仍负责收款。
+
+部署前运行 `pnpm db:migrate`；本地使用 `db:push` 时另运行 `pnpm billing:migrate`，`pnpm dev:local` 会自动执行。`BILLING_TENANT_ID` 和 `BILLING_PROJECT_ID` 默认均为 `default`，开始记账后应保持稳定。Worker 每分钟处理到期预留及中断扣费的恢复，即使关闭新积分操作仍继续处理已有结算。
+
+积分仅接受安全整数，实际结算不能超出预留；此次变更不导入或删除外部账本的余额与流水。详见 [账本适配器](../../../../packages/credits-velobase/README.md)。
+
 ## 规则
 
 - 通过 `@/server/order/services/stripe/client` 的 `getStripe()` 获取 Stripe。

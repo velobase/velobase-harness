@@ -40,6 +40,8 @@ const config = {
   // Load server SDKs through Node: their generated clients do not need Webpack
   // transforms, which otherwise make even the first page expensive to compile.
   serverExternalPackages: [
+    "@velobase/billing",
+    "pg",
     "@opentelemetry/api",
     "@opentelemetry/sdk-trace-node",
     "@opentelemetry/sdk-trace-base",

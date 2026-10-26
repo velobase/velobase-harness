@@ -57,11 +57,13 @@ export class CreditLedgerError extends Error {
   constructor(
     public readonly outcome: "REJECTED",
     message: string,
+    options?: ErrorOptions,
   ) {
-    super(message);
+    super(message, options);
+    this.name = "CreditLedgerError";
   }
 }
-const ownerSchema = z.object({ userId: z.string().min(1).max(256) });
+const ownerSchema = z.object({ userId: z.string().trim().min(1).max(255) });
 const balanceSchema = GetBalanceInputSchema.merge(ownerSchema);
 const recordsSchema = GetRecordsInputSchema.merge(ownerSchema);
 
