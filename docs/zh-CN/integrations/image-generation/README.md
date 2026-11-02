@@ -6,6 +6,7 @@
 
 - WaveSpeedAI，通过 `WavespeedProvider` 接入。
 - ModelRunner，通过 `ModelrunnerProvider` 接入。
+- Atlas Cloud，通过 `AtlasCloudProvider` 接入。
 
 WaveSpeedAI API 参考：
 
@@ -17,7 +18,7 @@ WaveSpeedAI API 参考：
 
 分层：
 
-- Provider adapter：`src/server/ai/image-generation/providers/wavespeed.ts`、`src/server/ai/image-generation/providers/modelrunner.ts`
+- Provider adapter：`src/server/ai/image-generation/providers/wavespeed.ts`、`src/server/ai/image-generation/providers/modelrunner.ts`、`src/server/ai/image-generation/providers/atlascloud.ts`
 - 框架 service：`src/server/ai/image-generation/service.ts`
 - Worker：`src/workers/processors/image-generation/processor.ts`
 - Queue：`src/workers/queues/image-generation.queue.ts`
@@ -36,7 +37,7 @@ WaveSpeed 连接测试需要：
 
 `auto` 会在以下配置齐全时启用模块：
 
-- 至少配置一个 provider key：`WAVESPEED_API_KEY` 或 `MODELRUNNER_KEY`
+- 至少配置一个 provider key：`WAVESPEED_API_KEY`、`MODELRUNNER_KEY` 或 `ATLASCLOUD_API_KEY`
 - 通过 `REDIS_URL` 或 `REDIS_HOST` 配置 Redis 连接
 
 ### ModelRunner
@@ -59,6 +60,19 @@ ModelRunner API 参考：
 
 - [Docs](https://modelrunner.ai/docs)
 - [模型 catalog](https://modelrunner.ai/models)
+
+### Atlas Cloud
+
+Atlas Cloud 文生图需要：
+
+- `ATLASCLOUD_API_KEY`
+
+可选配置，均有默认值：
+
+- `ATLASCLOUD_BASE_URL`，默认 `https://api.atlascloud.ai`
+- `ATLASCLOUD_REQUEST_TIMEOUT_MS`，默认 `30000`
+
+模型使用 Atlas Cloud 图片模型 ID，例如 `bytedance/seedream-v5.0-lite`。Adapter 对每次生成只提交一次，并使用返回的 prediction ID 轮询；输出支持 PNG 或 JPEG。常见宽高比会映射到模型公开的 2K 或 4K 尺寸；请求 1K 时使用该模型支持的最低 2K 尺寸。此 adapter 不提供价格预估和远程模型列表。
 
 可选配置：
 

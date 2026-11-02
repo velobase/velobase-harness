@@ -1,6 +1,7 @@
 import { env } from "@/env";
 import type { ImageGenerationProviderId } from "../types";
 import type { ImageGenerationProviderAdapter } from "./types";
+import { AtlasCloudProvider } from "./atlascloud";
 import { ModelrunnerProvider } from "./modelrunner";
 import { WavespeedProvider } from "./wavespeed";
 
@@ -21,6 +22,11 @@ export function registerDefaultImageGenerationProviders(): void {
   if (env.MODELRUNNER_KEY) {
     imageGenerationProviderRegistry.register(new ModelrunnerProvider());
   }
+
+  if (env.ATLASCLOUD_API_KEY) {
+    imageGenerationProviderRegistry.register(new AtlasCloudProvider());
+  }
+
   defaultsRegistered = true;
 }
 

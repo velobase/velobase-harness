@@ -18,7 +18,10 @@ export type {
   ImageGenerationOutputFormat,
 } from "@velobase/image-generation/types";
 export { TERMINAL_IMAGE_GENERATION_STATUSES } from "@velobase/image-generation/types";
-export type ImageGenerationProviderId = "wavespeed" | "modelrunner";
+export type ImageGenerationProviderId =
+  | "wavespeed"
+  | "modelrunner"
+  | "atlascloud";
 export type ImageGenerationCreateInput = CreateInput<ImageGenerationProviderId>;
 export type ImageGenerationEstimateInput =
   EstimateInput<ImageGenerationProviderId>;
@@ -28,6 +31,7 @@ export type ImageGenerationAsset = Asset<ImageGenerationProviderId>;
 export const PROVIDER_TO_PRISMA = {
   wavespeed: "WAVESPEED",
   modelrunner: "MODELRUNNER",
+  atlascloud: "ATLASCLOUD",
 } as const satisfies Record<
   ImageGenerationProviderId,
   PrismaImageGenerationProvider
@@ -36,6 +40,7 @@ export const PROVIDER_TO_PRISMA = {
 export const PRISMA_TO_PROVIDER = {
   WAVESPEED: "wavespeed",
   MODELRUNNER: "modelrunner",
+  ATLASCLOUD: "atlascloud",
 } as const satisfies Record<
   PrismaImageGenerationProvider,
   ImageGenerationProviderId
