@@ -1,4 +1,4 @@
-import type { UIMessage } from "ai";
+import type { UIMessage } from "@velobase/ai-chat/tools";
 
 /**
  * Custom message metadata type
@@ -23,4 +23,3 @@ export type CustomUIMessage = UIMessage<
     };
   }
 >;
-

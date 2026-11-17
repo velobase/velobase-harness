@@ -14,9 +14,9 @@ ChatPanel ← GET /api/chat/:id/run ← 有权限的会话投影
 
 ## 职责
 
-界面和交互分别在 `src/components/ai-chat`、`src/hooks/ai-chat`；会话接受、投影和执行器在 `src/server/ai-chat`；通用执行、租约、尝试和工具操作记录在 `src/server/agents`；队列入口在 `src/workers`。
+界面和交互分别在 `src/components/ai-chat`、`src/hooks/ai-chat`；会话接受、投影、PostgreSQL 连接池和执行器在 `src/server/ai-chat`；Pi Durable 运行时与 PostgreSQL 存储后端（`pi_durable` schema）在 `packages/ai-chat` 与 `packages/ai-chat-openrouter`；通用执行、租约、尝试和工具操作记录在 `src/server/agents`；队列入口在 `src/workers`。
 
-保留 `src/config/modules.ts` 和 `src/server/modules` 的注册启停机制。不新增运行时包，也不要求一项能力对应一个包。继续使用现有模型适配器。
+保留 `src/config/modules.ts` 和 `src/server/modules` 的注册启停机制。底层对话与工具执行采用 `@earendil-works/pi-durable` + `@earendil-works/pi-ai` + PostgreSQL (`pg`)。
 
 ## 运行与恢复
 

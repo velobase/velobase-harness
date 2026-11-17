@@ -14,15 +14,16 @@ ChatPanel ← GET /api/chat/:id/run ← authorized conversation projection
 
 ## Ownership
 
-| Location | Responsibility |
-| --- | --- |
-| `src/components/ai-chat`, `src/hooks/ai-chat` | UI, polling, sending and cancellation |
-| `src/server/ai-chat` | Chat admission, history projection, executor and billing binding |
-| `src/server/agents` | Executor registration, claims, leases, attempts and durable tool operations |
-| `src/workers` | Agent queue, processor and recovery scheduler |
-| `src/server/api/tools` | Registered tools and explicit recovery guarantees |
+| Location                                          | Responsibility                                                                                                      |
+| ------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| `src/components/ai-chat`, `src/hooks/ai-chat`     | UI, polling, sending and cancellation                                                                               |
+| `src/server/ai-chat`                              | Chat admission, history projection, Pi Durable PostgreSQL pool, executor and billing binding                        |
+| `packages/ai-chat`, `packages/ai-chat-openrouter` | Pi Durable execution harness, PostgreSQL `Storage` backend (`pi_durable` schema) and OpenRouter Pi AI model adapter |
+| `src/server/agents`                               | Executor registration, claims, leases, attempts and durable tool operations                                         |
+| `src/workers`                                     | Agent queue, processor and recovery scheduler                                                                       |
+| `src/server/api/tools`                            | Registered tools and explicit recovery guarantees                                                                   |
 
-Registration and enablement remain in `src/config/modules.ts` and `src/server/modules`. No additional runtime package is required. Existing model/provider adapters remain in use.
+Registration and enablement remain in `src/config/modules.ts` and `src/server/modules`. Execution runs through `@earendil-works/pi-durable` and `@earendil-works/pi-ai` over PostgreSQL (`pg`).
 
 ## Operation
 

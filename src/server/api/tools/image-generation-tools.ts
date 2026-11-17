@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { ImageGenerationWaitTimeoutError } from "@velobase/image-generation";
-import { tool } from "ai";
+import { tool } from "@velobase/ai-chat";
 import { z } from "zod";
 import { createLogger } from "@/lib/logger";
 import { db } from "@/server/db";

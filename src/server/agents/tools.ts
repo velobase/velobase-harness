@@ -1,5 +1,5 @@
 import { isDeepStrictEqual } from "node:util";
-import type { ToolSet, ToolCallOptions } from "ai";
+import type { ToolSet, ToolCallOptions } from "@velobase/ai-chat";
 import type { AgentToolOperation } from "@prisma/client";
 import { db } from "@/server/db";
 import { json } from "./service";
@@ -15,6 +15,10 @@ const policies = new Map<string, ToolRecovery>();
 /** Opt in only when the owning tool actually supplies the recovery guarantee. */
 export function registerToolRecovery(name: string, recovery: ToolRecovery) {
   policies.set(name, recovery);
+}
+
+export function getToolRecovery(name: string): ToolRecovery {
+  return policies.get(name) ?? "once";
 }
 
 export function operationOutput(operation: AgentToolOperation): unknown {
@@ -145,7 +149,13 @@ export function durableTools(
     }
   };
   const tools: ToolSet = {};
+  const replayPolicies = new Map<string, "safe" | "unsafe">();
   for (const [name, original] of Object.entries(originals)) {
+    const recovery = policies.get(name) ?? "once";
+    replayPolicies.set(
+      name,
+      recovery === "read" || recovery === "idempotent" ? "safe" : "unsafe",
+    );
     tools[name] = {
       ...original,
       execute: original.execute
@@ -159,6 +169,7 @@ export function durableTools(
   }
   return {
     tools,
+    policies: replayPolicies,
     get suspended() {
       return suspended;
     },
