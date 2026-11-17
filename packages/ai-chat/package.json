@@ -5,10 +5,18 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./tools": "./src/tools.ts"
+    "./tools": "./src/tools.ts",
+    "./postgres": "./src/postgres-storage.ts"
   },
   "dependencies": {
-    "ai": "^5.0.68",
+    "@earendil-works/chord": "1.5.2",
+    "@earendil-works/pi-ai": "1.5.2",
+    "@earendil-works/pi-durable": "1.5.2",
+    "@earendil-works/pi-schema": "1.5.2",
+    "pg": "^8.23.0",
     "zod": "3"
+  },
+  "devDependencies": {
+    "@types/pg": "^8.23.1"
   }
 }

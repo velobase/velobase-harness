@@ -58,11 +58,11 @@
     "test:telemetry": "node --import tsx --test src/server/telemetry/*.test.ts",
     "audit:prod": "node scripts/security/audit.mjs",
     "test:security": "node --test scripts/security/*.test.mjs",
-    "billing:migrate": "tsx scripts/migrate-billing.ts"
+    "billing:migrate": "tsx scripts/migrate-billing.ts",
+    "chat:migrate": "tsx scripts/migrate-chat.ts"
   },
   "dependencies": {
     "@ai-sdk/openai": "^2.0.53",
-    "@ai-sdk/react": "^2.0.76",
     "@ai-sdk/xai": "^2.0.39",
     "@anthropic-ai/claude-agent-sdk": "^0.1.13",
     "@auth/prisma-adapter": "^2.11.3",
@@ -70,6 +70,10 @@
     "@aws-sdk/s3-request-presigner": "^3.1125.0",
     "@bull-board/api": "^9.6.1",
     "@bull-board/fastify": "^9.6.1",
+    "@earendil-works/chord": "1.5.2",
+    "@earendil-works/pi-ai": "1.5.2",
+    "@earendil-works/pi-durable": "1.5.2",
+    "@earendil-works/pi-schema": "1.5.2",
     "@fastify/cors": "^11.3.0",
     "@google/genai": "^1.52.0",
     "@hono/node-server": "^1.19.15",

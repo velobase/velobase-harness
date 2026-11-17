@@ -2,7 +2,7 @@
 
 import React, { memo, useMemo } from "react";
 import type { ChatUIMessage } from "@/types/ai-chat/message";
-import { isToolUIPart, getToolName } from "ai";
+import { isToolUIPart, getToolName } from "@velobase/ai-chat/tools";
 import { cn } from "@/lib/utils";
 import { TextBlock } from "@/components/ai-chat/messages/blocks/TextBlock";
 import { ToolBlock } from "@/components/ai-chat/messages/blocks/ToolBlock";
@@ -62,9 +62,9 @@ function AssistantMessageImpl({
         });
       }
       // Tool parts (use SDK helper to check and extract tool name)
-      else if (isToolUIPart(part as Parameters<typeof isToolUIPart>[0])) {
+      else if (isToolUIPart(part)) {
         // Extract tool name using SDK helper
-        const toolName = getToolName(part as Parameters<typeof getToolName>[0]);
+        const toolName = getToolName(part);
         const toolCallId = (part as { toolCallId?: string }).toolCallId;
 
         // Get state and data

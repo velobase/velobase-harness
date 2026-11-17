@@ -46,6 +46,7 @@ overrides:
   "proxy-addr@>=1.1.0 <2.0.8": 2.0.8
   "compression@<1.8.2": 1.8.2
   "shell-quote@>=1.8.4 <1.11.0": 1.11.0
+  "undici@>=7.0.0 <7.30.2": 7.30.2
 
 patchedDependencies:
   node-forge@1.4.0: patches/node-forge@1.4.0.patch

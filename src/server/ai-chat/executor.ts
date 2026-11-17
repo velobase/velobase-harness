@@ -1,6 +1,5 @@
 import { reconcileTools } from "./tool-projection";
-import { readUIMessageStream, convertToModelMessages } from "ai";
-import { streamChat } from "@velobase/ai-chat";
+import { openPostgresStorage, runDurableChat } from "@velobase/ai-chat";
 import { createOpenRouterChatModel } from "@velobase/ai-chat-openrouter";
 import { db } from "@/server/db";
 import { env } from "@/env";
@@ -16,6 +15,7 @@ import { durableTools } from "@/server/agents/tools";
 import { calculateChatCost } from "@/server/billing/config/token-pricing";
 import { settleDeduction } from "@/server/billing/services/post-consume";
 import type { ChatUIMessage } from "@/types/ai-chat/message";
+import { getChatPool } from "./database";
 import { chatRunInputSchema } from "./input";
 import { interactionPath } from "./history";
 import { buildAIProjection } from "./services/projection.service";
@@ -144,29 +144,33 @@ const executor: AgentExecutor = {
         throw new AgentExecutionError("TOOL_FAILED");
     };
     try {
-      await durable.restore(
-        convertToModelMessages(messages, { ignoreIncompleteToolCalls: true }),
-      );
+      await durable.restore(messages);
       await save(latest);
       await ensureToolsSettled();
       messages = [...messages.slice(0, -1), latest];
-      // Empty placeholders are for observation and are not model input.
-      const modelMessages = messages.filter(
-        (message) => message.parts.length > 0,
-      );
+      const priorMessages = messages
+        .slice(0, -1)
+        .filter((message) => message.parts.length > 0);
+      const storage = await openPostgresStorage(getChatPool(), {
+        sessionId: `chat:${input.conversationId}:${context.run.id}`,
+      });
       let steps = context.run.steps;
-      const result = streamChat({
+      const result = await runDurableChat<ChatUIMessage>({
         model: createOpenRouterChatModel({
           apiKey: env.OPENROUTER_API_KEY ?? "",
           model: input.agent.model,
         }),
-        messages: modelMessages,
+        storage,
+        messages: [...priorMessages, latest],
         tools: durable.tools,
+        toolPolicies: durable.policies,
         system: input.agent.instructions,
+        requestId: context.run.id,
+        assistantMessageId: input.assistantMessageId,
         maxSteps: MAX_STEPS,
         maxOutputTokens: 4096,
         abortSignal: context.signal,
-        prepareStep: async () => {
+        onStepStart: async () => {
           await context.check();
           await ensureToolsSettled();
           if (steps >= MAX_STEPS) throw new AgentExecutionError("STEP_LIMIT");
@@ -177,7 +181,6 @@ const executor: AgentExecutor = {
             }),
           );
           steps++;
-          return {};
         },
         onStepFinish: async ({ usage }) => {
           await context.commit((tx) =>
@@ -190,29 +193,17 @@ const executor: AgentExecutor = {
             }),
           );
         },
-      });
-      let lastSave = 0;
-      for await (const message of readUIMessageStream<ChatUIMessage>({
-        message: latest,
-        stream: result.toUIMessageStream<ChatUIMessage>({
-          originalMessages: messages,
-          generateMessageId: () => input.assistantMessageId,
-          sendReasoning: false,
-        }),
-        terminateOnError: true,
-      })) {
-        latest = message;
-        if (Date.now() - lastSave >= 250) {
+        onProgress: async (message) => {
           await save(message);
-          lastSave = Date.now();
-        }
-      }
-      await save(latest);
+        },
+      });
+      await save(result.message);
       await ensureToolsSettled();
-      const finishReason = await result.finishReason;
-      if (finishReason !== "stop")
+      if (result.finishReason !== "stop")
         throw new AgentExecutionError(
-          finishReason === "length" ? "OUTPUT_LIMIT" : "INCOMPLETE_RESPONSE",
+          result.finishReason === "length"
+            ? "OUTPUT_LIMIT"
+            : "INCOMPLETE_RESPONSE",
         );
     } catch (error) {
       // Provider errors may wrap the callback exception. Preserve stable recovery decisions.

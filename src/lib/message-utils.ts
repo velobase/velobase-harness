@@ -1,4 +1,4 @@
-import type { UIMessage } from "ai";
+import type { UIMessage } from "@velobase/ai-chat/tools";
 import { createLogger } from "@/lib/logger";
 
 const logger = createLogger("message-utils");

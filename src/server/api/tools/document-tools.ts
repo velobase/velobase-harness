@@ -1,4 +1,4 @@
-import { tool } from "ai";
+import { tool } from "@velobase/ai-chat";
 import { z } from "zod";
 import crypto from "crypto";
 import { db } from "@/server/db";

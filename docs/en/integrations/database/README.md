@@ -27,9 +27,11 @@ Update `.env.example` and `src/env.js` when configuration changes.
 - Required fields need a safe migration plan for existing data.
 - Seed scripts should be idempotent.
 
-## Credit ledger schema
+## Credit ledger and Pi Durable schemas
 
 The `velobase_billing` schema is owned by the pinned `@velobase/billing` engine and installed by the committed Prisma SQL migration. Its tables are intentionally outside `schema.prisma` so local `db:push` does not manage or remove them. The engine uses a shared, bounded `pg` pool configured by `src/server/billing/database.ts`; product code still uses `db` for application data. After a local `db:push`, run `pnpm billing:migrate` to install this schema without applying the full application migration history.
+
+The `pi_durable` schema stores `@earendil-works/pi-durable` conversations, entries, tasks, submissions, and documents for AI Chat (`packages/ai-chat/src/postgres-storage.ts`), using the shared `pg` pool configured by `src/server/ai-chat/database.ts`. After a local `db:push`, run `pnpm chat:migrate` (or rely on `openPostgresStorage` automatic idempotent schema initialization).
 
 ## AI Rules
 

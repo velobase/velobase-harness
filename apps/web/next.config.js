@@ -41,6 +41,10 @@ const config = {
   // transforms, which otherwise make even the first page expensive to compile.
   serverExternalPackages: [
     "@velobase/billing",
+    "@earendil-works/pi-durable",
+    "@earendil-works/pi-ai",
+    "@earendil-works/pi-schema",
+    "@earendil-works/chord",
     "pg",
     "@opentelemetry/api",
     "@opentelemetry/sdk-trace-node",

@@ -1,4 +1,4 @@
-import type { UIMessage } from "ai";
+import type { UIMessage } from "@velobase/ai-chat/tools";
 import { z } from "zod";
 
 /**
@@ -32,4 +32,3 @@ export type DataParts = z.infer<typeof dataPartsSchema>;
  * No custom tools type - use default from SDK
  */
 export type ChatUIMessage = UIMessage<MessageMetadata, DataParts>;
-
