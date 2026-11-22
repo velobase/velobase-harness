@@ -10,7 +10,7 @@
 WaveSpeedAI API 参考：
 
 - [API Integration](https://wavespeed.ai/docs/docs-api)：用 `POST /api/v3/{model}` 提交任务。
-- [Get Result](https://wavespeed.ai/docs/get-result)：用 `GET /api/v3/predictions/{task-id}` 轮询任务状态。
+- [Get Result](https://wavespeed.ai/docs/get-result)：用 `GET /api/v3/predictions/{task-id}/result` 轮询任务状态。
 - [List Models API](https://wavespeed.ai/docs/docs-common-api/models)：用 `GET /api/v3/models` 验证凭证并查看可用模型 ID。
 
 ## 架构
