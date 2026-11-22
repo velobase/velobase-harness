@@ -10,7 +10,7 @@ Supported providers:
 WaveSpeedAI API references:
 
 - [API Integration](https://wavespeed.ai/docs/docs-api): submit tasks with `POST /api/v3/{model}`.
-- [Get Result](https://wavespeed.ai/docs/get-result): poll task status with `GET /api/v3/predictions/{task-id}`.
+- [Get Result](https://wavespeed.ai/docs/get-result): poll task status with `GET /api/v3/predictions/{task-id}/result`.
 - [List Models API](https://wavespeed.ai/docs/docs-common-api/models): verify credentials and inspect available model ids with `GET /api/v3/models`.
 
 ## Architecture

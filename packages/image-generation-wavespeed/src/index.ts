@@ -109,28 +109,12 @@ export class WavespeedProvider implements ImageGenerationProviderAdapter {
     providerTaskId: string,
     providerTaskUrl?: string,
   ): Promise<ProviderPrediction> {
-    const path = providerTaskUrl ?? `/api/v3/predictions/${providerTaskId}`;
-
-    try {
-      const response = await this.request<WaveSpeedPredictionData>(path, {
-        method: "GET",
-      });
-      return this.toPrediction(response.data, undefined, response);
-    } catch (error) {
-      if (
-        error instanceof ImageGenerationProviderError &&
-        error.details.httpStatus === 404 &&
-        !providerTaskUrl
-      ) {
-        const fallback = await this.request<WaveSpeedPredictionData>(
-          `/api/v3/predictions/${providerTaskId}/result`,
-          { method: "GET" },
-        );
-        return this.toPrediction(fallback.data, undefined, fallback);
-      }
-
-      throw error;
-    }
+    const path =
+      providerTaskUrl ?? `/api/v3/predictions/${providerTaskId}/result`;
+    const response = await this.request<WaveSpeedPredictionData>(path, {
+      method: "GET",
+    });
+    return this.toPrediction(response.data, undefined, response);
   }
 
   async estimateCost(
